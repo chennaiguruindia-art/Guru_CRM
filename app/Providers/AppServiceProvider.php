@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Filesystem\WindowsFilesystem;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -11,10 +13,14 @@ class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
+     *
+     * Swap in our Windows-compatible Filesystem so that Blade cache writes
+     * never hit the tempnam() / open_basedir crash on Plesk / IIS hosts.
      */
     public function register(): void
     {
-        //
+        $this->app->singleton('files', fn () => new WindowsFilesystem());
+        $this->app->bind(Filesystem::class, WindowsFilesystem::class);
     }
 
     /**

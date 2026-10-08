@@ -70,7 +70,6 @@ class QuotationRequest extends FormRequest
     {
         return [
             'customer_id' => ['required', 'exists:customers,id'],
-            'site_id' => ['nullable', 'exists:sites,id'],
             'date' => ['required', 'date'],
             'valid_until' => ['nullable', 'date', 'after_or_equal:date'],
             'sales_person_id' => ['nullable', 'exists:users,id'],

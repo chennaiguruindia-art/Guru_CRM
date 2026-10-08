@@ -63,7 +63,6 @@ class EstimationRequest extends FormRequest
     {
         return [
             'customer_id' => ['required', 'exists:customers,id'],
-            'site_id' => ['nullable', 'exists:sites,id'],
             'title' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date'],
 

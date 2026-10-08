@@ -106,7 +106,6 @@ class QuotationController extends Controller
             $quotation = Quotation::create([
                 'quotation_number' => Quotation::generateNumber(),
                 'customer_id' => $validated['customer_id'],
-                'site_id' => $validated['site_id'] ?? null,
                 'date' => $validated['date'],
                 'valid_until' => $validated['valid_until'] ?? null,
                 'sales_person_id' => $validated['sales_person_id'] ?? auth()->id(),

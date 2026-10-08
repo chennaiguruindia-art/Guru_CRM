@@ -21,6 +21,22 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton('files', fn () => new WindowsFilesystem());
         $this->app->bind(Filesystem::class, WindowsFilesystem::class);
+
+        // On Windows / IIS (Plesk) the Application Pool user often cannot write
+        // to storage/framework/views. We detect this and redirect compiled Blade
+        // views to the system temp directory which IIS *can* always write to.
+        $defaultCompiled = storage_path('framework/views');
+
+        if (! is_writable($defaultCompiled)) {
+            $compiledPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'guruindia_views';
+
+            if (! is_dir($compiledPath)) {
+                @mkdir($compiledPath, 0755, true);
+            }
+
+            // Override the compiled view path before the view service provider boots
+            $this->app['config']->set('view.compiled', $compiledPath);
+        }
     }
 
     /**

@@ -21,8 +21,19 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
+        $needsBootstrap = false;
+        try {
+            $needsBootstrap = ! User::query()->exists();
+        } catch (\Throwable) {
+            try {
+                $needsBootstrap = ! User::withoutGlobalScopes()->exists();
+            } catch (\Throwable) {
+                $needsBootstrap = false;
+            }
+        }
+
         return view('auth.login', [
-            'needsBootstrap' => ! User::query()->exists(),
+            'needsBootstrap' => $needsBootstrap,
         ]);
     }
 

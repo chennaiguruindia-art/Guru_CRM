@@ -53,7 +53,7 @@
                         <span class="fw-semibold text-success">{{ $lead->lead_code }}</span>
                     </div>
                     <div class="col-sm-6">
-                        <label class="text-muted small d-block">Visit Name</label>
+                        <label class="text-muted small d-block">Site Name</label>
                         <span class="fw-semibold">{{ $lead->name }}</span>
                     </div>
                     @if($lead->company_name)
@@ -76,6 +76,16 @@
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Source</label>
                         <span class="badge bg-light text-dark border">{{ $lead->source }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="text-muted small d-block">New or Existing Client</label>
+                        @if($lead->client_type === 'Existing Client')
+                            <span class="badge bg-soft-info text-info border">Existing Client</span>
+                        @elseif($lead->client_type === 'New Client')
+                            <span class="badge bg-soft-success text-success border">New Client</span>
+                        @else
+                            <span>—</span>
+                        @endif
                     </div>
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Purpose of Visit</label>

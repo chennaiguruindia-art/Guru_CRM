@@ -137,13 +137,7 @@
     <!-- Brand Header -->
     <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-between">
         <a href="{{ route('dashboard') }}" class="sidebar-brand text-decoration-none d-flex align-items-center gap-3">
-            <div class="brand-logo-icon">
-                <i class="bi bi-flower1"></i>
-            </div>
-            <div class="brand-text-group">
-                <div class="brand-title">Horti<span class="text-emerald">CRM</span></div>
-                <div class="brand-subtitle">Enterprise Operations</div>
-            </div>
+            <img src="{{ asset('logo/guru.png') }}" alt="Guru Living Assets" class="sidebar-brand-logo">
         </a>
         <button id="sidebar-close-btn" class="btn btn-sm btn-link text-white-50 p-1 d-lg-none" type="button" aria-label="Close navigation">
             <i class="bi bi-x-lg fs-5"></i>

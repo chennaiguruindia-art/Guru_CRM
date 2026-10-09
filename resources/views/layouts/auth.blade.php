@@ -42,14 +42,11 @@
             background: #ffffff;
             padding: 1.5rem 2rem 2.5rem;
         }
-        .auth-icon {
-            width: 68px;
-            height: 68px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            color: #ffffff;
-            font-size: 2rem;
-            box-shadow: 0 8px 20px rgba(22, 163, 74, 0.32);
+        .auth-logo {
+            display: block;
+            width: min(100%, 240px);
+            height: auto;
+            margin: 0 auto 1rem;
         }
         .auth-footer {
             color: #6b7280;
@@ -62,11 +59,8 @@
             <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
                 <div class="card auth-card">
                     <div class="auth-header">
-                        <div class="d-inline-flex align-items-center justify-content-center auth-icon mb-3">
-                            <i class="bi bi-flower1"></i>
-                        </div>
-                        <h4 class="fw-bold text-dark mb-1">Horticulture CRM</h4>
-                        <p class="text-muted small mb-0">Garden &amp; Landscape Enterprise Suite</p>
+                        <img src="{{ asset('logo/guru.png') }}" alt="Guru Living Assets" class="auth-logo">
+                        <p class="text-muted small mb-0">Enterprise Operations Suite</p>
                     </div>
                     <div class="auth-body">
                         @include('components.alert')

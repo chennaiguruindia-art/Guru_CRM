@@ -5,10 +5,11 @@
 @php
     // Where this Visit lands once saved — shown because the Source dropdown
     // is gone and the filer would otherwise have no cue.
-    // Where this Visit lands once saved — shown because the Source dropdown
-    // is gone and the filer would otherwise have no cue.
     [$channelLabel, $channelRoute] = \App\Models\Lead::CHANNEL_LISTS[$channel]
         ?? \App\Models\Lead::CHANNEL_LISTS['cold_call'];
+
+    // A Visit opened from the Existing Client list is already known to be one.
+    $clientTypeDefault = $channel === 'existing_client' ? 'Existing Client' : 'New Client';
 @endphp
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -37,7 +38,7 @@
                 <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Visit Name <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="Full name of contact person" required>
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
@@ -138,6 +139,17 @@
                     <input type="hidden" name="source" value="{{ $source }}">
 
                     <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">New or Existing Client</label>
+                        <select name="client_type" class="form-select @error('client_type') is-invalid @enderror">
+                            <option value="">-- Select --</option>
+                            @foreach(\App\Models\Lead::CLIENT_TYPES as $type)
+                                <option value="{{ $type }}" @selected(old('client_type',$clientTypeDefault)===$type)>{{ $type }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Is this Visit with somebody new, or a Client you already have?</div>
+                        @error('client_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Purpose of Visit</label>
                         <select name="purpose_of_visit" class="form-select @error('purpose_of_visit') is-invalid @enderror">
                             <option value="">-- Select Purpose --</option>
@@ -183,15 +195,6 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Assigned To</label>
-                        <select name="assigned_to_id" class="form-select">
-                            <option value="">-- Unassigned --</option>
-                            @foreach($users as $user)
-                                <option value="{{ $user->id }}" @selected(old('assigned_to_id')==$user->id)>{{ $user->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
                 </div>
             </div>
 
@@ -210,7 +213,7 @@
                     </div>
                     <div class="mb-0">
                         <label class="form-label small fw-semibold text-secondary">Follow-up Date</label>
-                        <input type="date" name="follow_up_date" class="form-control" value="{{ old('follow_up_date') }}">
+                        <input type="date" name="follow_up_date" class="form-control" value="{{ old('follow_up_date', now()->format('Y-m-d')) }}">
                     </div>
                 </div>
             </div>

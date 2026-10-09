@@ -162,6 +162,75 @@ class VisitChannelsTest extends TestCase
         $this->assertStringContainsString('name="source" value="Cold Call"', $fallback);
     }
 
+    public function test_the_visit_is_named_site_name_everywhere_and_follow_up_opens_on_today(): void
+    {
+        $actor = $this->actingAs($this->userWithRole('super-admin'));
+
+        $create = $actor->get('/leads/create')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Site Name <span class="text-danger">*</span>', $create);
+        $this->assertStringNotContainsString('Visit Name', $create);
+
+        // The follow-up date opens on today rather than empty.
+        $this->assertStringContainsString(
+            'name="follow_up_date" class="form-control" value="' . now()->format('Y-m-d') . '"',
+            $create
+        );
+
+        $lead = $this->makeLead();
+
+        $edit = $actor->get('/leads/' . $lead->id . '/edit')->assertOk()->getContent();
+        $this->assertStringContainsString('Site Name <span class="text-danger">*</span>', $edit);
+        $this->assertStringNotContainsString('Visit Name', $edit);
+
+        $show = $actor->get('/leads/' . $lead->id)->assertOk()->getContent();
+        $this->assertStringContainsString(
+            '<label class="text-muted small d-block">Site Name</label>',
+            $show
+        );
+        $this->assertStringNotContainsString('Visit Name', $show);
+
+        $list = $actor->get('/leads')->assertOk()->getContent();
+        $this->assertStringContainsString('<th>Site / Company</th>', $list);
+        $this->assertStringNotContainsString('Visit Name', $list);
+    }
+
+    public function test_nobody_is_asked_who_the_visit_is_for_and_it_lands_on_the_filer(): void
+    {
+        $filer = $this->userWithRole('super-admin');
+        $this->actingAs($filer);
+
+        $this->assertStringNotContainsString(
+            'name="assigned_to_id"',
+            $this->get('/leads/create')->assertOk()->getContent()
+        );
+
+        $this->post('/leads', [
+            'name' => 'Owned By The Filer', 'phone' => '9000000103',
+            'status' => 'New', 'priority' => 'Medium',
+        ])->assertSessionHasNoErrors();
+
+        $lead = Lead::where('name', 'Owned By The Filer')->firstOrFail();
+        $this->assertSame($filer->id, (int) $lead->assigned_to_id);
+
+        // The field is gone from the edit form too, so posting the form back
+        // must leave the owner exactly as it was rather than nulling it out.
+        $this->assertStringNotContainsString(
+            'name="assigned_to_id"',
+            $this->get('/leads/' . $lead->id . '/edit')->assertOk()->getContent()
+        );
+
+        $this->put('/leads/' . $lead->id, [
+            'name' => 'Owned By The Filer', 'phone' => '9000000103',
+            'status' => 'New', 'priority' => 'Urgent',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $lead->id,
+            'assigned_to_id' => $filer->id,
+        ]);
+    }
+
     public function test_source_is_stamped_from_the_channel_the_form_was_opened_on(): void
     {
         $actor = $this->actingAs($this->userWithRole('super-admin'));
@@ -198,6 +267,66 @@ class VisitChannelsTest extends TestCase
             ->getContent();
 
         $this->assertStringContainsString('name="source" value="Cold Call"', $html);
+    }
+
+    public function test_client_type_is_offered_on_the_form_and_round_trips(): void
+    {
+        $actor = $this->actingAs($this->userWithRole('super-admin'));
+
+        $html = $actor->get('/leads/create')->assertOk()->getContent();
+        $this->assertStringContainsString('name="client_type"', $html);
+
+        $actor->post('/leads', [
+            'name' => 'Returning Hotelier', 'phone' => '9000000104',
+            'status' => 'New', 'priority' => 'Medium',
+            'client_type' => 'Existing Client',
+        ])->assertSessionHasNoErrors();
+
+        $lead = Lead::where('name', 'Returning Hotelier')->firstOrFail();
+        $this->assertSame('Existing Client', $lead->client_type);
+
+        $edit = $actor->get('/leads/' . $lead->id . '/edit')->assertOk()->getContent();
+        $this->assertStringContainsString('value="Existing Client" selected', $edit);
+
+        $show = $actor->get('/leads/' . $lead->id)->assertOk()->getContent();
+        $this->assertStringContainsString('New or Existing Client', $show);
+        $this->assertStringContainsString('Existing Client', $show);
+    }
+
+    public function test_client_type_defaults_from_the_channel_and_can_be_left_blank(): void
+    {
+        $actor = $this->actingAs($this->userWithRole('super-admin'));
+
+        // Opened from Cold Calls: a new prospect is pre-selected.
+        $cold = $actor->get('/leads/create')->assertOk()->getContent();
+        $this->assertStringContainsString('value="New Client" selected', $cold);
+
+        // Opened from the Existing Client Visit list: already known to be one.
+        $existing = $actor->get('/leads/create?source=existing_client')->assertOk()->getContent();
+        $this->assertStringContainsString('value="Existing Client" selected', $existing);
+        $this->assertStringNotContainsString('value="New Client" selected', $existing);
+
+        // Optional — not knowing is a valid answer.
+        $actor->post('/leads', [
+            'name' => 'Unsure Prospect', 'phone' => '9000000105',
+            'status' => 'New', 'priority' => 'Medium',
+            'client_type' => '',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNull(Lead::where('name', 'Unsure Prospect')->firstOrFail()->client_type);
+    }
+
+    public function test_client_type_rejects_a_value_that_is_not_offered(): void
+    {
+        $actor = $this->actingAs($this->userWithRole('super-admin'));
+
+        $actor->post('/leads', [
+            'name' => 'Bad Client Type', 'phone' => '9000000106',
+            'status' => 'New', 'priority' => 'Medium',
+            'client_type' => 'Maybe',
+        ])->assertSessionHasErrors('client_type');
+
+        $this->assertDatabaseMissing('leads', ['name' => 'Bad Client Type']);
     }
 
     public function test_purpose_of_visit_and_service_type_round_trip(): void

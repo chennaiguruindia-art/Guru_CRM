@@ -17,6 +17,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Product Tagline
+    |--------------------------------------------------------------------------
+    |
+    | The one-line description of the product, shown in the footer beside the
+    | copyright notice. Override it in ".env" if the wording ever changes.
+    |
+    */
+
+    'tagline' => env('APP_TAGLINE', 'Professional Landscaping & Nursery ERP'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | The build number shown in the footer, so that a screenshot of any page
+    | immediately identifies which version of the system produced it.
+    |
+    */
+
+    'version' => env('APP_VERSION', '2.0'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |
@@ -65,7 +89,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
     |--------------------------------------------------------------------------

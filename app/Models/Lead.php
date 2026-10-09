@@ -56,6 +56,13 @@ class Lead extends Model
         'Other',
     ];
 
+    /**
+     * Whether this Visit is against a brand new prospect or somebody already
+     * in Clients. Optional, and independent of the channel it was filed under
+     * — a Cold Call can still turn out to be a returning client.
+     */
+    public const CLIENT_TYPES = ['New Client', 'Existing Client'];
+
     protected $fillable = [
         'lead_code',
         'name',
@@ -69,6 +76,7 @@ class Lead extends Model
         'state',
         'pincode',
         'source',
+        'client_type',
         'purpose_of_visit',
         'service_type',
         'interested_service',

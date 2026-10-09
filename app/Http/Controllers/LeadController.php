@@ -133,8 +133,6 @@ class LeadController extends Controller
      */
     public function create(Request $request): View
     {
-        $users = User::where('status', 'active')->get();
-
         // ?source=cold_call — set by the Add button on the channel's list page.
         $channel = $request->query('source');
         $channel = is_string($channel) && array_key_exists($channel, Lead::CHANNELS)
@@ -148,7 +146,7 @@ class LeadController extends Controller
 
         $source = Lead::CHANNELS[$channel];
 
-        return view('leads.create', compact('users', 'source', 'channel'));
+        return view('leads.create', compact('source', 'channel'));
     }
 
     public function store(LeadRequest $request): RedirectResponse|JsonResponse
@@ -156,6 +154,10 @@ class LeadController extends Controller
         $data = $request->validated();
         $data['lead_code'] = Lead::generateCode();
         $data['created_by_id'] = auth()->id();
+
+        // The form no longer asks who the Visit is for — the person filing it
+        // owns it, which keeps the detail row and the list column meaningful.
+        $data['assigned_to_id'] = auth()->id();
 
         // The form has no Source dropdown any more — fall back to the plain
         // Visits channel when nothing specified one.
@@ -200,8 +202,7 @@ class LeadController extends Controller
 
     public function edit(Lead $lead): View
     {
-        $users = User::where('status', 'active')->get();
-        return view('leads.edit', compact('lead', 'users'));
+        return view('leads.edit', compact('lead'));
     }
 
     public function update(LeadRequest $request, Lead $lead): RedirectResponse|JsonResponse

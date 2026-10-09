@@ -32,7 +32,7 @@
                 <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Visit Name <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name',$lead->name) }}" required>
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
@@ -114,6 +114,17 @@
                         <div class="form-control bg-light text-muted">{{ $lead->source ?: '—' }}</div>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">New or Existing Client</label>
+                        <select name="client_type" class="form-select @error('client_type') is-invalid @enderror">
+                            <option value="">-- Select --</option>
+                            @foreach(\App\Models\Lead::CLIENT_TYPES as $type)
+                                <option value="{{ $type }}" @selected(old('client_type',$lead->client_type)===$type)>{{ $type }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Is this Visit with somebody new, or a Client you already have?</div>
+                        @error('client_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Purpose of Visit</label>
                         <select name="purpose_of_visit" class="form-select @error('purpose_of_visit') is-invalid @enderror">
                             <option value="">-- Select Purpose --</option>
@@ -156,15 +167,6 @@
                         <select name="priority" class="form-select" required>
                             @foreach(['Low','Medium','High','Urgent'] as $p)
                                 <option value="{{ $p }}" @selected(old('priority',$lead->priority)===$p)>{{ $p }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Assigned To</label>
-                        <select name="assigned_to_id" class="form-select">
-                            <option value="">-- Unassigned --</option>
-                            @foreach($users as $user)
-                                <option value="{{ $user->id }}" @selected(old('assigned_to_id',$lead->assigned_to_id)==$user->id)>{{ $user->name }}</option>
                             @endforeach
                         </select>
                     </div>

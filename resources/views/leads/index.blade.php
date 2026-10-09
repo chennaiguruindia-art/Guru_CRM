@@ -86,7 +86,7 @@
             <thead>
                 <tr>
                     <th>Visit ID</th>
-                    <th>Name / Company</th>
+                    <th>Site / Company</th>
                     <th>Phone</th>
                     <th>Source</th>
                     <th>Service Interest</th>

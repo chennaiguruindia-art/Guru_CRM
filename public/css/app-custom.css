@@ -501,38 +501,15 @@ label, .form-label {
     background: var(--hort-sidebar-bg);
 }
 
-.sidebar-brand { color: var(--hort-text); }
-.sidebar-brand:hover { color: var(--hort-primary-dark); }
-
-.brand-logo-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ffffff;
-    font-size: 1.35rem;
-    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.32);
-    flex-shrink: 0;
+.sidebar-brand {
+    min-width: 0;
 }
 
-.brand-title {
-    font-size: 1.1rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.2;
-    color: var(--hort-text);
-}
-.brand-title .text-emerald { color: var(--hort-primary); }
-
-.brand-subtitle {
-    font-size: 0.66rem;
-    color: var(--hort-text-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 600;
+.sidebar-brand-logo {
+    display: block;
+    width: min(100%, 220px);
+    height: auto;
+    object-fit: contain;
 }
 
 /* Fills the gap between the brand header and the user card, and scrolls on its

@@ -51,23 +51,29 @@ class TodayService
         return count($this->items(100));
     }
 
-    /** @return array<int, array> */
+    /**
+     * A follow-up nags on the day it is due and then removes itself.
+     *
+     * It is a reminder, not a permanent red mark: anything already past its
+     * date has been missed, and a card that stays red for ever teaches people
+     * to ignore the strip. Nobody should have to clear it by hand, and a
+     * Converted or Lost visit has nothing left to chase.
+     *
+     * @return array<int, array>
+     */
     private function leadFollowUps(): array
     {
         return $this->safe(function () {
-            $today = now()->toDateString();
-
             return Lead::with('assignedTo')
-                ->whereNotNull('follow_up_date')
-                ->where('follow_up_date', '<=', $today)
-                ->where('status', '!=', 'Converted')
+                ->whereDate('follow_up_date', now()->toDateString())
+                ->whereNotIn('status', ['Converted', 'Lost'])
                 ->orderBy('follow_up_date')
                 ->limit(5)
                 ->get()
                 ->map(fn (Lead $l) => $this->make(
                     'lead', 'bi-funnel',
-                    $l->follow_up_date < $today ? 'danger' : 'warning',
-                    $l->follow_up_date < $today ? 'Visit follow-up overdue' : 'Visit follow-up today',
+                    'warning',
+                    'Visit follow-up today',
                     $l->name,
                     $this->join([$l->lead_code, $l->status, $l->assignedTo?->name]),
                     route('leads.show', $l),

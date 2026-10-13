@@ -185,7 +185,7 @@
                         '<div class="notif-empty">' +
                         '<i class="bi bi-check2-circle"></i>' +
                         '<div><strong>Nothing needs attention</strong></div>' +
-                        '<small>Overdue invoices, visits and tasks will show up here.</small>' +
+                        '<small>Overdue invoices, tasks and visits due today will show up here.</small>' +
                         '</div>';
                     return;
                 }

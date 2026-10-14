@@ -54,6 +54,16 @@
                     </select>
                 </div>
                 @endif
+                @if($branches->isNotEmpty())
+                <div class="col-6 col-md-2">
+                    <select name="branch_id" class="form-select form-select-sm">
+                        <option value="">All Branches</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected(request('branch_id')==$branch->id)>{{ $branch->display_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
                 <div class="col-6 col-md-2">
                     <select name="priority" class="form-select form-select-sm">
                         <option value="">All Priorities</option>
@@ -70,6 +80,9 @@
         </form>
     </div>
 </div>
+
+{{-- Everything from here down is swapped in place by the filter script. --}}
+<div id="visit-list-region">
 
 {{-- Summary badges --}}
 <div class="d-flex flex-wrap gap-2 mb-3">
@@ -148,6 +161,7 @@
     </div>
     @endif
 </div>
+</div>
 
 {{-- Convert Modal --}}
 <div class="modal fade" id="convertModal" tabindex="-1">
@@ -207,47 +221,107 @@
 @endsection
 
 @push('scripts')
+<style>
+    /* Held back while the filters are fetching, so a click cannot land on rows
+       that are about to be replaced. */
+    #visit-list-region { transition: opacity .15s ease; }
+    #visit-list-region.is-loading { opacity: .4; pointer-events: none; }
+</style>
 <script>
-// Convert modal
-document.querySelectorAll('.btn-convert').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const id = this.dataset.id;
-        document.getElementById('convert-lead-name').textContent = this.dataset.name;
-        document.getElementById('convert-form').action = `/leads/${id}/convert`;
+// The row buttons live inside the swapped region, so binding has to be a
+// function that runs again after every refresh rather than a one-off loop.
+function bindVisitRowButtons() {
+    document.querySelectorAll('.btn-convert').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            document.getElementById('convert-lead-name').textContent = this.dataset.name;
+            document.getElementById('convert-form').action = `/leads/${id}/convert`;
 
-        // Type of Service decides what conversion creates, so the manual
-        // "create a project" tickbox only exists when none was chosen.
-        const service = this.dataset.service || '';
-        const note = document.getElementById('convert-service-note');
-        const projectOption = document.getElementById('project-option');
-        if (service) {
-            note.textContent = service === 'AMC'
-                ? 'Type of Service is AMC — converting will create an AMC Contract for this Client.'
-                : 'Type of Service is Single Project — converting will create a Project for this Client.';
-            note.classList.remove('d-none');
-            projectOption.classList.add('d-none');
-            document.getElementById('chkCreateProject').checked = false;
-        } else {
-            note.classList.add('d-none');
-            projectOption.classList.remove('d-none');
-        }
+            // Type of Service decides what conversion creates, so the manual
+            // "create a project" tickbox only exists when none was chosen.
+            const service = this.dataset.service || '';
+            const note = document.getElementById('convert-service-note');
+            const projectOption = document.getElementById('project-option');
+            if (service) {
+                note.textContent = service === 'AMC'
+                    ? 'Type of Service is AMC — converting will create an AMC Contract for this Client.'
+                    : 'Type of Service is Single Project — converting will create a Project for this Client.';
+                note.classList.remove('d-none');
+                projectOption.classList.add('d-none');
+                document.getElementById('chkCreateProject').checked = false;
+            } else {
+                note.classList.add('d-none');
+                projectOption.classList.remove('d-none');
+            }
 
-        new bootstrap.Modal(document.getElementById('convertModal')).show();
+            new bootstrap.Modal(document.getElementById('convertModal')).show();
+        });
     });
-});
 
-// Create project toggle
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('delete-lead-name').textContent = this.dataset.name;
+            document.getElementById('delete-form').action = `/leads/${this.dataset.id}`;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+}
+
+bindVisitRowButtons();
+
+// Create project toggle — in the modal, outside the swapped region.
 document.getElementById('chkCreateProject')?.addEventListener('change', function() {
     document.getElementById('project-name-wrap').classList.toggle('d-none', !this.checked);
 });
 
-// Delete modal
-document.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.getElementById('delete-lead-name').textContent = this.dataset.name;
-        document.getElementById('delete-form').action = `/leads/${this.dataset.id}`;
-        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+// Pick a branch or a status and the list follows straight away: there is no
+// Filter button to remember. The server still renders every row and only the
+// region is replaced, so the markup has one source of truth and cannot drift
+// between the two.
+const visitRegion = document.getElementById('visit-list-region');
+const visitForm = document.getElementById('filter-form');
+
+if (visitRegion && visitForm) {
+    let searchTimer;
+
+    const applyFilters = () => {
+        const url = visitForm.action + '?' + new URLSearchParams(new FormData(visitForm)).toString();
+
+        fetch(url)
+            .then((res) => {
+                if (!res.ok) throw new Error(res.status);
+                return res.text();
+            })
+            .then((html) => {
+                const next = new DOMParser().parseFromString(html, 'text/html')
+                    .getElementById('visit-list-region');
+                if (!next) throw new Error('list region missing');
+
+                visitRegion.innerHTML = next.innerHTML;
+                bindVisitRowButtons();
+                visitRegion.classList.remove('is-loading');
+                history.pushState({ visitFilters: true }, '', url);
+            })
+            // Rather than leave a stale list on screen, fall back to a plain
+            // page load — exactly what pressing Filter would have done.
+            .catch(() => visitForm.submit());
+    };
+
+    visitForm.querySelectorAll('select').forEach((el) => {
+        el.addEventListener('change', () => {
+            visitRegion.classList.add('is-loading');
+            applyFilters();
+        });
     });
-});
+
+    // Typing needs a pause, or every keystroke would fetch a fresh list.
+    visitForm.querySelector('input[name="search"]')?.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        visitRegion.classList.add('is-loading');
+        searchTimer = setTimeout(applyFilters, 400);
+    });
+
+    window.addEventListener('popstate', () => location.reload());
+}
 </script>
 @endpush

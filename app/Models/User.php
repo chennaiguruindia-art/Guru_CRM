@@ -68,6 +68,38 @@ class User extends Authenticatable
         return $this->hasOne(Employee::class);
     }
 
+    /**
+     * The branch this login works out of, or null when the roster has none on
+     * file. Drives App\Models\Scopes\BranchScope — a null branch sees no
+     * visits at all, rather than every branch's.
+     */
+    public function branchId(): ?int
+    {
+        return $this->employee?->branch_id;
+    }
+
+    /**
+     * What the navbar should say about this login's branch.
+     */
+    public function branchLabel(): string
+    {
+        if ($branch = $this->employee?->branch) {
+            return $branch->display_name;
+        }
+
+        // Administration is not stranded without one — it reads every branch —
+        // so only a branch-scoped login is told that it has none.
+        return $this->canSeeAllBranches() ? 'All branches' : 'No branch assigned';
+    }
+
+    /**
+     * Administration reads every branch. Everybody else is held to their own.
+     */
+    public function canSeeAllBranches(): bool
+    {
+        return $this->hasAnyRole(['super-admin', 'admin']);
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);

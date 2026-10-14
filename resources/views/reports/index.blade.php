@@ -18,6 +18,28 @@
         </div>
     </div>
 
+    {{-- Branch — Administration only --}}
+    @if($branches->isNotEmpty())
+        <form method="GET" action="{{ route('reports.index') }}" class="card border-0 shadow-sm mb-4">
+            <div class="card-body py-3 d-flex flex-wrap align-items-center gap-2">
+                <label class="small fw-semibold text-secondary mb-0 me-1">
+                    <i class="bi bi-building me-1"></i>Branch
+                </label>
+                <select name="branch_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    <option value="">All Branches</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" @selected($branchId === $branch->id)>{{ $branch->display_name }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-search me-1"></i>Filter</button>
+                @if($branchId)
+                    <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg me-1"></i>Clear</a>
+                @endif
+                <span class="text-muted small ms-auto">Narrows the visit figures. Customers, projects, quotations and finance belong to the company as a whole.</span>
+            </div>
+        </form>
+    @endif
+
     {{-- Flash Messages --}}
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">

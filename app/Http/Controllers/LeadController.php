@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LeadRequest;
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
@@ -89,6 +90,18 @@ class LeadController extends Controller
             $query->where('assigned_to_id', $request->input('assigned_to_id'));
         }
 
+        // Narrowing by branch is an Administration control. Everybody else is
+        // already held to their own branch by the scope on Lead, so honouring
+        // the parameter for them could only ever empty their list.
+        $branches = collect();
+        if ($request->user()?->canSeeAllBranches()) {
+            $branches = Branch::where('status', 'active')->orderBy('name')->get();
+
+            if ($request->filled('branch_id')) {
+                $query->where('branch_id', $request->input('branch_id'));
+            }
+        }
+
         $leads = $query->paginate(15)->withQueryString();
         $users = User::where('status', 'active')->get();
 
@@ -104,7 +117,7 @@ class LeadController extends Controller
             ]);
         }
 
-        return view('leads.index', compact('leads', 'users', 'channel', 'sources'));
+        return view('leads.index', compact('leads', 'users', 'channel', 'sources', 'branches'));
     }
 
     /**
@@ -158,6 +171,11 @@ class LeadController extends Controller
         // The form no longer asks who the Visit is for — the person filing it
         // owns it, which keeps the detail row and the list column meaningful.
         $data['assigned_to_id'] = auth()->id();
+
+        // …and it belongs to the branch they work out of. Stamped rather than
+        // chosen, so a later reassignment cannot move a visit into somebody
+        // else's patch, and a mis-pick cannot leak one across branches.
+        $data['branch_id'] = auth()->user()->branchId();
 
         // The form has no Source dropdown any more — fall back to the plain
         // Visits channel when nothing specified one.

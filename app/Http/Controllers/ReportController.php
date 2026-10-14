@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
@@ -16,10 +17,28 @@ class ReportController extends Controller
 {
     public function index(Request $request): View
     {
+        // Narrowing the report to one branch is an Administration control:
+        // every other role is already held to their own branch by the scope on
+        // Lead, so only the visit figures below can be filtered this way —
+        // quotations, projects, invoices and expenses belong to customers, and
+        // customers do not carry a branch.
+        $branches = collect();
+        $branchId = null;
+
+        if ($request->user()?->canSeeAllBranches()) {
+            $branches = Branch::where('status', 'active')->orderBy('name')->get();
+
+            if ($request->filled('branch_id')) {
+                $branchId = (int) $request->input('branch_id');
+            }
+        }
+
+        $byBranch = fn ($query) => $branchId ? $query->where('branch_id', $branchId) : $query;
+
         $leadStats = [
-            'total' => Lead::count(),
-            'converted' => Lead::where('status', 'Converted')->count(),
-            'lost' => Lead::where('status', 'Lost')->count(),
+            'total' => $byBranch(Lead::query())->count(),
+            'converted' => $byBranch(Lead::query()->where('status', 'Converted'))->count(),
+            'lost' => $byBranch(Lead::query()->where('status', 'Lost'))->count(),
         ];
 
         $salesStats = [
@@ -41,6 +60,13 @@ class ReportController extends Controller
             'expenses' => Expense::sum('amount'),
         ];
 
-        return view('reports.index', compact('leadStats', 'salesStats', 'projectStats', 'financeStats'));
+        return view('reports.index', compact(
+            'leadStats',
+            'salesStats',
+            'projectStats',
+            'financeStats',
+            'branches',
+            'branchId',
+        ));
     }
 }

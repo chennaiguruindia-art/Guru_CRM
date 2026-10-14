@@ -10,7 +10,7 @@
                 <i class="bi bi-flower2 me-1"></i> Horticulture ERP
             </span>
             <span class="text-muted small">&bull;</span>
-            <span class="text-secondary small fw-medium">Bangalore Central Nursery & Operations</span>
+            <span class="text-secondary small fw-medium">{{ auth()->user()?->branchLabel() ?? 'All branches' }}</span>
         </div>
     </div>
 

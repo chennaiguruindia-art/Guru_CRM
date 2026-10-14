@@ -84,6 +84,7 @@ class Lead extends Model
         'priority',
         'assigned_to_id',
         'created_by_id',
+        'branch_id',
         'converted_customer_id',
         'expected_value',
         'expected_closing_date',
@@ -98,6 +99,17 @@ class Lead extends Model
         'follow_up_date' => 'date',
     ];
 
+    /**
+     * A branch sees its own visits and nobody else's. Administration is exempt
+     * and may narrow further with the branch filter on the list and reports.
+     *
+     * @see \App\Models\Scopes\BranchScope
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Models\Scopes\BranchScope());
+    }
+
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to_id');
@@ -106,6 +118,15 @@ class Lead extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    /**
+     * The branch this visit was filed from — stamped when it is logged, so a
+     * later reassignment cannot move it into somebody else's territory.
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function convertedCustomer(): BelongsTo

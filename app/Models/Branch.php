@@ -25,6 +25,17 @@ class Branch extends Model
     }
 
     /**
+     * What somebody actually picks out of a list: the city it sits in.
+     *
+     * Branches are named after the company, so the name on its own cannot tell
+     * two of them apart — "Chennai" and "Bangalore" can.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->location ?: $this->name;
+    }
+
+    /**
      * Human-friendly, collision-free branch code, e.g. BR-0001.
      */
     public static function generateCode(): string

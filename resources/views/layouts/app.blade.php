@@ -33,6 +33,16 @@
                 <!-- Flash Alerts -->
                 @include('components.alert')
 
+                @if(auth()->check() && ! auth()->user()->canSeeAllBranches() && auth()->user()->branchId() === null)
+                    <div class="alert alert-warning shadow-sm mb-0" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Your account has no branch.</strong>
+                        Until an administrator assigns one under
+                        <span class="fw-semibold">Administration &rsaquo; Users</span>,
+                        no visits are shown to you.
+                    </div>
+                @endif
+
                 <!-- Page Content -->
                 @yield('content')
             </main>

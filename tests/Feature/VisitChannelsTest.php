@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasBranchStaff;
 use Tests\TestCase;
 
 /**
@@ -26,7 +27,7 @@ use Tests\TestCase;
  */
 class VisitChannelsTest extends TestCase
 {
-    use RefreshDatabase;
+    use HasBranchStaff, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -400,10 +401,20 @@ class VisitChannelsTest extends TestCase
 
     public function test_only_super_admin_may_convert_a_visit_into_a_client(): void
     {
-        $lead = $this->makeLead(['name' => 'Locked Visit']);
+        // Put the visit on a branch and the Field Marketer on that same branch,
+        // so the refusal below is about the permission itself rather than about
+        // the visit merely sitting outside their branch.
+        $branch = $this->branch();
+        $lead = $this->makeLead(['name' => 'Locked Visit', 'branch_id' => $branch->id]);
 
         foreach (['admin', 'fieldmarketer'] as $roleSlug) {
-            $this->actingAs($this->userWithRole($roleSlug))
+            $user = $this->userWithRole($roleSlug);
+
+            if ($roleSlug === 'fieldmarketer') {
+                $this->putInBranch($user, $branch->id);
+            }
+
+            $this->actingAs($user)
                 ->post('/leads/' . $lead->id . '/convert')
                 ->assertForbidden();
         }

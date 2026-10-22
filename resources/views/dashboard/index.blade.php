@@ -356,55 +356,6 @@
         </div>
     </div>
 
-    <!-- Recent System Audit Activity Trail -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0 fw-semibold text-dark">
-                <i class="bi bi-clock-history text-secondary me-2"></i> Recent System & Audit Activity
-            </h6>
-            <a href="{{ Route::has('audit-logs.index') ? route('audit-logs.index') : '#' }}" class="small text-decoration-none text-success fw-medium">View All Logs</a>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-crm mb-0 align-middle">
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Module</th>
-                        <th>IP Address</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($recentActivities as $log)
-                        <tr>
-                            <td class="small text-muted">{{ $log->created_at->format('d M Y, h:i A') }}</td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="navbar-user-avatar" style="width: 26px; height: 26px; font-size: 0.75rem;">
-                                        {{ $log->user ? $log->user->initials : 'SYS' }}
-                                    </div>
-                                    <span class="small fw-medium">{{ $log->user ? $log->user->name : 'System' }}</span>
-                                </div>
-                            </td>
-                            <td><span class="badge bg-light text-dark text-capitalize">{{ str_replace('_', ' ', $log->action) }}</span></td>
-                            <td class="small text-secondary">{{ \App\Services\ModuleLabel::for($log->module) }}</td>
-                            <td class="small text-muted">{{ $log->ip_address ?? '127.0.0.1' }}</td>
-                            <td><span class="badge bg-soft-success text-success">Logged</span></td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted small">
-                                <i class="bi bi-check-circle text-success fs-4 d-block mb-1"></i>
-                                System operational. Fresh installation initialized. All module activities will be recorded here.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
 </div>
 @endsection
 

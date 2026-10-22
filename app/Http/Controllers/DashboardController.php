@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Lead;
@@ -26,14 +25,9 @@ class DashboardController extends Controller
     {
         $metrics = $this->buildMetrics();
 
-        $recentActivities = AuditLog::with('user')
-            ->latest()
-            ->take(8)
-            ->get();
-
         $todo = $this->today->items(12);
 
-        return view('dashboard.index', compact('metrics', 'recentActivities', 'todo'));
+        return view('dashboard.index', compact('metrics', 'todo'));
     }
 
     public function stats(): JsonResponse

@@ -59,6 +59,14 @@ class CustomerController extends Controller
         $data = $request->validated();
         $data['customer_code'] = Customer::generateCode();
 
+        // Stamped rather than chosen, the same way a Visit is: a client belongs
+        // to the person who brought it in and to the branch they work out of,
+        // so App\Models\Scopes\RecordVisibilityScope can hold the whole CRM to
+        // one rule and a crafted form post cannot move one onto someone else's
+        // patch.
+        $data['created_by_id'] = auth()->id();
+        $data['branch_id'] = auth()->user()->branchId();
+
         $customer = Customer::create($data);
 
         AuditLogger::log('create', 'customers', $customer->id, null, $customer->toArray());

@@ -100,14 +100,14 @@ class Lead extends Model
     ];
 
     /**
-     * A branch sees its own visits and nobody else's. Administration is exempt
-     * and may narrow further with the branch filter on the list and reports.
+     * A CRM record is read by the Super Admin, by the Admin of its own branch,
+     * and by whoever entered it — nobody else.
      *
-     * @see \App\Models\Scopes\BranchScope
+     * @see \App\Models\Scopes\RecordVisibilityScope
      */
     protected static function booted(): void
     {
-        static::addGlobalScope(new \App\Models\Scopes\BranchScope());
+        static::addGlobalScope(new \App\Models\Scopes\RecordVisibilityScope());
     }
 
     public function assignedTo(): BelongsTo

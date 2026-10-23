@@ -70,8 +70,9 @@ class User extends Authenticatable
 
     /**
      * The branch this login works out of, or null when the roster has none on
-     * file. Drives App\Models\Scopes\BranchScope — a null branch sees no
-     * visits at all, rather than every branch's.
+     * file. Drives App\Models\Scopes\RecordVisibilityScope — for anyone below
+     * the Super Admin, a null branch means no records at all rather than every
+     * branch's.
      */
     public function branchId(): ?int
     {
@@ -87,17 +88,18 @@ class User extends Authenticatable
             return $branch->display_name;
         }
 
-        // Administration is not stranded without one — it reads every branch —
-        // so only a branch-scoped login is told that it has none.
+        // Only the Super Admin genuinely reads across every branch, so only
+        // that login is told it has the choice of them.
         return $this->canSeeAllBranches() ? 'All branches' : 'No branch assigned';
     }
 
     /**
-     * Administration reads every branch. Everybody else is held to their own.
+     * Only the Super Admin reads across every branch. An Admin is held to
+     * their own, and everybody else to the records they personally entered.
      */
     public function canSeeAllBranches(): bool
     {
-        return $this->hasAnyRole(['super-admin', 'admin']);
+        return $this->hasRole('super-admin');
     }
 
     public function auditLogs(): HasMany

@@ -13,7 +13,7 @@ return new class extends Migration
      * Until now a branch was only a label on the employee record — the original
      * migration said so plainly — so a field marketer in Bangalore could read
      * every other branch's visits. Each visit now carries the branch of
-     * whoever logged it, and App\Models\Scopes\BranchScope holds everybody to
+     * whoever logged it, and App\Models\Scopes\RecordVisibilityScope holds everybody to
      * their own.
      */
     public function up(): void

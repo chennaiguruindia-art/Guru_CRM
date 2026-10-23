@@ -401,31 +401,35 @@ class VisitChannelsTest extends TestCase
 
     public function test_only_super_admin_may_convert_a_visit_into_a_client(): void
     {
-        // Put the visit on a branch and the Field Marketer on that same branch,
-        // so the refusal below is about the permission itself rather than about
-        // the visit merely sitting outside their branch.
-        $branch = $this->branch();
-        $lead = $this->makeLead(['name' => 'Locked Visit', 'branch_id' => $branch->id]);
+        // Hand each actor a visit they can plainly see — entered by them, in
+        // their own branch — so the refusal below is about the convert
+        // permission itself, and not about the visit sitting out of reach
+        // behind App\Models\Scopes\RecordVisibilityScope.
+        $leadIds = [];
 
         foreach (['admin', 'fieldmarketer'] as $roleSlug) {
             $user = $this->userWithRole($roleSlug);
+            $this->putInBranch($user, $this->branch()->id, $roleSlug === 'admin' ? 'Admin' : 'Field Marketer');
 
-            if ($roleSlug === 'fieldmarketer') {
-                $this->putInBranch($user, $branch->id);
-            }
+            $lead = $this->makeLead([
+                'name' => 'Locked Visit',
+                'branch_id' => $user->branchId(),
+                'created_by_id' => $user->id,
+            ]);
 
             $this->actingAs($user)
                 ->post('/leads/' . $lead->id . '/convert')
                 ->assertForbidden();
+
+            $this->assertDatabaseHas('leads', ['id' => $lead->id, 'status' => 'New']);
+            $leadIds[] = $lead->id;
         }
 
-        $this->assertDatabaseHas('leads', ['id' => $lead->id, 'status' => 'New']);
-
         $this->actingAs($this->userWithRole('super-admin'))
-            ->post('/leads/' . $lead->id . '/convert')
+            ->post('/leads/' . $leadIds[0] . '/convert')
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('leads', ['id' => $lead->id, 'status' => 'Converted']);
+        $this->assertDatabaseHas('leads', ['id' => $leadIds[0], 'status' => 'Converted']);
     }
 
     public function test_convert_is_withheld_from_the_matrix_of_any_role_but_super_admin(): void

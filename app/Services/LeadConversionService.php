@@ -38,6 +38,12 @@ class LeadConversionService
                     'state' => $lead->state,
                     'pincode' => $lead->pincode,
                     'assigned_to_id' => $lead->assigned_to_id,
+                    // The client carries the branch and the author of the visit
+                    // it came from, not whoever happened to press Convert — so
+                    // converting cannot move it onto somebody else's patch or
+                    // out of reach of the salesperson who earned it.
+                    'branch_id' => $lead->branch_id,
+                    'created_by_id' => $lead->created_by_id ?? $lead->assigned_to_id,
                     'status' => 'active',
                     'notes' => 'Converted from Visit ' . $lead->lead_code,
                 ]);

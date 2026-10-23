@@ -29,9 +29,32 @@ class Customer extends Model
         'pincode',
         'country',
         'status',
+        'branch_id',
+        'created_by_id',
         'assigned_to_id',
         'notes',
     ];
+
+    /**
+     * A CRM record is read by the Super Admin, by the Admin of its own branch,
+     * and by whoever entered it — nobody else.
+     *
+     * @see \App\Models\Scopes\RecordVisibilityScope
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RecordVisibilityScope());
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
 
     public function assignedTo(): BelongsTo
     {

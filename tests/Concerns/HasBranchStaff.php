@@ -8,7 +8,7 @@ use App\Models\User;
 
 /**
  * Branches only decide what somebody may see once there is an employee record
- * tying their login to one — that link is what BranchScope reads.
+ * tying their login to one — that link is what RecordVisibilityScope reads.
  */
 trait HasBranchStaff
 {
@@ -25,7 +25,7 @@ trait HasBranchStaff
 
     /**
      * Put a login on a branch's roster. Without this the login has no branch,
-     * and BranchScope fails closed: it sees no visits at all.
+     * and RecordVisibilityScope fails closed for it: it sees nothing.
      */
     private function putInBranch(User $user, int $branchId, string $designation = 'Field Marketer'): Employee
     {

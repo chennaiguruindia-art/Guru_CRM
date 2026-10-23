@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,18 @@ class UserController extends Controller
      */
     private const ASSIGNABLE_ROLES = ['admin', 'fieldmarketer'];
 
+    /**
+     * Mobile numbers are the sign-in identifier, so "no number on file" is not
+     * a state this system can be in — such an account could never be logged
+     * into, which is exactly the trap worth making loud at entry.
+     *
+     * @var array<string, string>
+     */
+    private const PHONE_MESSAGES = [
+        'phone.required' => 'A mobile number is required — it is what this person signs in with.',
+        'phone.regex' => 'That does not look like a mobile number. Enter 10 digits, with or without the +91.',
+    ];
+
     public function create(): View
     {
         $roles = Role::whereIn('slug', self::ASSIGNABLE_ROLES)->orderBy('name')->get();
@@ -59,10 +72,15 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Settled into its stored form before validation, because the
+        // uniqueness check has to run against that and not against however
+        // the number happened to be typed.
+        $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^\d{10,15}$/', 'unique:users,phone'],
             'password' => ['required', 'string', 'min:6'],
             // Not merely exists:roles,id — a hand-crafted request must not be
             // able to attach the Super Admin role by guessing its id.
@@ -73,14 +91,14 @@ class UserController extends Controller
             ],
             // Optional: the branch the new employee reports to.
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
-        ]);
+        ], self::PHONE_MESSAGES);
 
         $role = Role::findOrFail($validated['role_id']);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
+            'phone' => $validated['phone'],
             'password' => Hash::make($validated['password']),
             'status' => 'active',
         ]);
@@ -135,16 +153,24 @@ class UserController extends Controller
             ->merge($user->roles()->pluck('roles.id')->all())
             ->unique();
 
+        $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => [
+                'required',
+                'string',
+                'max:30',
+                'regex:/^\d{10,15}$/',
+                Rule::unique('users', 'phone')->ignore($user->id),
+            ],
             'status' => ['required', 'in:active,inactive'],
             // Optional: blank means "keep the existing password".
             'password' => ['nullable', 'string', 'min:6'],
             'role_id' => ['required', 'exists:roles,id', Rule::in($allowedRoleIds->all())],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
-        ], [], ['role_id' => 'role']);
+        ], self::PHONE_MESSAGES, ['role_id' => 'role']);
 
         $currentRole = $user->roles()->first();
 
@@ -161,7 +187,7 @@ class UserController extends Controller
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
+            'phone' => $validated['phone'],
             'status' => $validated['status'],
             'password' => $request->filled('password') ? Hash::make($validated['password']) : $user->password,
         ]);

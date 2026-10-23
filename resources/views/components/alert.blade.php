@@ -6,7 +6,9 @@
         </div>
         <div class="small mb-2 text-muted">This is the only time the password is shown.</div>
         <div class="d-flex flex-wrap gap-4 small">
-            <span>Login ID: <code class="user-select-all bg-white border">{{ session('login_credentials.username') }}</code></span>
+            @if(session('login_credentials.phone'))
+                <span>Sign in with mobile: <code class="user-select-all bg-white border">{{ session('login_credentials.phone') }}</code></span>
+            @endif
             <span>Password: <code class="user-select-all bg-white border">{{ session('login_credentials.password') }}</code></span>
         </div>
         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>

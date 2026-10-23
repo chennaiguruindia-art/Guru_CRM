@@ -6,33 +6,27 @@
 <form method="POST" action="{{ route('login') }}" class="needs-validation">
     @csrf
 
-    <!-- Login ID (email or Employee ID) -->
+    <!-- Mobile number — what identifies the login -->
     <div class="mb-3">
-        <label for="email" class="form-label small fw-semibold text-secondary">Login ID</label>
+        <label for="phone" class="form-label small fw-semibold text-secondary">Mobile Number</label>
         <div class="input-group">
-            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person"></i></span>
-            <input id="email" type="text" class="form-control border-start-0 @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="EMP-0001 or name@company.com">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-phone"></i></span>
+            <input id="phone" type="tel" inputmode="tel" class="form-control border-start-0 @error('phone') is-invalid @enderror" name="phone" value="{{ old('phone') }}" required autofocus autocomplete="username" placeholder="98765 43210">
         </div>
-        <div class="form-text">Use your Employee ID or your email address.</div>
-        @error('email')
+        <div class="form-text">The mobile number recorded on your account.</div>
+        @error('phone')
             <div class="text-danger small mt-1">{{ $message }}</div>
         @enderror
     </div>
 
     <!-- Password -->
     <div class="mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <label for="password" class="form-label small fw-semibold text-secondary mb-0">Password</label>
-            @if (Route::has('password.request'))
-                <a class="small text-success text-decoration-none" href="{{ route('password.request') }}">
-                    Forgot Password?
-                </a>
-            @endif
-        </div>
+        <label for="password" class="form-label small fw-semibold text-secondary">Password</label>
         <div class="input-group">
             <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-shield-lock"></i></span>
             <input id="password" type="password" class="form-control border-start-0 @error('password') is-invalid @enderror" name="password" required autocomplete="current-password" placeholder="••••••••">
         </div>
+        <div class="form-text">Forgotten it? Ask an Admin to reset it from User Management.</div>
         @error('password')
             <div class="text-danger small mt-1">{{ $message }}</div>
         @enderror

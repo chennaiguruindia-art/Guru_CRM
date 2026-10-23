@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,9 +54,13 @@ class EmployeeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // The roster phone is also the sign-in identifier, so it is settled
+        // into the form the login will store it in before anything is saved.
+        $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^\d{10,15}$/'],
             'email' => ['nullable', 'email', 'max:255'],
             'designation' => ['required', 'string', 'max:100'],
             'department' => ['required', 'string', 'max:100'],
@@ -110,10 +115,15 @@ class EmployeeController extends Controller
 
         $password = $request->input('password') ?: Str::random(10);
 
+        // The roster mobile is what this person signs in with, so it is
+        // carried across here rather than left to be filled in later.
+        $phone = Phone::normalize($emp->phone);
+
         $user = User::create([
             'name' => $emp->name,
             'email' => $email,
             'username' => $emp->employee_code,
+            'phone' => $phone,
             'password' => $password,
             'status' => 'active',
         ]);
@@ -124,7 +134,11 @@ class EmployeeController extends Controller
 
         $emp->update(['user_id' => $user->id]);
 
-        return ['username' => $emp->employee_code, 'password' => $password];
+        return [
+            'username' => $emp->employee_code,
+            'phone' => $phone,
+            'password' => $password,
+        ];
     }
 
     public function show(Employee $employee): View

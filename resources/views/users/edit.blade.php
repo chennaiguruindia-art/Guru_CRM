@@ -123,28 +123,29 @@
                             </div>
                         </div>
 
-                        {{-- Phone --}}
+                        {{-- Mobile — this is the sign-in identifier --}}
                         <div class="mb-4">
                             <label for="phone" class="form-label fw-semibold">
-                                Phone Number
-                                <span class="text-muted fw-normal small">(optional)</span>
+                                Mobile Number <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white">
                                     <i class="bi bi-telephone text-muted"></i>
                                 </span>
                                 <input
-                                    type="text"
+                                    type="tel"
+                                    inputmode="tel"
                                     id="phone"
                                     name="phone"
                                     class="form-control @error('phone') is-invalid @enderror"
-                                    placeholder="e.g. +91 98765 43210"
+                                    placeholder="e.g. 98765 43210"
                                     value="{{ old('phone', $user->phone) }}"
                                 >
                                 @error('phone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                            <div class="form-text">This is what the person signs in with instead of an email address.</div>
                         </div>
 
                         {{-- Status --}}

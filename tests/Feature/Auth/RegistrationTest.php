@@ -27,6 +27,7 @@ class RegistrationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Owner',
             'email' => 'owner@example.com',
+            'phone' => '9876543200',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
@@ -41,6 +42,10 @@ class RegistrationTest extends TestCase
             'The first account is Super Admin.'
         );
         $this->assertTrue($user->hasPermission('users.create'));
+
+        // Signup asks for the mobile because it is the sign-in identifier —
+        // an account created without one could never be logged into.
+        $this->assertSame('9876543200', $user->phone);
     }
 
     public function test_registration_screen_closes_once_an_account_exists(): void
@@ -50,6 +55,11 @@ class RegistrationTest extends TestCase
         $this->get('/register')->assertStatus(404);
     }
 
+    /**
+     * Signup now asks for a mobile, but closing the door must not turn into a
+     * data-entry form — an established system gets the 404, not a validation
+     * error naming the fields it would have wanted.
+     */
     public function test_new_users_cannot_self_register_after_bootstrap(): void
     {
         User::factory()->create();
@@ -57,6 +67,7 @@ class RegistrationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Latecomer',
             'email' => 'latecomer@example.com',
+            'phone' => '9876543201',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);

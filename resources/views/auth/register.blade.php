@@ -35,9 +35,23 @@
         <div class="input-group">
             <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
             <input id="email" type="email" class="form-control border-start-0 @error('email') is-invalid @enderror"
-                   name="email" value="{{ old('email') }}" required autocomplete="username" placeholder="you@company.com">
+                   name="email" value="{{ old('email') }}" required autocomplete="email" placeholder="you@company.com">
         </div>
         @error('email')
+            <div class="text-danger small mt-1">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <!-- Mobile — what this account signs in with -->
+    <div class="mb-3">
+        <label for="phone" class="form-label small fw-semibold text-secondary">Mobile Number</label>
+        <div class="input-group">
+            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-phone"></i></span>
+            <input id="phone" type="tel" inputmode="tel" class="form-control border-start-0 @error('phone') is-invalid @enderror"
+                   name="phone" value="{{ old('phone') }}" required autocomplete="username" placeholder="98765 43210">
+        </div>
+        <div class="form-text">This is what you will sign in with, so it must be yours alone.</div>
+        @error('phone')
             <div class="text-danger small mt-1">{{ $message }}</div>
         @enderror
     </div>

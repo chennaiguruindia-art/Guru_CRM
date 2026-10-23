@@ -29,12 +29,13 @@ class PhaseOneAuthAndDashboardTest extends TestCase
         if (!$user) {
             $user = User::factory()->create([
                 'email' => 'admin@horticulturecrm.com',
+                'phone' => '9876500100',
                 'password' => bcrypt('admin123'),
             ]);
         }
 
         $response = $this->post('/login', [
-            'email' => 'admin@horticulturecrm.com',
+            'phone' => $user->phone,
             'password' => 'admin123',
         ]);
 

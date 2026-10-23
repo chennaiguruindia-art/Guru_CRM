@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,9 +30,10 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Accepts an email address OR an Employee ID such as EMP-0001,
-            // so this must not be constrained to a valid email format.
-            'email' => ['required', 'string', 'max:255'],
+            // The mobile number on the account — deliberately not an email
+            // address, which the sales team shares between them and so cannot
+            // identify anybody.
+            'phone' => ['required', 'string', 'max:30'],
             'password' => ['required', 'string'],
         ];
     }
@@ -39,38 +41,33 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * People sign in with their Employee ID (stored in users.username) or with
-     * their email address — whichever they type in the "Login ID" box.
-     *
      * @throws ValidationException
      */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        $identifier = trim((string) $this->input('email'));
+        $identifier = Phone::normalize($this->input('phone'));
 
-        $user = User::query()
-            ->where('email', $identifier)
-            ->orWhere('username', $identifier)
-            ->first();
+        // One number belongs to exactly one login, so there is no ambiguity to
+        // settle and no need to guess between matches.
+        $user = $identifier
+            ? User::query()->where('phone', $identifier)->first()
+            : null;
 
         if ($user && $user->status !== 'active') {
             throw ValidationException::withMessages([
-                'email' => 'This account has been deactivated. Please contact the administrator.',
+                'phone' => 'This account has been deactivated. Please contact the administrator.',
             ]);
         }
 
-        // Resolve to an id so the lookup above is the single source of truth
-        // (a plain email attempt would not match Employee IDs).
-        $credentials = ['password' => $this->input('password')];
-        $credentials[$user ? 'id' : 'email'] = $user?->id ?? $identifier;
-
-        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
+        // Resolved to an id first, so the password is only ever checked against
+        // a row the phone actually matched.
+        if (! $user || ! Auth::attempt(['id' => $user->id, 'password' => $this->input('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'phone' => trans('auth.failed'),
             ]);
         }
 
@@ -93,7 +90,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            'phone' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -105,6 +102,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('phone')).'|'.$this->ip());
     }
 }

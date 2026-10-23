@@ -16,8 +16,8 @@ use Tests\TestCase;
  *   - A Field Marketer reaches Cold Calls and nothing else in CRM & Clients:
  *     Promotion Email / Call, Existing Client Visit and Client are Admin and
  *     above, and so is converting a Visit into one.
- *   - Assigning a person provisions a login whose username is their Employee
- *     ID, and that ID signs them in.
+ *   - Assigning a person provisions a login whose sign-in identifier is the
+ *     mobile number on the roster.
  */
 class RbacAccessControlTest extends TestCase
 {
@@ -110,7 +110,7 @@ class RbacAccessControlTest extends TestCase
         );
     }
 
-    public function test_assigning_a_person_provisions_an_employee_id_login(): void
+    public function test_assigning_a_person_provisions_a_mobile_login(): void
     {
         $this->seedRbac();
         $admin = $this->userWithRole('admin');
@@ -131,22 +131,20 @@ class RbacAccessControlTest extends TestCase
 
         $this->assertNotNull($employee, 'The person was created.');
         $this->assertNotNull($employee->user_id, 'A login was provisioned.');
-        $this->assertSame(
-            $employee->employee_code,
-            $employee->user->username,
-            'The login username is the Employee ID.'
-        );
 
-        // ... and that Employee ID is what they sign in with.
+        // The roster mobile is carried across in its stored form — country
+        // code dropped — so it is what this person signs in with.
+        $this->assertSame('1234567890', $employee->user->phone);
+
         $this->post('/login', [
-            'email' => $employee->employee_code,
+            'phone' => $employee->phone,
             'password' => 'secret123',
         ])->assertRedirect('/dashboard');
 
         $this->assertAuthenticated();
     }
 
-    public function test_login_by_employee_id_rejects_a_wrong_password(): void
+    public function test_login_by_mobile_rejects_a_wrong_password(): void
     {
         $this->seedRbac();
 
@@ -155,7 +153,7 @@ class RbacAccessControlTest extends TestCase
         $employee = Employee::create([
             'employee_code' => 'EMP-9999',
             'name' => 'Wrong Password Person',
-            'phone' => '+91 12345 67891',
+            'phone' => '1234567891',
             'designation' => 'Sales Executive',
             'department' => 'Sales',
             'employee_type' => 'Full-Time',
@@ -166,19 +164,20 @@ class RbacAccessControlTest extends TestCase
             'name' => 'Wrong Password Person',
             'email' => 'wrongpw@example.com',
             'username' => 'EMP-9999',
+            'phone' => '1234567891',
             'password' => 'secret123',
             'status' => 'active',
         ]);
 
         $employee->update(['user_id' => $user->id]);
 
-        $this->post('/login', ['email' => 'EMP-9999', 'password' => 'not-the-password'])
-            ->assertSessionHasErrors('email');
+        $this->post('/login', ['phone' => '1234567891', 'password' => 'not-the-password'])
+            ->assertSessionHasErrors('phone');
 
         $this->assertGuest();
 
         // ...and the correct password does sign them in.
-        $this->post('/login', ['email' => 'EMP-9999', 'password' => 'secret123'])
+        $this->post('/login', ['phone' => '1234567891', 'password' => 'secret123'])
             ->assertRedirect('/dashboard');
 
         $this->assertAuthenticated();
@@ -188,16 +187,17 @@ class RbacAccessControlTest extends TestCase
     {
         $this->seedRbac();
 
-        $user = User::factory()->create([
+        User::factory()->create([
             'email' => 'fired@example.com',
+            'phone' => '9999999990',
             'password' => bcrypt('secret123'),
             'status' => 'inactive',
         ]);
 
         $this->post('/login', [
-            'email' => 'fired@example.com',
+            'phone' => '9999999990',
             'password' => 'secret123',
-        ])->assertSessionHasErrors('email');
+        ])->assertSessionHasErrors('phone');
 
         $this->assertGuest();
     }
@@ -216,6 +216,7 @@ class RbacAccessControlTest extends TestCase
         $this->actingAs($admin)->post('/users', [
             'name' => 'Second Admin',
             'email' => 'admin2@example.com',
+            'phone' => '9876500001',
             'password' => 'secret123',
             'role_id' => Role::where('slug', 'admin')->firstOrFail()->id,
         ])->assertRedirect('/users');
@@ -232,6 +233,7 @@ class RbacAccessControlTest extends TestCase
         $this->actingAs($admin)->post('/users', [
             'name' => 'Sneaky',
             'email' => 'sneaky@example.com',
+            'phone' => '9876500002',
             'password' => 'secret123',
             'role_id' => Role::where('slug', 'super-admin')->firstOrFail()->id,
         ])->assertSessionHasErrors('role_id');

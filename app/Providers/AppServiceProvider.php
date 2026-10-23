@@ -60,6 +60,11 @@ class AppServiceProvider extends ServiceProvider
                     if (! Schema::hasColumn('users', 'username')) {
                         $table->string('username')->nullable()->unique();
                     }
+                    if (! Schema::hasIndex('users', 'users_phone_unique')) {
+                        // Mobile is the login identifier, so it has to be
+                        // one-number-one-person.
+                        $table->unique('phone');
+                    }
                     $table->softDeletes();
                 });
             }

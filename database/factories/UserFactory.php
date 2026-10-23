@@ -27,6 +27,9 @@ class UserFactory extends Factory
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            // Mobile is the sign-in identifier, so a factory account has to
+            // carry a unique one or it could not be logged into.
+            'phone' => (string) fake()->unique()->numerify('9#########'),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

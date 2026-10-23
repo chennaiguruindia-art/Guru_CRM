@@ -121,8 +121,55 @@ class User extends Authenticatable
             return true;
         }
 
+        // System Settings is not reached through the permission table. A
+        // permission row would let any Admin quietly widen their own reach, so
+        // the Super Admin grants it per role from Settings → Access instead —
+        // and everything asking about `settings.*` is answered from there.
+        if (str_starts_with($permissionSlug, 'settings.')) {
+            return $this->canOpenSettings();
+        }
+
         foreach ($this->roles as $role) {
             if ($role->permissions->contains('slug', $permissionSlug)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Roles the Super Admin may let into System Settings, keyed by slug, with
+     * the switch that grants each one. Every switch starts off, so the section
+     * belongs to Super Admin alone until somebody is deliberately added.
+     *
+     * @var array<string, string>
+     */
+    private const SETTINGS_ACCESS = [
+        'admin' => 'settings_access_admin',
+        'fieldmarketer' => 'settings_access_sales',
+    ];
+
+    /**
+     * Whether this login may open System Settings.
+     */
+    public function canOpenSettings(): bool
+    {
+        $switches = null;
+
+        foreach (self::SETTINGS_ACCESS as $roleSlug => $settingKey) {
+            if (! $this->hasRole($roleSlug)) {
+                continue;
+            }
+
+            // Only read once, and only if this login holds a role that could
+            // be granted one — the common case is a field marketer, and that
+            // should not cost a query on every sidebar render.
+            $switches ??= Setting::query()
+                ->whereIn('key', array_values(self::SETTINGS_ACCESS))
+                ->pluck('value', 'key');
+
+            if (($switches[$settingKey] ?? 'no') === 'yes') {
                 return true;
             }
         }

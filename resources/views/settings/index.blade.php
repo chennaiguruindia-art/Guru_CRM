@@ -75,6 +75,20 @@
                         <i class="bi bi-toggle-on"></i> Modules
                     </button>
                 </li>
+                @if ($canGrantAccess)
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center gap-2"
+                            id="access-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#access"
+                            type="button"
+                            role="tab"
+                            aria-controls="access"
+                            aria-selected="false">
+                        <i class="bi bi-people"></i> Access
+                    </button>
+                </li>
+                @endif
                 <li class="nav-item" role="presentation">
                     <button class="nav-link d-flex align-items-center gap-2"
                             id="notifications-tab"
@@ -387,6 +401,85 @@
                     </div>{{-- /tab-pane modules --}}
 
                     {{-- ============================================================
+                         TAB — Access (Super Admin only)
+
+                         Decides who else may reach this whole section. Held
+                         back from Admin and Sales so that being let in cannot
+                         be turned into widening the door behind them.
+                    ============================================================ --}}
+                    @if ($canGrantAccess)
+                    <div class="tab-pane fade"
+                         id="access"
+                         role="tabpanel"
+                         aria-labelledby="access-tab">
+
+                        <h6 class="fw-semibold text-muted text-uppercase small mb-3 border-bottom pb-2">
+                            <i class="bi bi-people me-1"></i> Who can open System Settings
+                        </h6>
+
+                        <div class="alert alert-info d-flex align-items-start gap-2 mb-4">
+                            <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+                            <div class="small">
+                                System Settings is <strong>Super Admin only</strong> unless a switch below is on.
+                                Each switch saves instantly — turn one on and that role gains the whole Settings
+                                section, switch it off and the entry disappears from their sidebar at once. Your own
+                                access is never affected by these.
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            @foreach ($access as $entry)
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100 bg-white">
+                                        <div class="d-flex align-items-start justify-content-between gap-3">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <span class="fs-5 text-primary mt-1">
+                                                    <i class="bi bi-person-gear"></i>
+                                                </span>
+                                                <div>
+                                                    <div class="fw-semibold small">{{ $entry['label'] }}</div>
+                                                    <div class="text-muted" style="font-size: .78rem;">
+                                                        {{ $entry['description'] }}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {{-- hidden field guarantees the key is submitted when switched off --}}
+                                            <input type="hidden" name="{{ $entry['key'] }}" value="no">
+                                            <div class="form-check form-switch m-0 flex-shrink-0 pt-1">
+                                                <input class="form-check-input module-switch"
+                                                       type="checkbox"
+                                                       role="switch"
+                                                       id="switch_{{ $entry['key'] }}"
+                                                       name="{{ $entry['key'] }}"
+                                                       value="yes"
+                                                       style="cursor: pointer;"
+                                                       {{ ($settings[$entry['key']] ?? 'no') === 'yes' ? 'checked' : '' }}>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-2 small {{ ($settings[$entry['key']] ?? 'no') === 'yes' ? 'text-success' : 'text-danger' }}"
+                                             id="state_{{ $entry['key'] }}">
+                                            <i class="bi bi-circle-fill me-1" style="font-size: .55rem; vertical-align: middle;"></i>
+                                            {{ ($settings[$entry['key']] ?? 'no') === 'yes' ? 'Can open Settings' : 'Cannot open Settings' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mt-4 mb-0">
+                            <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                            <div class="small">
+                                Switching a role off while one of its people is inside Settings leaves the page they
+                                have open working until they next move — the sidebar entry is gone from that moment.
+                            </div>
+                        </div>
+
+                    </div>{{-- /tab-pane access --}}
+                    @endif
+
+                    {{-- ============================================================
                          TAB 4 — Notifications
                     ============================================================ --}}
                     <div class="tab-pane fade"
@@ -508,6 +601,14 @@
         var endpoint = @json(route('settings.module'));
         var token = @json(csrf_token());
 
+        // Modules describe sidebar visibility; the Access switches describe
+        // whether that role may reach Settings at all.
+        function labelFor(key, on) {
+            return key.indexOf('settings_access_') === 0
+                ? (on ? 'Can open Settings' : 'Cannot open Settings')
+                : (on ? 'Visible in sidebar' : 'Hidden from sidebar');
+        }
+
         function setStatus(key, on) {
             var label = document.getElementById('state_' + key);
             if (!label) return;
@@ -515,7 +616,7 @@
             label.classList.toggle('text-danger', !on);
             label.classList.toggle('text-muted', null);
             label.innerHTML = '<i class="bi bi-circle-fill me-1" style="font-size:.55rem;vertical-align:middle;"></i>' +
-                (on ? 'Visible in sidebar' : 'Hidden from sidebar');
+                labelFor(key, on);
         }
 
         document.querySelectorAll('.module-switch').forEach(function (input) {
@@ -539,8 +640,8 @@
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                         return res.json();
                     })
-                    .then(function () {
-                        showToast(on ? 'Module enabled — showing in sidebar.' : 'Module hidden from sidebar.', 'success');
+                    .then(function (data) {
+                        showToast(data.message || (on ? 'Switch turned on.' : 'Switch turned off.'), 'success');
                     })
                     .catch(function () {
                         // Roll the switch back so the UI never lies about saved state.

@@ -71,6 +71,14 @@ class RbacAccessControlTest extends TestCase
         $this->seedRbac();
         $admin = $this->userWithRole('admin');
 
+        // System Settings is the one module the Super Admin has to open by
+        // hand — see SettingsAccessTest. With it granted, Admin is in nowhere
+        // else refused.
+        \App\Models\Setting::updateOrCreate(
+            ['key' => 'settings_access_admin'],
+            ['value' => 'yes', 'group' => 'access']
+        );
+
         foreach ([
             '/dashboard', '/leads', '/customers', '/projects', '/estimations',
             '/quotations', '/branches', '/users', '/roles', '/reports', '/settings',

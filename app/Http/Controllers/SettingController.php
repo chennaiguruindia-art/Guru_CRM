@@ -33,42 +33,75 @@ class SettingController extends Controller
          'description' => 'Branches, User Management, Roles & Permissions, System Settings, Audit Trail'],
     ];
 
+    /**
+     * Who may open System Settings, keyed by the switch that grants them.
+     * These are the Super Admin's alone to throw: an Admin who has been let in
+     * must not be able to widen the door behind them.
+     *
+     * @var list<array{key: string, label: string, description: string}>
+     */
+    private const ACCESS = [
+        ['key' => 'settings_access_admin', 'label' => 'Admin',
+         'description' => 'Reach System Settings, Company, Branding, Modules and Notifications'],
+        ['key' => 'settings_access_sales', 'label' => 'Field Marketer (Sales)',
+         'description' => 'Reach System Settings, Company, Branding, Modules and Notifications'],
+    ];
+
     public function index(): View
     {
         $settings = Setting::all()->pluck('value', 'key');
         $modules = self::MODULES;
+        $access = self::ACCESS;
+        $canGrantAccess = auth()->user()?->hasRole('super-admin') ?? false;
 
-        return view('settings.index', compact('settings', 'modules'));
+        return view('settings.index', compact('settings', 'modules', 'access', 'canGrantAccess'));
     }
 
     /**
-     * POST /settings/module — instant save for a single Modules tab switch.
-     * The switch posts on change so there is no "forgot to hit Save" state.
+     * POST /settings/module — instant save for a single Modules or Access tab
+     * switch. The switch posts on change so there is no "forgot to hit Save"
+     * state.
      */
     public function toggleModule(Request $request): \Illuminate\Http\JsonResponse
     {
         $key = (string) $request->input('key');
-        $valid = array_column(self::MODULES, 'key');
+        $isAccess = in_array($key, array_column(self::ACCESS, 'key'), true);
+        $valid = array_merge(array_column(self::MODULES, 'key'), array_column(self::ACCESS, 'key'));
 
         if (!in_array($key, $valid, true)) {
-            return response()->json(['ok' => false, 'message' => 'Unknown module.'], 422);
+            return response()->json(['ok' => false, 'message' => 'Unknown switch.'], 422);
+        }
+
+        if ($isAccess && ! $this->mayGrantAccess()) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Only the Super Admin can decide who reaches System Settings.',
+            ], 403);
         }
 
         $enabled = filter_var($request->input('value'), FILTER_VALIDATE_BOOLEAN);
 
         Setting::updateOrCreate(
             ['key' => $key],
-            ['value' => $enabled ? 'yes' : 'no', 'group' => 'modules']
+            ['value' => $enabled ? 'yes' : 'no', 'group' => $isAccess ? 'access' : 'modules']
         );
 
-        AuditLogger::log('update', 'settings', 0, null, ['module' => $key, 'enabled' => $enabled]);
+        AuditLogger::log('update', 'settings', 0, null, ['switch' => $key, 'enabled' => $enabled]);
 
         return response()->json([
             'ok' => true,
             'key' => $key,
             'enabled' => $enabled,
-            'message' => $enabled ? 'Module enabled for everyone.' : 'Module hidden for everyone.',
+            'message' => $enabled ? 'Switch turned on.' : 'Switch turned off.',
         ]);
+    }
+
+    /**
+     * Only the Super Admin hands out Settings access.
+     */
+    private function mayGrantAccess(): bool
+    {
+        return auth()->user()?->hasRole('super-admin') ?? false;
     }
 
     public function store(Request $request): RedirectResponse
@@ -76,16 +109,28 @@ class SettingController extends Controller
         $inputs = $request->except(['_token']);
 
         // Module switches post a hidden "no" + checkbox "yes"; every other
-        // field is a plain value. Normalise module flags to yes/no and tag
-        // them with the 'modules' group. Existing groups (company, tax, ...)
-        // are left untouched for non-module keys.
-        foreach ($inputs as $key => $val) {
-            $isModule = str_starts_with((string) $key, 'module_');
+        // field is a plain value. Normalise the switches to yes/no and tag them
+        // with their group. Existing groups (company, tax, ...) are left
+        // untouched for plain fields.
+        $accessKeys = array_column(self::ACCESS, 'key');
 
-            $payload = ['value' => $isModule ? (filter_var($val, FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no') : $val];
+        foreach ($inputs as $key => $val) {
+            // Handing out Settings access is the Super Admin's alone, so a
+            // crafted form post from an Admin is dropped rather than saved.
+            if (! $this->mayGrantAccess() && in_array((string) $key, $accessKeys, true)) {
+                continue;
+            }
+
+            $isModule = str_starts_with((string) $key, 'module_');
+            $isAccess = in_array((string) $key, $accessKeys, true);
+            $isSwitch = $isModule || $isAccess;
+
+            $payload = ['value' => $isSwitch ? (filter_var($val, FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no') : $val];
 
             if ($isModule) {
                 $payload['group'] = 'modules';
+            } elseif ($isAccess) {
+                $payload['group'] = 'access';
             }
 
             Setting::updateOrCreate(['key' => $key], $payload);

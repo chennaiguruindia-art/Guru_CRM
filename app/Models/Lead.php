@@ -139,9 +139,18 @@ class Lead extends Model
         return $this->hasMany(LeadActivity::class)->latest();
     }
 
+    /**
+     * The next Visit code for the whole company.
+     *
+     * Counted across every visit rather than through the scope that decides
+     * who may read them, because codes are unique company-wide: a salesperson
+     * who has filed nothing would otherwise be handed the same LEAD-0001 as
+     * everybody else, the count coming back empty from their side of the
+     * scope. Trashed visits are counted too, so a code is never reused.
+     */
     public static function generateCode(): string
     {
-        $last = static::withTrashed()->latest('id')->first();
+        $last = static::withoutGlobalScopes()->withTrashed()->latest('id')->first();
         $next = $last ? ($last->id + 1) : 1;
         return 'LEAD-' . str_pad($next, 4, '0', STR_PAD_LEFT);
     }

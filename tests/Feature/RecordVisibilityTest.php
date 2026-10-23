@@ -283,4 +283,48 @@ class RecordVisibilityTest extends TestCase
         $this->assertSame(['A Hotel', 'B Apartment'], $titlesFor($this->bangaloreAdmin));
         $this->assertSame([], $titlesFor($this->adminWithoutBranch));
     }
+
+    /**
+     * Codes are counted company-wide, not from the filer's side of the scope.
+     * Otherwise the very first visit a salesperson files collides with
+     * somebody else's LEAD-0001 and the insert is refused outright — which is
+     * what every salesperson in every branch would hit.
+     */
+    public function test_a_salesperson_who_has_filed_nothing_still_gets_a_fresh_code(): void
+    {
+        $this->makeLead($this->salesA, ['name' => 'A Hotel']);
+
+        // A newcomer in the other branch, with no visits to their name — from
+        // where they stand, the count of existing visits comes back empty.
+        $newcomer = $this->person('fieldmarketer', $this->chennai);
+
+        $this->actingAs($newcomer);
+
+        $this->assertSame('LEAD-0002', Lead::generateCode());
+
+        $this->post('/leads', [
+            'name' => 'Newcomer Visit',
+            'phone' => '9500000000',
+            'status' => 'New',
+            'priority' => 'Medium',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('leads', [
+            'name' => 'Newcomer Visit',
+            'lead_code' => 'LEAD-0002',
+        ]);
+    }
+
+    /**
+     * The same defect on the Clients side: an Admin creating one would be
+     * handed a code from an empty count too.
+     */
+    public function test_a_viewer_who_can_see_no_client_still_gets_a_fresh_code(): void
+    {
+        $this->makeCustomer($this->salesA, ['name' => 'A Client']);
+
+        $this->actingAs($this->adminWithoutBranch);
+
+        $this->assertSame('CUST-0002', Customer::generateCode());
+    }
 }

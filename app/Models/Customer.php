@@ -96,9 +96,16 @@ class Customer extends Model
         return $this->hasMany(Complaint::class);
     }
 
+    /**
+     * The next Client code for the whole company.
+     *
+     * Counted across every client rather than through the scope that decides
+     * who may read them — the same reason as Lead::generateCode(): a viewer
+     * who can see none of them would be handed a code somebody else owns.
+     */
     public static function generateCode(): string
     {
-        $last = static::withTrashed()->latest('id')->first();
+        $last = static::withoutGlobalScopes()->withTrashed()->latest('id')->first();
         $next = $last ? ($last->id + 1) : 1;
         return 'CUST-' . str_pad($next, 4, '0', STR_PAD_LEFT);
     }

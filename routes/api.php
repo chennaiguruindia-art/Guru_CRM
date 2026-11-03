@@ -57,21 +57,28 @@ $pickPermission = function (string $module, string ...$candidates): string {
 
 /**
  * Register an API resource route with granular permission enforcement.
+ * Names are prefixed with 'api.' to prevent collision with web resource routes.
  */
 $apiResourceWithPerms = function (string $uri, string $controller, string $module) use ($pickPermission): void {
+    $resourceName = 'api.' . str_replace('-', '_', $uri);
+
     Route::apiResource($uri, $controller)
+        ->names($resourceName)
         ->only(['index', 'show'])
         ->middleware('permission:' . $pickPermission($module, 'view'));
 
     Route::apiResource($uri, $controller)
+        ->names($resourceName)
         ->only(['store'])
         ->middleware('permission:' . $pickPermission($module, 'create'));
 
     Route::apiResource($uri, $controller)
+        ->names($resourceName)
         ->only(['update'])
         ->middleware('permission:' . $pickPermission($module, 'edit', 'create'));
 
     Route::apiResource($uri, $controller)
+        ->names($resourceName)
         ->only(['destroy'])
         ->middleware('permission:' . $pickPermission($module, 'delete', 'edit'));
 };

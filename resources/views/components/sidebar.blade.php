@@ -15,6 +15,23 @@
     $moduleFlags = \App\Models\Setting::query()->pluck('value', 'key');
     $moduleOn = fn (string $key) => ($moduleFlags['module_' . $key] ?? 'yes') !== 'no';
 
+    // Role-based sidebar section filtering:
+    // - Super Admin: sees all sidebar sections and groups
+    // - Admin: CRM & Clients, Sales & Projects, Administration only
+    // - Sales Person (Field Marketer): CRM & Clients only
+    $isSuperAdmin = $user !== null && $user->hasRole('super-admin');
+    $isAdmin = $user !== null && $user->hasRole('admin') && !$isSuperAdmin;
+    $isSales = $user !== null && ($user->hasRole('fieldmarketer') || (!$isSuperAdmin && !$isAdmin));
+
+    $allowedGroupKeys = null; // null = all allowed (Super Admin)
+    if ($isSuperAdmin) {
+        $allowedGroupKeys = null;
+    } elseif ($isAdmin) {
+        $allowedGroupKeys = ['crm_clients', 'sales_projects', 'administration'];
+    } else {
+        $allowedGroupKeys = ['crm_clients'];
+    }
+
     // section > group > item = [label, icon, routeName, routePatterns, permission|null]
     $sections = [
         [
@@ -103,15 +120,25 @@
         $groupsOut = [];
 
         foreach ($section['groups'] as $group) {
+            // Role-based group visibility check
+            if (isset($group['key']) && $allowedGroupKeys !== null && !in_array($group['key'], $allowedGroupKeys, true)) {
+                continue;
+            }
+
             // Global module switch — turned off in System Settings → Modules.
-            if (isset($group['key']) && !$moduleOn($group['key'])) {
+            // Super Admin always sees all sidebar sections.
+            if (isset($group['key']) && !$isSuperAdmin && !$moduleOn($group['key'])) {
                 continue;
             }
 
             $itemsOut = [];
 
             foreach ($group['items'] as $item) {
-                if ($can($item[4])) {
+                // Ensure all CRM & Clients entries are accessible to Sales Person
+                if ($isSales && ($group['key'] ?? '') === 'crm_clients') {
+                    $itemsOut[] = $item;
+                    $visibleCount++;
+                } elseif ($can($item[4])) {
                     $itemsOut[] = $item;
                     $visibleCount++;
                 }
@@ -123,12 +150,17 @@
         }
 
         if ($groupsOut) {
-            $menu[] = ['label' => $section['label'], 'groups' => $groupsOut];
+            $sectionLabel = $section['label'];
+            // If only administration is visible in Section 5 for Admin, label it 'ADMINISTRATION'
+            if ($sectionLabel === 'ANALYTICS & SYSTEM' && !$isSuperAdmin) {
+                $sectionLabel = 'ADMINISTRATION';
+            }
+            $menu[] = ['label' => $sectionLabel, 'groups' => $groupsOut];
         }
     }
 
-    // Small menus render flat — no accordions, nothing to expand.
-    $flatten = $visibleCount <= 14;
+    // Preserve accordion groups as shown in design
+    $flatten = false;
 
     $isGroupActive = fn (array $group) => request()->routeIs($group['active']);
 @endphp

@@ -86,15 +86,14 @@ class RoleAndPermissionSeeder extends Seeder
         // create sub-users and manage everything.
         $roleModels['admin']->permissions()->sync(array_values($adminGranted));
 
-        // Field Marketer
-        // Deliberately narrow: they log Cold Calls and nothing else, so that
-        // is the only entry the CRM & Clients menu shows them. Promotion
-        // Email / Call, Existing Client Visit and Client are Admin and above,
-        // and so is converting a Visit into one. Sales & Projects detail,
-        // finance and administration were never theirs either.
-        $fieldPermissions = collect($adminGranted)->filter(function ($id, $slug) use ($adminAndAbove) {
-            return str_starts_with($slug, 'leads.')
-                && ! in_array($slug, $adminAndAbove, true);
+        // Field Marketer (Sales Person)
+        // Dedicated to CRM & Clients: holds leads permissions (except convert)
+        // and customer permissions.
+        $fieldPermissions = collect($permissionIds)->filter(function ($id, $slug) use ($superAdminOnly) {
+            if (in_array($slug, $superAdminOnly, true)) {
+                return false;
+            }
+            return str_starts_with($slug, 'leads.') || str_starts_with($slug, 'customers.');
         })->values()->all();
         $roleModels['fieldmarketer']->permissions()->sync($fieldPermissions);
 

@@ -102,6 +102,8 @@ Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
+Route::view('/privacy-policy', 'privacy-policy')->name('privacy-policy');
+
 // Authenticated Routes
 Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWithPerms) {
 

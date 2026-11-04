@@ -37,6 +37,8 @@
             &copy; {{ now()->format('Y') }} <strong class="text-dark">{{ config('app.name', 'Horticulture CRM') }}</strong>. {{ config('app.tagline', 'Professional Landscaping & Nursery ERP') }}.
         </div>
         <div class="d-flex gap-3 flex-wrap justify-content-center">
+            <a href="{{ route('privacy-policy') }}" class="text-muted text-decoration-none">Privacy Policy</a>
+            <span>&bull;</span>
             <span>System Version {{ config('app.version', '2.0') }}</span>
             <span>&bull;</span>
             <span>{{ $stack }}</span>

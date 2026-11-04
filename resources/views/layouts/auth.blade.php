@@ -69,6 +69,7 @@
                 </div>
                 <div class="text-center mt-3 auth-footer small">
                     &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+                    <a href="{{ route('privacy-policy') }}" class="text-secondary ms-2">Privacy Policy</a>
                 </div>
             </div>
         </div>

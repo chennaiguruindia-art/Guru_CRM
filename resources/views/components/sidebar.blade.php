@@ -27,13 +27,44 @@
     if ($isSuperAdmin) {
         $allowedGroupKeys = null;
     } elseif ($isAdmin) {
-        $allowedGroupKeys = ['crm_clients', 'sales_projects', 'administration'];
+        $allowedGroupKeys = ['crm_clients', 'sales_projects', 'operations_staff', 'administration'];
     } else {
         $allowedGroupKeys = ['crm_clients'];
     }
 
-    // section > group > item = [label, icon, routeName, routePatterns, permission|null]
-    $sections = [
+    $isHrmMode = request()->is('hrm*') || request()->is('employees*') || request()->is('attendance*');
+
+    if ($isHrmMode && ($isAdmin || $isSuperAdmin)) {
+        $allowedGroupKeys = null;
+        $sections = [
+            [
+                'label' => 'HRM SUITE',
+                'groups' => [
+                    ['label' => null, 'icon' => null, 'active' => ['hrm.dashboard'], 'items' => [
+                        ['HRM Overview', 'bi-speedometer2', 'hrm.dashboard', ['hrm.dashboard'], null],
+                    ]],
+                    ['label' => 'Staff Management', 'key' => 'hrm_staff', 'icon' => 'bi-people-fill', 'active' => ['employees*'], 'items' => [
+                        ['All Employees', 'bi-person-badge', 'employees.index', ['employees.index', 'employees.show', 'employees.edit'], 'employees.view'],
+                        ['Add New Employee', 'bi-person-plus', 'employees.create', ['employees.create'], 'employees.create'],
+                    ]],
+                    ['label' => 'Attendance & Tracking', 'key' => 'hrm_attendance', 'icon' => 'bi-calendar-check-fill', 'active' => ['attendance*', 'hrm.report*'], 'items' => [
+                        ['Daily Attendance', 'bi-calendar-check', 'attendance.index', ['attendance.index'], 'attendance.view'],
+                        ['Monthly Reports', 'bi-file-earmark-bar-graph', 'hrm.report', ['hrm.report*'], 'attendance.view'],
+                    ]],
+                ],
+            ],
+            [
+                'label' => 'NAVIGATION',
+                'groups' => [
+                    ['label' => null, 'icon' => null, 'active' => [], 'items' => [
+                        ['← Switch to CRM Suite', 'bi-arrow-left-circle-fill', 'dashboard', ['dashboard*'], null],
+                    ]],
+                ],
+            ],
+        ];
+    } else {
+        // section > group > item = [label, icon, routeName, routePatterns, permission|null]
+        $sections = [
         [
             'label' => null,
             'groups' => [
@@ -71,10 +102,11 @@
                     ['Maintenance Logs', 'bi-tools', 'maintenance.index', ['maintenance*'], 'maintenance.view'],
                     ['AMC Contracts', 'bi-shield-check', 'amc.index', ['amc*'], 'amc.view'],
                 ]],
-                ['label' => 'Operations & Staff', 'key' => 'operations_staff', 'icon' => 'bi-gear-wide-connected', 'active' => ['employees*', 'tasks*', 'attendance*', 'vendors*', 'purchases*'], 'items' => [
-                    ['Employees', 'bi-person-badge', 'employees.index', ['employees*'], 'employees.view'],
-                    ['Tasks', 'bi-check2-square', 'tasks.index', ['tasks*'], 'tasks.view'],
+                ['label' => 'HRM & Operations', 'key' => 'operations_staff', 'icon' => 'bi-gear-wide-connected', 'active' => ['employees*', 'tasks*', 'attendance*', 'vendors*', 'purchases*', 'hrm*'], 'items' => [
+                    ['HRM Portal Suite', 'bi-people-fill', 'hrm.dashboard', ['hrm*'], 'employees.view'],
+                    ['Employees Directory', 'bi-person-badge', 'employees.index', ['employees*'], 'employees.view'],
                     ['Daily Attendance', 'bi-calendar-check', 'attendance.index', ['attendance*'], 'attendance.view'],
+                    ['Tasks', 'bi-check2-square', 'tasks.index', ['tasks*'], 'tasks.view'],
                     ['Vendors', 'bi-shop', 'vendors.index', ['vendors*'], 'vendors.view'],
                     ['Purchase Orders', 'bi-cart-check', 'purchases.index', ['purchases*'], 'purchases.view'],
                 ]],
@@ -111,6 +143,7 @@
             ],
         ],
     ];
+    }
 
     // ── Apply permissions ────────────────────────────────────────────────
     $visibleCount = 0;

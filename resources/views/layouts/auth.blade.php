@@ -56,7 +56,7 @@
 <body class="auth-wrapper d-flex align-items-center justify-content-center p-3">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+            <div class="col-12 col-sm-10 col-md-9 col-lg-6 col-xl-5">
                 <div class="card auth-card">
                     <div class="auth-header">
                         <img src="{{ asset('logo/guru.png') }}" alt="Guru Living Assets" class="auth-logo">

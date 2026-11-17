@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -28,6 +29,7 @@ class User extends Authenticatable
         'email',
         'username',
         'phone',
+        'branch_id',
         'avatar',
         'status',
         'password',
@@ -70,6 +72,14 @@ class User extends Authenticatable
     }
 
     /**
+     * The branch this login belongs to directly (for Admins).
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
      * The branch this login works out of, or null when the roster has none on
      * file. Drives App\Models\Scopes\RecordVisibilityScope — for anyone below
      * the Super Admin, a null branch means no records at all rather than every
@@ -77,7 +87,7 @@ class User extends Authenticatable
      */
     public function branchId(): ?int
     {
-        return $this->employee?->branch_id;
+        return $this->branch_id ?? $this->employee?->branch_id;
     }
 
     /**
@@ -85,7 +95,7 @@ class User extends Authenticatable
      */
     public function branchLabel(): string
     {
-        if ($branch = $this->employee?->branch) {
+        if ($branch = $this->branch ?? $this->employee?->branch) {
             return $branch->display_name;
         }
 

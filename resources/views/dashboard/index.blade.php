@@ -22,8 +22,14 @@
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                     <li><a class="dropdown-item py-2" href="{{ Route::has('leads.create') ? route('leads.create') : '#' }}"><i class="bi bi-funnel text-success me-2"></i> New Visit</a></li>
                     <li><a class="dropdown-item py-2" href="{{ Route::has('customers.create') ? route('customers.create') : '#' }}"><i class="bi bi-people text-primary me-2"></i> New Client</a></li>
-                    <li><a class="dropdown-item py-2" href="{{ Route::has('settings.index') ? route('settings.index') : '#' }}"><i class="bi bi-gear text-secondary me-2"></i> Global Settings</a></li>
+                    @if(auth()->user()->hasPermission('employees.create'))
+                        <li><a class="dropdown-item py-2" href="{{ route('employees.create') }}"><i class="bi bi-person-plus text-success me-2"></i> Add Employee</a></li>
+                    @endif
+                    @if(auth()->user()->hasPermission('attendance.view'))
+                        <li><a class="dropdown-item py-2" href="{{ route('attendance.index') }}"><i class="bi bi-calendar-check text-info me-2"></i> Staff Attendance</a></li>
+                    @endif
                     <li><a class="dropdown-item py-2" href="{{ Route::has('quotations.create') ? route('quotations.create') : '#' }}"><i class="bi bi-file-earmark-plus text-info me-2"></i> Create Quotation</a></li>
+                    <li><a class="dropdown-item py-2" href="{{ Route::has('settings.index') ? route('settings.index') : '#' }}"><i class="bi bi-gear text-secondary me-2"></i> Global Settings</a></li>
                 </ul>
             </div>
         </div>

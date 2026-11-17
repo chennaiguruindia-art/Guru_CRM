@@ -5,12 +5,33 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-person-badge-fill text-success me-2"></i>Employees & Staff</h4>
-        <p class="text-muted small mb-0">Manage garden supervisors, landscape designers, gardeners and staff.</p>
+        <p class="text-muted small mb-0">
+            @if(auth()->user()->canSeeAllBranches())
+                Manage staff across all company branches.
+            @else
+                Manage staff for <span class="badge bg-success-subtle text-success border border-success-subtle">{{ auth()->user()->branchLabel() }}</span>.
+            @endif
+        </p>
     </div>
     <a href="{{ route('employees.create') }}" class="btn btn-success shadow-sm">
         <i class="bi bi-plus-lg me-1"></i> Add Employee
     </a>
 </div>
+
+@if(session('login_credentials'))
+<div class="alert alert-success shadow-sm mb-4 border-0">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-key-fill fs-5 text-success"></i>
+        <h6 class="mb-0 fw-bold text-success">HRM Portal Login Account Created!</h6>
+    </div>
+    <p class="small text-muted mb-2">Share these credentials with the employee so they can sign in to their HRM Portal:</p>
+    <div class="p-3 bg-white rounded border d-inline-block small font-monospace">
+        <div><strong class="text-secondary">Login ID (Employee Code):</strong> <span class="text-success fw-bold">{{ session('login_credentials.username') }}</span></div>
+        <div><strong class="text-secondary">Mobile Number:</strong> <span>{{ session('login_credentials.phone') }}</span></div>
+        <div><strong class="text-secondary">Password:</strong> <span class="text-danger fw-bold">{{ session('login_credentials.password') }}</span></div>
+    </div>
+</div>
+@endif
 
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
@@ -21,6 +42,7 @@
                     <th>Name</th>
                     <th>Designation</th>
                     <th>Department</th>
+                    <th>Branch</th>
                     <th>Phone</th>
                     <th>Type</th>
                     <th>Status</th>
@@ -30,10 +52,11 @@
             <tbody>
                 @forelse($employees as $emp)
                 <tr>
-                    <td><a href="{{ route('employees.show', $emp) }}" class="fw-semibold text-success text-decoration-none">{{ $emp->employee_code }}</a></td>
-                    <td class="fw-semibold">{{ $emp->name }}</td>
+                    <td><a href="{{ route('employees.show', $emp) }}" class="fw-semibold text-success text-decoration-none font-monospace">{{ $emp->employee_code }}</a></td>
+                    <td class="fw-semibold text-dark">{{ $emp->name }}</td>
                     <td>{{ $emp->designation }}</td>
                     <td><span class="badge bg-light text-dark border">{{ $emp->department }}</span></td>
+                    <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ $emp->branch?->name ?? '—' }}</span></td>
                     <td class="small">{{ $emp->phone }}</td>
                     <td class="small">{{ $emp->employee_type }}</td>
                     <td>

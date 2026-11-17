@@ -14,11 +14,13 @@ class Employee extends Model
 
     protected $fillable = [
         'employee_code', 'user_id', 'branch_id', 'name', 'phone', 'email', 'designation',
-        'department', 'joining_date', 'employee_type', 'salary', 'status', 'address'
+        'department', 'joining_date', 'employee_type', 'salary', 'status', 'address',
+        'dob', 'blood_group', 'emergency_contact'
     ];
 
     protected $casts = [
         'joining_date' => 'date',
+        'dob' => 'date',
         'salary' => 'decimal:2',
     ];
 

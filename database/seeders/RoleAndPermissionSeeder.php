@@ -22,6 +22,7 @@ class RoleAndPermissionSeeder extends Seeder
             ['name' => 'Super Admin', 'slug' => 'super-admin', 'description' => 'The first account created by signup. Full control, and cannot be assigned to anyone else.'],
             ['name' => 'Admin', 'slug' => 'admin', 'description' => 'Full management access, and may create sub-users'],
             ['name' => 'Field Marketer', 'slug' => 'fieldmarketer', 'description' => 'Out in the field: adds leads and converts them into customers'],
+            ['name' => 'Employee', 'slug' => 'employee', 'description' => 'Employee HRM Self-Service Portal access for daily attendance, leaves, and profile.'],
         ];
 
         $roleModels = [];

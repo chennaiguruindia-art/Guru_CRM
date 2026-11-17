@@ -18,7 +18,20 @@ class EmployeeController extends Controller
 {
     public function index(Request $request): View|JsonResponse
     {
-        $query = Employee::with('user')->latest();
+        $user = $request->user();
+        $query = Employee::with(['user', 'branch'])->latest();
+
+        // Branch Admin scoping: only sees employees of their own branch
+        if ($user && ! $user->canSeeAllBranches()) {
+            $branchId = $user->branchId();
+            if ($branchId === null) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->where('branch_id', $branchId);
+            }
+        } elseif ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->input('branch_id'));
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -40,42 +53,72 @@ class EmployeeController extends Controller
             return response()->json(['success' => true, 'data' => $employees]);
         }
 
-        return view('employees.index', compact('employees'));
+        $branches = $user && $user->canSeeAllBranches() ? Branch::where('status', 'active')->orderBy('name')->get() : collect();
+
+        return view('employees.index', compact('employees', 'branches'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $user = $request->user();
         $users = User::where('status', 'active')->get();
         $roles = Role::orderBy('name')->get();
-        $branches = Branch::where('status', 'active')->orderBy('name')->get();
+
+        // Branch admin can only select their own branch
+        if ($user && ! $user->canSeeAllBranches()) {
+            $branches = Branch::where('id', $user->branchId())->get();
+        } else {
+            $branches = Branch::where('status', 'active')->orderBy('name')->get();
+        }
 
         return view('employees.create', compact('users', 'roles', 'branches'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
         // The roster phone is also the sign-in identifier, so it is settled
         // into the form the login will store it in before anything is saved.
-        $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
+        $request->merge([
+            'phone' => Phone::normalize($request->input('phone')),
+            'salary' => $request->input('monthly_salary', $request->input('salary', 0)),
+            'joining_date' => $request->input('date_of_joining', $request->input('joining_date')),
+        ]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30', 'regex:/^\d{10,15}$/'],
             'email' => ['nullable', 'email', 'max:255'],
             'designation' => ['required', 'string', 'max:100'],
-            'department' => ['required', 'string', 'max:100'],
+            'department' => ['nullable', 'string', 'max:100'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'joining_date' => ['nullable', 'date'],
             'employee_type' => ['required', 'string'],
             'salary' => ['nullable', 'numeric', 'min:0'],
-            'user_id' => ['nullable', 'exists:users,id'],
             'address' => ['nullable', 'string'],
+            'dob' => ['nullable', 'date'],
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'emergency_contact' => ['nullable', 'string', 'max:100'],
 
-            // Login provisioning — see buildLogin() below.
+            // Login provisioning
             'create_login' => ['sometimes', 'boolean'],
-            'role' => ['required_if:create_login,1', 'nullable', 'exists:roles,slug'],
+            'role' => ['sometimes', 'nullable', 'exists:roles,slug'],
             'password' => ['nullable', 'string', 'min:6'],
         ]);
+
+        if (empty($validated['department'])) {
+            $validated['department'] = 'General';
+        }
+
+        // Enforce branch assignment for branch admins: cannot create employees for other branches
+        if ($user && ! $user->canSeeAllBranches()) {
+            $branchId = $user->branchId();
+            if (! $branchId) {
+                return back()->with('error', 'Your admin account has no assigned branch. Contact Super Admin.')->withInput();
+            }
+            $validated['branch_id'] = $branchId;
+        }
 
         $validated['employee_code'] = Employee::generateCode();
         $validated['status'] = 'active';
@@ -101,7 +144,8 @@ class EmployeeController extends Controller
      */
     private function buildLogin(Employee $emp, Request $request): ?array
     {
-        if (! $request->boolean('create_login') || $emp->user_id) {
+        $createLogin = $request->has('create_login') ? $request->boolean('create_login') : true;
+        if (! $createLogin || $emp->user_id) {
             return null;
         }
 
@@ -126,11 +170,19 @@ class EmployeeController extends Controller
             'phone' => $phone,
             'password' => $password,
             'status' => 'active',
+            'branch_id' => $emp->branch_id,
         ]);
 
-        if ($role = $request->input('role')) {
-            $user->assignRole($role);
+        $role = $request->input('role');
+        if (empty($role)) {
+            if (stripos($emp->designation, 'sale') !== false || stripos($emp->designation, 'market') !== false) {
+                $role = 'fieldmarketer';
+            } else {
+                $role = 'employee';
+            }
         }
+
+        $user->assignRole($role);
 
         $emp->update(['user_id' => $user->id]);
 
@@ -141,14 +193,82 @@ class EmployeeController extends Controller
         ];
     }
 
-    public function show(Employee $employee): View
+    public function show(Request $request, Employee $employee): View
     {
-        $employee->load('user', 'attendances');
+        $user = $request->user();
+        if ($user && ! $user->canSeeAllBranches() && $employee->branch_id !== $user->branchId()) {
+            abort(403, 'Unauthorized access to employee in another branch.');
+        }
+
+        $employee->load('user', 'branch', 'attendances');
         return view('employees.show', compact('employee'));
     }
 
-    public function destroy(Employee $employee): RedirectResponse
+    public function edit(Request $request, Employee $employee): View
     {
+        $user = $request->user();
+        if ($user && ! $user->canSeeAllBranches() && $employee->branch_id !== $user->branchId()) {
+            abort(403, 'Unauthorized access to employee in another branch.');
+        }
+
+        $branches = $user && ! $user->canSeeAllBranches()
+            ? Branch::where('id', $user->branchId())->get()
+            : Branch::where('status', 'active')->orderBy('name')->get();
+
+        return view('employees.edit', compact('employee', 'branches'));
+    }
+
+    public function update(Request $request, Employee $employee): RedirectResponse
+    {
+        $user = $request->user();
+        if ($user && ! $user->canSeeAllBranches() && $employee->branch_id !== $user->branchId()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->merge([
+            'phone' => Phone::normalize($request->input('phone')),
+            'salary' => $request->input('monthly_salary', $request->input('salary', 0)),
+            'joining_date' => $request->input('date_of_joining', $request->input('joining_date')),
+        ]);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^\d{10,15}$/'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'designation' => ['required', 'string', 'max:100'],
+            'department' => ['nullable', 'string', 'max:100'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'joining_date' => ['nullable', 'date'],
+            'employee_type' => ['required', 'string'],
+            'salary' => ['nullable', 'numeric', 'min:0'],
+            'address' => ['nullable', 'string'],
+            'dob' => ['nullable', 'date'],
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'emergency_contact' => ['nullable', 'string', 'max:100'],
+            'status' => ['required', 'in:active,inactive'],
+        ]);
+
+        if (empty($validated['department'])) {
+            $validated['department'] = $employee->department ?? 'General';
+        }
+
+        if ($user && ! $user->canSeeAllBranches()) {
+            $validated['branch_id'] = $user->branchId();
+        }
+
+        $employee->update($validated);
+        AuditLogger::log('update', 'employees', $employee->id);
+
+        return redirect()->route('employees.show', $employee)->with('success', 'Employee updated successfully!');
+    }
+
+    public function destroy(Request $request, Employee $employee): RedirectResponse
+    {
+        $user = $request->user();
+        if ($user && ! $user->canSeeAllBranches() && $employee->branch_id !== $user->branchId()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         AuditLogger::log('delete', 'employees', $employee->id);
         $employee->delete();
         return redirect()->route('employees.index')->with('success', 'Employee deleted!');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Employee;
 use App\Models\User;
 use App\Support\Phone;
 use Illuminate\Auth\Events\Lockout;
@@ -30,10 +31,9 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // The mobile number on the account — deliberately not an email
-            // address, which the sales team shares between them and so cannot
-            // identify anybody.
-            'phone' => ['required', 'string', 'max:30'],
+            // Accepts either phone or employee code / username
+            'phone' => ['required_without:login', 'nullable', 'string', 'max:50'],
+            'login' => ['sometimes', 'nullable', 'string', 'max:50'],
             'password' => ['required', 'string'],
         ];
     }
@@ -47,13 +47,28 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $identifier = Phone::normalize($this->input('phone'));
+        $raw = trim((string) ($this->input('login') ?: $this->input('phone')));
+        $identifier = Phone::normalize($raw);
 
-        // One number belongs to exactly one login, so there is no ambiguity to
-        // settle and no need to guess between matches.
+        // 1. Try matching by normalized mobile number
         $user = $identifier
             ? User::query()->where('phone', $identifier)->first()
             : null;
+
+        // 2. Try matching by username (which stores Employee ID e.g. EMP-0001) or email
+        if (! $user && $raw !== '') {
+            $user = User::query()->where('username', $raw)
+                ->orWhere('email', $raw)
+                ->first();
+        }
+
+        // 3. Fallback: match by employee_code directly from Employee record
+        if (! $user && $raw !== '') {
+            $emp = Employee::query()->where('employee_code', $raw)->first();
+            if ($emp && $emp->user_id) {
+                $user = User::query()->find($emp->user_id);
+            }
+        }
 
         if ($user && $user->status !== 'active') {
             throw ValidationException::withMessages([
@@ -62,7 +77,7 @@ class LoginRequest extends FormRequest
         }
 
         // Resolved to an id first, so the password is only ever checked against
-        // a row the phone actually matched.
+        // a row that matched.
         if (! $user || ! Auth::attempt(['id' => $user->id, 'password' => $this->input('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 

@@ -12,6 +12,17 @@
             <span class="text-muted small">&bull;</span>
             <span class="text-secondary small fw-medium">{{ auth()->user()?->branchLabel() ?? 'All branches' }}</span>
         </div>
+
+        @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <div class="btn-group btn-group-sm p-1 bg-light rounded-pill border ms-1 shadow-xs">
+                <a href="{{ route('dashboard') }}" class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {{ !request()->is('hrm*') && !request()->is('employees*') && !request()->is('attendance*') ? 'btn-success text-white shadow-sm' : 'text-secondary' }}">
+                    <i class="bi bi-briefcase-fill me-1"></i> CRM
+                </a>
+                <a href="{{ route('hrm.dashboard') }}" class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {{ request()->is('hrm*') || request()->is('employees*') || request()->is('attendance*') ? 'btn-success text-white shadow-sm' : 'text-secondary' }}">
+                    <i class="bi bi-people-fill me-1"></i> HRM Portal
+                </a>
+            </div>
+        @endif
     </div>
 
     <!-- Right: Global Search, Quick Actions, Notification Bell, User Menu -->

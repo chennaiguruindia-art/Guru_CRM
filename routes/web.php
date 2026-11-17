@@ -12,6 +12,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EstimationController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\HrmDashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LeadController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlantController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PurchaseController;
@@ -100,13 +102,26 @@ $resourceWithPerms = function (string $uri, string $controller, string $module, 
 
 // Root redirect
 Route::get('/', function () {
-    return Auth::check() ? redirect()->route('dashboard') : redirect()->route('login');
+    if (! Auth::check()) {
+        return redirect()->route('login');
+    }
+    if (Auth::user()->hasRole('employee') && ! Auth::user()->hasAnyRole(['super-admin', 'admin', 'fieldmarketer'])) {
+        return redirect()->route('portal.punch');
+    }
+    return redirect()->route('dashboard');
 });
 
 Route::view('/privacy-policy', 'privacy-policy')->name('privacy-policy');
 
 // Authenticated Routes
 Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWithPerms) {
+
+    // Employee HRM Self-Service Portal
+    Route::get('/portal', [PortalController::class, 'dashboard'])->name('portal.dashboard');
+    Route::get('/portal/punch', [PortalController::class, 'punch'])->name('portal.punch');
+    Route::post('/portal/punch-in', [PortalController::class, 'punchIn'])->name('portal.punch_in');
+    Route::post('/portal/punch-out', [PortalController::class, 'punchOut'])->name('portal.punch_out');
+    Route::get('/portal/attendance', [PortalController::class, 'attendance'])->name('portal.attendance');
 
     // Dashboard — every role lands here, so it carries no permission.
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -155,6 +170,12 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
     $resourceWithPerms('amc', AmcController::class, 'amc');
 
     // Operations Section
+    // Admin Dedicated HRM Suite
+    Route::get('/hrm', [HrmDashboardController::class, 'index'])
+        ->name('hrm.dashboard')->middleware('permission:' . $pickPermission('employees', 'view'));
+    Route::get('/hrm/reports', [HrmDashboardController::class, 'report'])
+        ->name('hrm.report')->middleware('permission:' . $pickPermission('attendance', 'view'));
+
     $resourceWithPerms('employees', EmployeeController::class, 'employees');
     $resourceWithPerms('tasks', TaskController::class, 'tasks');
 

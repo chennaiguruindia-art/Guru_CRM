@@ -21,8 +21,13 @@ class DashboardController extends Controller
     {
     }
 
-    public function index(): View
+    public function index()
     {
+        $user = auth()->user();
+        if ($user && $user->hasRole('employee') && ! $user->hasAnyRole(['super-admin', 'admin', 'fieldmarketer'])) {
+            return redirect()->route('portal.dashboard');
+        }
+
         $metrics = $this->buildMetrics();
 
         $todo = $this->today->items(12);

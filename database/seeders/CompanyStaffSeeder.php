@@ -32,48 +32,52 @@ class CompanyStaffSeeder extends Seeder
         $bangalore = Branch::where('name', 'Bangalore')->first();
         $coimbatore = Branch::where('name', 'Coimbatore')->first();
 
-        // 2. Clear previous test records safely
-        Schema::disableForeignKeyConstraints();
-        DB::table('attendances')->truncate();
-        DB::table('role_user')->truncate();
-        DB::table('employees')->truncate();
-        DB::table('users')->truncate();
-        Schema::enableForeignKeyConstraints();
-
         $defaultPassword = 'password'; // universal password for all seeded accounts
 
-        // Branch admin accounts
-        $chennaiAdmin = User::create([
-            'name' => 'Ponarasi',
-            'email' => 'admin.chennai@guru.com',
-            'username' => 'admin.chennai',
-            'phone' => '9176625631',
-            'branch_id' => $chennai->id,
-            'password' => $defaultPassword,
-            'status' => 'active',
-        ]);
-        $chennaiAdmin->assignRole('admin');
+        // Branch admin accounts (updateOrCreate ensures existing users are never wiped)
+        if ($chennai) {
+            $chennaiAdmin = User::updateOrCreate(
+                ['email' => 'admin.chennai@guru.com'],
+                [
+                    'name' => 'Ponarasi',
+                    'username' => 'admin.chennai',
+                    'phone' => '9176625631',
+                    'branch_id' => $chennai->id,
+                    'password' => $defaultPassword,
+                    'status' => 'active',
+                ]
+            );
+            $chennaiAdmin->assignRole('admin');
+        }
 
-        $bangaloreAdmin = User::create([
-            'name' => 'Keerthana',
-            'email' => 'admin.bangalore@guru.com',
-            'username' => 'admin.bangalore',
-            'phone' => '9742250341',
-            'branch_id' => $bangalore->id,
-            'password' => $defaultPassword,
-            'status' => 'active',
-        ]);
-        $bangaloreAdmin->assignRole('admin');
+        if ($bangalore) {
+            $bangaloreAdmin = User::updateOrCreate(
+                ['email' => 'admin.bangalore@guru.com'],
+                [
+                    'name' => 'Keerthana',
+                    'username' => 'admin.bangalore',
+                    'phone' => '9742250341',
+                    'branch_id' => $bangalore->id,
+                    'password' => $defaultPassword,
+                    'status' => 'active',
+                ]
+            );
+            $bangaloreAdmin->assignRole('admin');
+        }
 
-        $coimbatoreAdmin = User::create([
-            'name' => 'Sathish',
-            'email' => 'admin.coimbatore@guru.com',
-            'username' => 'admin.coimbatore',
-            'phone' => '9876543210',
-            'branch_id' => $coimbatore->id,
-            'password' => $defaultPassword,
-            'status' => 'active',
-        ]);
-        $coimbatoreAdmin->assignRole('admin');
+        if ($coimbatore) {
+            $coimbatoreAdmin = User::updateOrCreate(
+                ['email' => 'admin.coimbatore@guru.com'],
+                [
+                    'name' => 'Sathish',
+                    'username' => 'admin.coimbatore',
+                    'phone' => '9876543210',
+                    'branch_id' => $coimbatore->id,
+                    'password' => $defaultPassword,
+                    'status' => 'active',
+                ]
+            );
+            $coimbatoreAdmin->assignRole('admin');
+        }
     }
 }

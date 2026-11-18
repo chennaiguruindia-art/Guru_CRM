@@ -252,4 +252,12 @@ Route::get('/run-seed', function () {
     return '<pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
 });
 
+Route::get('/run-seed-permissions', function () {
+    \Illuminate\Support\Facades\Artisan::call('db:seed', [
+        '--class' => 'RoleAndPermissionSeeder',
+        '--force' => true,
+    ]);
+    return '<pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
+});
+
 require __DIR__ . '/auth.php';

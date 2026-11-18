@@ -20,19 +20,23 @@
         </ol></nav>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
+        @if($channel === 'existing_client')
         <a href="{{ route('leads.sample_template') }}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Sample Data (CSV)
         </a>
+        @endif
         <span class="badge bg-soft-info text-info border"><i class="bi bi-inbox me-1"></i>Saved under {{ $channelLabel }}</span>
         <a href="{{ route($channelRoute) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
     </div>
 </div>
 
+@if($channel === 'existing_client')
 {{-- Standalone form for CSV bulk import so it never triggers single-visit validation on Site Name/Phone --}}
 <form id="bulk-csv-form" method="POST" action="{{ route('leads.import') }}" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="source" value="{{ $source }}">
 </form>
+@endif
 
 <form method="POST" action="{{ route('leads.store') }}" id="lead-form" enctype="multipart/form-data">
     @csrf
@@ -46,9 +50,22 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By) <span class="text-danger">*</span></label>
+                            <select name="assigned_to_id" class="form-select @error('assigned_to_id') is-invalid @enderror" required>
+                                <option value="">-- Select Employee --</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" @selected(old('assigned_to_id', auth()->id()) == $user->id)>
+                                        {{ $user->name }} ({{ $user->email }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">Select which employee or staff member spoke with this lead.</div>
+                            @error('assigned_to_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="Full name of contact person" required>
+                            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="Site or client name" required>
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
@@ -104,7 +121,8 @@
                 </div>
             </div>
 
-            {{-- Existing Client Old Records & Data Upload --}}
+            {{-- Existing Client Old Records & Data Upload (Only shown for Existing Client channel) --}}
+            @if($channel === 'existing_client')
             <div class="card border-0 shadow-sm mb-4 border-top border-4 border-primary" id="existing-client-docs-card">
                 <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
@@ -207,6 +225,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             {{-- Visiting Card --}}
             <div class="card border-0 shadow-sm mb-4">
@@ -250,18 +269,8 @@
                         untouched.
                     --}}
                     <input type="hidden" name="source" value="{{ $source }}">
+                    <input type="hidden" name="client_type" value="{{ $clientTypeDefault }}">
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">New or Existing Client</label>
-                        <select name="client_type" class="form-select @error('client_type') is-invalid @enderror">
-                            <option value="">-- Select --</option>
-                            @foreach(\App\Models\Lead::CLIENT_TYPES as $type)
-                                <option value="{{ $type }}" @selected(old('client_type',$clientTypeDefault)===$type)>{{ $type }}</option>
-                            @endforeach
-                        </select>
-                        <div class="form-text">Is this Visit with somebody new, or a Client you already have?</div>
-                        @error('client_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Purpose of Visit</label>
                         <select name="purpose_of_visit" class="form-select @error('purpose_of_visit') is-invalid @enderror">

@@ -31,6 +31,18 @@
                 <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-semibold"><i class="bi bi-person text-success me-2"></i>Contact Details</h6></div>
                 <div class="card-body p-4">
                     <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By)</label>
+                            <select name="assigned_to_id" class="form-select @error('assigned_to_id') is-invalid @enderror">
+                                <option value="">-- Select Employee --</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" @selected(old('assigned_to_id', $lead->assigned_to_id) == $user->id)>
+                                        {{ $user->name }} ({{ $user->email }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('assigned_to_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name',$lead->name) }}" required>
@@ -158,17 +170,7 @@
                         <label class="form-label small fw-semibold text-secondary">Source</label>
                         <div class="form-control bg-light text-muted">{{ $lead->source ?: '—' }}</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">New or Existing Client</label>
-                        <select name="client_type" class="form-select @error('client_type') is-invalid @enderror">
-                            <option value="">-- Select --</option>
-                            @foreach(\App\Models\Lead::CLIENT_TYPES as $type)
-                                <option value="{{ $type }}" @selected(old('client_type',$lead->client_type)===$type)>{{ $type }}</option>
-                            @endforeach
-                        </select>
-                        <div class="form-text">Is this Visit with somebody new, or a Client you already have?</div>
-                        @error('client_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
+                    <input type="hidden" name="client_type" value="{{ $lead->client_type }}">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Purpose of Visit</label>
                         <select name="purpose_of_visit" class="form-select @error('purpose_of_visit') is-invalid @enderror">

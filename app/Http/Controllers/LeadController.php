@@ -161,7 +161,14 @@ class LeadController extends Controller
 
         $source = Lead::CHANNELS[$channel];
 
-        return view('leads.create', compact('source', 'channel'));
+        $users = User::where('status', 'active')
+            ->when($request->user() && ! $request->user()->hasRole('super-admin'), function ($q) use ($request) {
+                $q->where('branch_id', $request->user()->branch_id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return view('leads.create', compact('source', 'channel', 'users'));
     }
 
     public function store(LeadRequest $request): RedirectResponse|JsonResponse
@@ -174,9 +181,8 @@ class LeadController extends Controller
         $data['lead_code'] = Lead::generateCode();
         $data['created_by_id'] = auth()->id();
 
-        // The form no longer asks who the Visit is for — the person filing it
-        // owns it, which keeps the detail row and the list column meaningful.
-        $data['assigned_to_id'] = auth()->id();
+        // Employee who spoke with or handled this lead
+        $data['assigned_to_id'] = $request->input('assigned_to_id') ?: auth()->id();
 
         // …and it belongs to the branch they work out of. Stamped rather than
         // chosen, so a later reassignment cannot move a visit into somebody
@@ -186,6 +192,7 @@ class LeadController extends Controller
         // The form has no Source dropdown any more — fall back to the plain
         // Visits channel when nothing specified one.
         $data['source'] ??= Lead::DEFAULT_SOURCE;
+        $data['client_type'] ??= 'New Client';
         $data['priority'] ??= 'Medium';
         $data['expected_value'] ??= 0;
 
@@ -467,7 +474,14 @@ class LeadController extends Controller
 
     public function edit(Lead $lead): View
     {
-        return view('leads.edit', compact('lead'));
+        $users = User::where('status', 'active')
+            ->when(! auth()->user()->hasRole('super-admin'), function ($q) {
+                $q->where('branch_id', auth()->user()->branch_id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return view('leads.edit', compact('lead', 'users'));
     }
 
     public function update(LeadRequest $request, Lead $lead): RedirectResponse|JsonResponse
@@ -475,6 +489,10 @@ class LeadController extends Controller
         $oldValues = $lead->toArray();
         $data = $request->validated();
         $data['priority'] ??= $lead->priority ?? 'Medium';
+
+        if ($request->filled('assigned_to_id')) {
+            $data['assigned_to_id'] = $request->input('assigned_to_id');
+        }
 
         if ($request->hasFile('visiting_card_photo')) {
             $previous = $lead->visiting_card_photo;

@@ -95,6 +95,15 @@
                         <th>Employee</th>
                         <th>Follow-up</th>
                         <th class="text-end">Actions</th>
+                    @elseif($channel === 'existing_client')
+                        <th>Visit ID</th>
+                        <th>Site Name</th>
+                        <th>Operation Team / Employee</th>
+                        <th>Purpose of Visit</th>
+                        <th>Area & Location</th>
+                        <th>Remarks</th>
+                        <th>Follow-up</th>
+                        <th class="text-end">Actions</th>
                     @else
                         <th>Visit ID</th>
                         <th>Site / Company</th>
@@ -149,6 +158,31 @@
                         </td>
                         <td class="small">{{ $lead->city ?: ($lead->state ?: '—') }}</td>
                         <td class="small">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</td>
+                        <td class="small {{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
+                            {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
+                        </td>
+                    @elseif($channel === 'existing_client')
+                        <td><a href="{{ route('leads.show',$lead) }}" class="fw-semibold text-success text-decoration-none">{{ $lead->lead_code }}</a></td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ $lead->name }}</div>
+                            @if($lead->company_name)<div class="small text-muted">{{ $lead->company_name }}</div>@endif
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</div>
+                            @if($lead->designation)
+                                <div class="small text-muted">{{ $lead->designation }}</div>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="badge bg-soft-info text-info border">{{ $lead->purpose_of_visit ?: 'Routine Inspection' }}</span>
+                        </td>
+                        <td>
+                            <div class="small text-dark fw-semibold">{{ $lead->area ?: ($lead->city ?: '—') }}</div>
+                            @if($lead->address && $lead->area)<div class="small text-muted text-truncate" style="max-width: 180px;">{{ $lead->address }}</div>@endif
+                        </td>
+                        <td class="small text-muted text-truncate" style="max-width: 220px;" title="{{ $lead->remarks }}">
+                            {{ $lead->remarks ? Str::limit($lead->remarks, 40) : '—' }}
+                        </td>
                         <td class="small {{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
                             {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
                         </td>

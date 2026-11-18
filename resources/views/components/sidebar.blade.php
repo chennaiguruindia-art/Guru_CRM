@@ -82,7 +82,7 @@
                     // Marketer sees. The other three are Admin and above.
                     ['Cold Calls / Direct Call', 'bi-telephone', 'cold_calls.index', ['cold_calls*'], 'leads.view'],
                     ['Promotion Email / Call', 'bi-envelope', 'promotion_emails.index', ['promotion_emails*'], 'leads.promotion'],
-                    ['Existing Client Visit', 'bi-person-check', 'client_visits.index', ['client_visits*'], 'leads.existing_client'],
+                    ['Operation Team Visit', 'bi-person-workspace', 'client_visits.index', ['client_visits*'], 'leads.existing_client'],
                     ['Client', 'bi-people', 'customers.index', ['customers*'], 'customers.view'],
                 ]],
                 ['label' => 'Sales & Projects', 'key' => 'sales_projects', 'icon' => 'bi-briefcase-fill', 'active' => ['estimations*', 'quotations*', 'projects*', 'work-orders*'], 'items' => [

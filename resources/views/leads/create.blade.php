@@ -1,60 +1,113 @@
 @extends('layouts.app')
-@section('title','Add New Visit')
-
-@section('content')
 @php
-    // Where this Visit lands once saved — shown because the Source dropdown
-    // is gone and the filer would otherwise have no cue.
-    [$channelLabel, $channelRoute] = \App\Models\Lead::CHANNEL_LISTS[$channel]
+    $channelDetails = \App\Models\Lead::CHANNEL_LISTS[$channel]
         ?? \App\Models\Lead::CHANNEL_LISTS['cold_call'];
+    $channelLabel = $channelDetails[0];
+    $channelRoute = $channelDetails[1];
 
-    // A Visit opened from the Existing Client list is already known to be one.
+    $pageHeading = match($channel) {
+        'existing_client' => 'Operation Team Visit',
+        'promotion_email' => 'Promotion Email / Call',
+        default => 'Add New Visit',
+    };
+
     $clientTypeDefault = $channel === 'existing_client' ? 'Existing Client' : 'New Client';
 @endphp
-<div class="d-flex justify-content-between align-items-center mb-4">
+@section('title', $pageHeading)
+
+@section('content')
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-funnel-fill text-success me-2"></i>Add New Visit</h4>
+        <h4 class="fw-bold mb-0 text-dark">
+            <i class="bi {{ $channel === 'existing_client' ? 'bi-person-workspace text-primary' : ($channel === 'promotion_email' ? 'bi-megaphone text-primary' : 'bi-funnel-fill text-success') }} me-2"></i>
+            {{ $pageHeading }}
+        </h4>
         <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-0">
             <li class="breadcrumb-item"><a href="{{ route($channelRoute) }}" class="text-success text-decoration-none">{{ $channelLabel }}</a></li>
             <li class="breadcrumb-item active">Add New</li>
         </ol></nav>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
-        @if($channel === 'existing_client')
-        <a href="{{ route('leads.sample_template') }}" class="btn btn-outline-success btn-sm">
-            <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Sample Data (CSV)
-        </a>
-        @endif
         <span class="badge bg-soft-info text-info border"><i class="bi bi-inbox me-1"></i>Saved under {{ $channelLabel }}</span>
         <a href="{{ route($channelRoute) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
     </div>
 </div>
-
-@if($channel === 'existing_client')
-{{-- Standalone form for CSV bulk import so it never triggers single-visit validation on Site Name/Phone --}}
-<form id="bulk-csv-form" method="POST" action="{{ route('leads.import') }}" enctype="multipart/form-data">
-    @csrf
-    <input type="hidden" name="source" value="{{ $source }}">
-</form>
-@endif
 
 <form method="POST" action="{{ route('leads.store') }}" id="lead-form" enctype="multipart/form-data">
     @csrf
     <div class="row g-4">
         {{-- Left Column --}}
         <div class="col-12 col-lg-8">
-            {{-- Contact Details --}}
+            {{-- Contact / Visit Details Card --}}
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom py-3">
                     <h6 class="mb-0 fw-semibold">
-                        <i class="bi {{ $channel === 'promotion_email' ? 'bi-megaphone text-primary' : 'bi-person text-success' }} me-2"></i>
-                        {{ $channel === 'promotion_email' ? 'Promotion Email / Call Details' : 'Visit Contact Details' }}
+                        @if($channel === 'existing_client')
+                            <i class="bi bi-person-workspace text-primary me-2"></i>Operation Team Visit Details
+                        @elseif($channel === 'promotion_email')
+                            <i class="bi bi-megaphone text-primary me-2"></i>Promotion Email / Call Details
+                        @else
+                            <i class="bi bi-person text-success me-2"></i>Visit Contact Details
+                        @endif
                     </h6>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        @if($channel === 'promotion_email')
-                            {{-- 1st: Mode of Approach --}}
+                        @if($channel === 'existing_client')
+                            {{-- 1. Employee Name (Operation Team) --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Employee Name (Operation Team) <span class="text-danger">*</span></label>
+                                <input type="text" name="employee_name" list="employee-list" class="form-control @error('employee_name') is-invalid @enderror"
+                                       value="{{ old('employee_name', auth()->user()?->name) }}"
+                                       placeholder="Employee name who visited" required>
+                                <datalist id="employee-list">
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->name }}">{{ $user->email }}</option>
+                                    @endforeach
+                                </datalist>
+                                @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 2. Designation --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Designation</label>
+                                <input type="text" name="designation" class="form-control @error('designation') is-invalid @enderror"
+                                       value="{{ old('designation') }}" placeholder="e.g. Operations Executive / Field Engineer">
+                                @error('designation')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 3. Site Name --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
+                                       value="{{ old('name') }}" placeholder="Site name (e.g. Taj Grand, Adyar Villa)" required>
+                                @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 4. Purpose of Visit --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Purpose of Visit <span class="text-danger">*</span></label>
+                                <select name="purpose_of_visit" class="form-select @error('purpose_of_visit') is-invalid @enderror" required>
+                                    <option value="">-- Select Purpose --</option>
+                                    @foreach(['Routine Site Inspection','Client Service Review','Site Measurement & Audit','Work Progress Check','Plant & Material Replacement','Complaint & Issue Resolution','Contract Renewal Discussion','General Visit'] as $p)
+                                        <option value="{{ $p }}" @selected(old('purpose_of_visit', 'Routine Site Inspection')===$p)>{{ $p }}</option>
+                                    @endforeach
+                                </select>
+                                @error('purpose_of_visit')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- Contact Person & Phone --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Contact Person at Site</label>
+                                <input type="text" name="contact_person" class="form-control" value="{{ old('contact_person') }}" placeholder="Client / Site in-charge name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Contact Phone</label>
+                                <input type="text" name="phone" class="form-control" value="{{ old('phone') }}" placeholder="+91 98765 43210">
+                            </div>
+
+                        @elseif($channel === 'promotion_email')
+                            {{-- Promotion Email Layout --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Mode of Approach <span class="text-danger">*</span></label>
                                 <select name="mode_of_approach" class="form-select @error('mode_of_approach') is-invalid @enderror" required>
@@ -66,48 +119,41 @@
                                 @error('mode_of_approach')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- 2nd: Company Name --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Company Name <span class="text-danger">*</span></label>
                                 <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name') }}" placeholder="Company name" required>
                                 @error('company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- 3rd: Contact Person --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Contact Person <span class="text-danger">*</span></label>
                                 <input type="text" name="contact_person" class="form-control @error('contact_person') is-invalid @enderror" value="{{ old('contact_person') }}" placeholder="Contact person name" required>
                                 @error('contact_person')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- 4th: Contact Person Designation --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Contact Person Designation</label>
                                 <input type="text" name="designation" class="form-control @error('designation') is-invalid @enderror" value="{{ old('designation') }}" placeholder="e.g. Managing Director, Manager, Owner">
                                 @error('designation')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- 5th: Email --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Email</label>
                                 <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" placeholder="email@example.com">
                                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- 6th: Phone --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Phone <span class="text-danger">*</span></label>
                                 <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}" placeholder="+91 98765 43210" required>
                                 @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- 7th: WhatsApp --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">WhatsApp Number</label>
                                 <input type="text" name="whatsapp" class="form-control" value="{{ old('whatsapp') }}" placeholder="WhatsApp number (if different)">
                             </div>
 
-                            {{-- Employee Name --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Employee Name (Handled By)</label>
                                 <input type="text" name="employee_name" list="employee-list" class="form-control @error('employee_name') is-invalid @enderror"
@@ -121,6 +167,7 @@
                                 @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         @else
+                            {{-- Standard Cold Call / General Visit --}}
                             <div class="col-12">
                                 <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By)</label>
                                 <input type="text" name="employee_name" list="employee-list" class="form-control @error('employee_name') is-invalid @enderror"
@@ -170,152 +217,50 @@
                 </div>
             </div>
 
-            {{-- Address --}}
+            {{-- Location & Area --}}
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="mb-0 fw-semibold"><i class="bi bi-geo-alt text-info me-2"></i>Location & Address</h6>
+                    <h6 class="mb-0 fw-semibold"><i class="bi bi-geo-alt text-info me-2"></i>Location & Area</h6>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold text-secondary">Address</label>
-                            <textarea name="address" class="form-control" rows="2" placeholder="Full address">{{ old('address') }}</textarea>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Area / Locality</label>
+                            <input type="text" name="area" class="form-control" value="{{ old('area') }}" placeholder="e.g. Guindy, Adyar, OMR, Whitefield">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">City</label>
-                            <input type="text" name="city" class="form-control" value="{{ old('city') }}" placeholder="City">
+                            <input type="text" name="city" class="form-control" value="{{ old('city', 'Chennai') }}" placeholder="City">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-secondary">Site Address</label>
+                            <textarea name="address" class="form-control" rows="2" placeholder="Full address or landmark">{{ old('address') }}</textarea>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">State</label>
-                            <input type="text" name="state" class="form-control" value="{{ old('state','TamilNadu') }}" placeholder="State">
+                            <input type="text" name="state" class="form-control" value="{{ old('state','Tamil Nadu') }}" placeholder="State">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Pincode</label>
-                            <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}" placeholder="560001">
+                            <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}" placeholder="600001">
                         </div>
                     </div>
                 </div>
             </div>
-
-            {{-- Existing Client Old Records & Data Upload (Only shown for Existing Client channel) --}}
-            @if($channel === 'existing_client')
-            <div class="card border-0 shadow-sm mb-4 border-top border-4 border-primary" id="existing-client-docs-card">
-                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                        <h6 class="mb-0 fw-semibold text-primary">
-                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>Existing Client Old Records & Data Upload
-                        </h6>
-                        <small class="text-muted">Sample data download panni, client data fill panni upload panna direct-aa DB-la store aagidum.</small>
-                    </div>
-                    <a href="{{ route('leads.sample_template') }}" class="btn btn-sm btn-outline-success">
-                        <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Sample Data (CSV)
-                    </a>
-                </div>
-                <div class="card-body p-4">
-                    {{-- Nav Tabs --}}
-                    <ul class="nav nav-pills mb-3 gap-2" id="clientRecordTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active small py-1 px-3" id="tab-csv-import" data-bs-toggle="pill" data-bs-target="#pane-csv-import" type="button" role="tab">
-                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>1. Bulk Upload Sample CSV to DB
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link small py-1 px-3" id="tab-doc-upload" data-bs-toggle="pill" data-bs-target="#pane-doc-upload" type="button" role="tab">
-                                <i class="bi bi-paperclip me-1"></i>2. Attach Old Documents / Files
-                            </button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content" id="clientRecordTabContent">
-                        {{-- Pane 1: CSV Bulk Import --}}
-                        <div class="tab-pane fade show active" id="pane-csv-import" role="tabpanel">
-                            <div class="p-3 bg-light rounded border mb-3">
-                                <div class="row align-items-center g-3">
-                                    <div class="col-md-7">
-                                        <div class="fw-semibold text-dark small mb-1">
-                                            <i class="bi bi-info-circle-fill text-primary me-1"></i>How to upload and store in Database:
-                                        </div>
-                                        <ol class="small text-muted mb-0 ps-3">
-                                            <li>Click <strong>Download Sample Data</strong> to get the sample CSV format.</li>
-                                            <li>Fill in existing clients' details (Name, Phone, Address, Service, Follow-up date).</li>
-                                            <li>Select the filled CSV below and click <strong>Upload & Save to DB</strong>.</li>
-                                        </ol>
-                                    </div>
-                                    <div class="col-md-5 text-md-end">
-                                        <a href="{{ route('leads.sample_template') }}" class="btn btn-success btn-sm w-100 py-2 fw-semibold">
-                                            <i class="bi bi-download me-1"></i>Download Sample Template (CSV)
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-8">
-                                    <label class="form-label small fw-semibold text-secondary">Select Filled Sample CSV File</label>
-                                    <input type="file" name="import_file" id="import_file" form="bulk-csv-form" class="form-control" accept=".csv,.txt" required>
-                                </div>
-                                <div class="col-md-4 pt-md-4">
-                                    <button type="submit" form="bulk-csv-form" formnovalidate class="btn btn-primary w-100 py-2 fw-semibold shadow-sm">
-                                        <i class="bi bi-database-fill-add me-1"></i>Upload & Save to DB
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Pane 2: Attach Old Files & Documents --}}
-                        <div class="tab-pane fade" id="pane-doc-upload" role="tabpanel">
-                            <div class="row g-3">
-                                <div class="col-md-5">
-                                    <label class="form-label small fw-semibold text-secondary">Record / Document Category</label>
-                                    <select name="document_category" class="form-select">
-                                        <option value="Past Agreement / Contract" selected>Past Agreement / Contract</option>
-                                        <option value="Previous Quotation / Estimate">Previous Quotation / Estimate</option>
-                                        <option value="Old Invoices & Payment History">Old Invoices & Payment History</option>
-                                        <option value="Site Plans & Garden Photos">Site Plans & Garden Photos</option>
-                                        <option value="Maintenance / Service Log">Maintenance / Service Log</option>
-                                        <option value="Existing Client Record">Other Old Record</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-7">
-                                    <label for="client_documents" class="form-label small fw-semibold text-secondary">
-                                        Select Files (CSV, Excel, PDF, Word, Photos)
-                                    </label>
-                                    <input type="file" name="client_documents[]" id="client_documents"
-                                           class="form-control @error('client_documents.*') is-invalid @enderror"
-                                           multiple
-                                           accept=".csv,.txt,.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
-                                           onchange="handleClientFilesSelect(this)">
-                                    @error('client_documents.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                    <div class="form-text">CSV, Excel, PDF, Word, JPG, PNG up to 10 MB each. Select multiple files together.</div>
-                                </div>
-
-                                <div class="col-12">
-                                    <div id="selected-files-list" class="p-3 bg-light rounded border d-none">
-                                        <div class="small fw-semibold text-secondary mb-2"><i class="bi bi-paperclip me-1"></i>Selected Files to Upload:</div>
-                                        <div id="selected-files-items" class="d-flex flex-column gap-2"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
 
             {{-- Visiting Card --}}
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="mb-0 fw-semibold"><i class="bi bi-card-image text-primary me-2"></i>Visiting Card <span class="text-muted fw-normal small">(optional)</span></h6>
+                    <h6 class="mb-0 fw-semibold"><i class="bi bi-card-image text-primary me-2"></i>Visiting Card / Site Photo <span class="text-muted fw-normal small">(optional)</span></h6>
                 </div>
                 <div class="card-body p-4">
-                    <label for="visiting_card_photo" class="form-label small fw-semibold text-secondary">Card Photo</label>
+                    <label for="visiting_card_photo" class="form-label small fw-semibold text-secondary">Photo</label>
                     <input type="file" name="visiting_card_photo" id="visiting_card_photo"
                            class="form-control @error('visiting_card_photo') is-invalid @enderror"
                            accept="image/jpeg,image/png,image/webp"
                            onchange="previewCard(this, 'card-preview-create')">
                     @error('visiting_card_photo')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <div class="form-text text-muted mb-2">JPG, PNG or WebP — up to 5 MB. Photograph the card handed over at the hotel, apartment or villa.</div>
+                    <div class="form-text text-muted mb-2">JPG, PNG or WebP up to 5 MB.</div>
                     <img id="card-preview-create" src="" alt="" class="d-none rounded border mt-2" style="max-height:140px">
                 </div>
             </div>
@@ -323,32 +268,32 @@
             {{-- Remarks --}}
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="mb-0 fw-semibold"><i class="bi bi-chat-text text-secondary me-2"></i>Remarks & Requirements</h6>
+                    <h6 class="mb-0 fw-semibold"><i class="bi bi-chat-text text-secondary me-2"></i>Visit Remarks & Observations</h6>
                 </div>
                 <div class="card-body p-4">
-                    <textarea name="remarks" class="form-control" rows="4" placeholder="Client requirements, site details, special notes…">{{ old('remarks') }}</textarea>
+                    <textarea name="remarks" class="form-control" rows="4" placeholder="Inspection observations, work carried out, client feedback, special notes…">{{ old('remarks') }}</textarea>
                 </div>
             </div>
         </div>
 
         {{-- Right Column --}}
         <div class="col-12 col-lg-4">
-            @if($channel === 'promotion_email')
+            @if($channel === 'promotion_email' || $channel === 'existing_client')
             <div class="card border-0 shadow-sm mb-4 border-top border-3 border-success">
                 <div class="card-header bg-white border-bottom py-3">
                     <h6 class="mb-0 fw-semibold text-success"><i class="bi bi-calendar-check me-2"></i>Follow-up Date</h6>
                 </div>
                 <div class="card-body p-4">
                     <input type="hidden" name="source" value="{{ $source }}">
-                    <input type="hidden" name="client_type" value="New Client">
-                    <input type="hidden" name="status" value="Contacted">
+                    <input type="hidden" name="client_type" value="{{ $clientTypeDefault }}">
+                    <input type="hidden" name="status" value="{{ $channel === 'existing_client' ? 'Site Visit Required' : 'Contacted' }}">
 
                     <div class="mb-0">
                         <label for="follow_up_date" class="form-label small fw-semibold text-secondary">Follow-up Date <span class="text-muted fw-normal">(optional)</span></label>
                         <input type="date" name="follow_up_date" id="follow_up_date"
                                class="form-control @error('follow_up_date') is-invalid @enderror"
                                value="{{ old('follow_up_date') }}">
-                        <div class="form-text">Pick a follow-up date to receive automated notifications.</div>
+                        <div class="form-text">Optional. Pick a date if a follow-up visit is required.</div>
                         @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
@@ -359,12 +304,6 @@
                     <h6 class="mb-0 fw-semibold"><i class="bi bi-sliders text-warning me-2"></i>Visit Classification</h6>
                 </div>
                 <div class="card-body p-4">
-                    {{--
-                        There is no Source dropdown any more. The channel comes
-                        from which Add button was pressed (Cold Call /
-                        Promotion Email / Existing Client) and is posted back
-                        untouched.
-                    --}}
                     <input type="hidden" name="source" value="{{ $source }}">
                     <input type="hidden" name="client_type" value="{{ $clientTypeDefault }}">
 
@@ -420,7 +359,7 @@
 
             <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-success py-2 fw-semibold"><i class="bi bi-check2-circle me-1"></i>Save Visit</button>
-                <a href="{{ route('leads.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <a href="{{ route($channelRoute) }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </div>
     </div>
@@ -429,57 +368,16 @@
 
 @push('scripts')
 <script>
-    function handleClientFilesSelect(input) {
-        const container = document.getElementById('selected-files-list');
-        const items = document.getElementById('selected-files-items');
-        if (!container || !items) return;
-
-        items.innerHTML = '';
-        if (!input.files || input.files.length === 0) {
-            container.classList.add('d-none');
-            return;
-        }
-
-        container.classList.remove('d-none');
-        Array.from(input.files).forEach((file) => {
-            const ext = file.name.split('.').pop().toLowerCase();
-            let iconClass = 'bi-file-earmark text-secondary';
-            if (['pdf'].includes(ext)) iconClass = 'bi-file-earmark-pdf text-danger';
-            else if (['doc', 'docx'].includes(ext)) iconClass = 'bi-file-earmark-word text-primary';
-            else if (['csv', 'txt', 'xls', 'xlsx'].includes(ext)) iconClass = 'bi-file-earmark-spreadsheet text-success';
-            else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) iconClass = 'bi-file-earmark-image text-info';
-
-            const sizeKb = (file.size / 1024).toFixed(1);
-            const sizeStr = sizeKb > 1024 ? (sizeKb / 1024).toFixed(2) + ' MB' : sizeKb + ' KB';
-
-            const row = document.createElement('div');
-            row.className = 'd-flex align-items-center justify-content-between p-2 bg-white rounded border small';
-            row.innerHTML = `
-                <div class="d-flex align-items-center gap-2 text-truncate me-2">
-                    <i class="bi ${iconClass} fs-5"></i>
-                    <div>
-                        <div class="fw-semibold text-dark text-truncate" style="max-width: 320px;">${escHtml(file.name)}</div>
-                        <span class="text-muted" style="font-size: 0.72rem;">${sizeStr} · .${ext.toUpperCase()}</span>
-                    </div>
-                </div>
-                <span class="badge bg-success-subtle text-success border">Ready to upload</span>
-            `;
-            items.appendChild(row);
-        });
-    }
-
-    function escHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
     function previewCard(input, previewId) {
         const preview = document.getElementById(previewId);
         if (!preview) return;
         if (input.files && input.files[0]) {
-            preview.src = URL.createObjectURL(input.files[0]);
-            preview.classList.remove('d-none');
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.classList.remove('d-none');
+            };
+            reader.readAsDataURL(input.files[0]);
         } else {
             preview.classList.add('d-none');
             preview.src = '';

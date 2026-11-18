@@ -183,7 +183,11 @@ class LeadController extends Controller
 
         // Ensure name is present (falls back to company_name or contact_person if site name empty)
         if (empty($data['name'])) {
-            $data['name'] = $data['company_name'] ?: ($data['contact_person'] ?: 'Promotion Lead');
+            $data['name'] = $data['company_name'] ?: ($data['contact_person'] ?: 'Visit Record');
+        }
+
+        if (empty($data['phone'])) {
+            $data['phone'] = '—';
         }
 
         // Employee who spoke with or handled this lead

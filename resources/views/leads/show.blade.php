@@ -146,10 +146,10 @@
                         <label class="text-muted small d-block">Employee (Handled By)</label>
                         <span>{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</span>
                     </div>
-                    @if($lead->address)
+                    @if($lead->address || $lead->area)
                     <div class="col-12">
-                        <label class="text-muted small d-block">Address</label>
-                        <span>{{ $lead->address }}{{ $lead->city ? ', '.$lead->city : '' }}{{ $lead->state ? ', '.$lead->state : '' }} {{ $lead->pincode }}</span>
+                        <label class="text-muted small d-block">Location & Address</label>
+                        <span>{{ $lead->area ? $lead->area.', ' : '' }}{{ $lead->address }}{{ $lead->city ? ', '.$lead->city : '' }}{{ $lead->state ? ', '.$lead->state : '' }} {{ $lead->pincode }}</span>
                     </div>
                     @endif
                     @if($lead->remarks)

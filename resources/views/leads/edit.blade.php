@@ -88,15 +88,19 @@
                             <label class="form-label small fw-semibold text-secondary">Address</label>
                             <textarea name="address" class="form-control" rows="2">{{ old('address',$lead->address) }}</textarea>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-secondary">Area / Locality</label>
+                            <input type="text" name="area" class="form-control" value="{{ old('area', $lead->area) }}" placeholder="e.g. Guindy, Adyar">
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label small fw-semibold text-secondary">City</label>
                             <input type="text" name="city" class="form-control" value="{{ old('city',$lead->city) }}">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label small fw-semibold text-secondary">State</label>
                             <input type="text" name="state" class="form-control" value="{{ old('state',$lead->state) }}">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label small fw-semibold text-secondary">Pincode</label>
                             <input type="text" name="pincode" class="form-control" value="{{ old('pincode',$lead->pincode) }}">
                         </div>

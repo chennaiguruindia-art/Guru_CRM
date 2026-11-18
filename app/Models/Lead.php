@@ -39,7 +39,7 @@ class Lead extends Model
     public const CHANNEL_LISTS = [
         'cold_call'       => ['Cold Calls / Direct Call', 'cold_calls.index', 'leads.view'],
         'promotion_email' => ['Promotion Email / Call', 'promotion_emails.index', 'leads.promotion'],
-        'existing_client' => ['Existing Client Visit', 'client_visits.index', 'leads.existing_client'],
+        'existing_client' => ['Operation Team Visit', 'client_visits.index', 'leads.existing_client'],
     ];
 
     /** Engagement type — decides what conversion creates. */
@@ -74,6 +74,7 @@ class Lead extends Model
         'phone',
         'whatsapp',
         'address',
+        'area',
         'city',
         'state',
         'pincode',

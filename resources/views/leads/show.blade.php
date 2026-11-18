@@ -24,9 +24,20 @@
     <div class="d-flex gap-2 flex-wrap">
         @can('leads.convert')
         @if($lead->status !== 'Converted')
-        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#convertModal">
-            <i class="bi bi-arrow-up-right-circle me-1"></i>Convert
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#convertModal">
+            <i class="bi bi-person-check-fill me-1"></i>Convert to Client
         </button>
+        @if($lead->status !== 'Lost')
+        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal">
+            <i class="bi bi-x-circle me-1"></i>Reject / Mark as Lost
+        </button>
+        @endif
+        @else
+        @if($lead->convertedCustomer)
+        <a href="{{ route('customers.show', $lead->convertedCustomer) }}" class="btn btn-success btn-sm">
+            <i class="bi bi-check2-circle me-1"></i>Client: {{ $lead->convertedCustomer->customer_code }}
+        </a>
+        @endif
         @endif
         @endcan
         <a href="{{ route('leads.edit',$lead) }}" class="btn btn-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
@@ -43,7 +54,6 @@
                 <h6 class="mb-0 fw-semibold"><i class="bi bi-person text-success me-2"></i>Visit Details</h6>
                 <div class="d-flex gap-2">
                     <span class="badge {{ $lead->status_badge_class }}">{{ $lead->status }}</span>
-                    <span class="badge {{ $lead->priority_badge_class }}">{{ $lead->priority }}</span>
                 </div>
             </div>
             <div class="card-body p-4">
@@ -144,6 +154,43 @@
                                  class="rounded border" style="max-height:160px">
                         </a>
                         <div class="form-text">Click to view full size.</div>
+                    </div>
+                    @endif
+
+                    @if($lead->documents && $lead->documents->count())
+                    <div class="col-12 mt-3">
+                        <label class="text-muted small d-block mb-2"><i class="bi bi-paperclip me-1"></i>Attached Documents & Old Records ({{ $lead->documents->count() }})</label>
+                        <div class="list-group list-group-flush rounded border">
+                            @foreach($lead->documents as $doc)
+                                @php
+                                    $ext = strtolower($doc->file_type ?? pathinfo($doc->file_path, PATHINFO_EXTENSION));
+                                    $icon = match($ext) {
+                                        'pdf' => 'bi-file-earmark-pdf text-danger',
+                                        'doc', 'docx' => 'bi-file-earmark-word text-primary',
+                                        'csv', 'txt', 'xls', 'xlsx' => 'bi-file-earmark-spreadsheet text-success',
+                                        'jpg', 'jpeg', 'png', 'webp' => 'bi-file-earmark-image text-info',
+                                        default => 'bi-file-earmark text-secondary'
+                                    };
+                                    $sizeKb = round(($doc->file_size ?? 0) / 1024, 1);
+                                    $sizeStr = $sizeKb > 1024 ? round($sizeKb / 1024, 2) . ' MB' : $sizeKb . ' KB';
+                                @endphp
+                                <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <i class="bi {{ $icon }} fs-3"></i>
+                                        <div>
+                                            <div class="fw-semibold text-dark">{{ $doc->title }}</div>
+                                            <div class="small text-muted">
+                                                <span class="badge bg-light text-secondary border me-1">{{ $doc->category }}</span>
+                                                {{ $sizeStr }} &bull; {{ $doc->created_at->format('d M Y, h:i A') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary" download>
+                                        <i class="bi bi-download me-1"></i>View / Download
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                     @endif
                 </div>
@@ -268,7 +315,7 @@
         <div class="modal-content">
             <form method="POST" action="{{ route('leads.convert',$lead) }}">
                 @csrf
-                <div class="modal-header"><h5 class="modal-title fw-semibold"><i class="bi bi-arrow-up-right-circle text-warning me-2"></i>Convert to Client</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header"><h5 class="modal-title fw-semibold text-success"><i class="bi bi-person-check-fill text-success me-2"></i>Convert to Client</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Client Type</label>
@@ -298,6 +345,32 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2-circle me-1"></i>Convert Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Reject Modal --}}
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ route('leads.reject', $lead) }}">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-danger"><i class="bi bi-x-circle text-danger me-2"></i>Reject / Mark as Lost</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Are you sure you want to mark visit <strong>{{ $lead->name }} ({{ $lead->lead_code }})</strong> as Lost / Rejected?</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Reason (Optional)</label>
+                        <textarea name="reason" rows="3" class="form-control" placeholder="e.g. Client not interested, budget mismatch, chose competitor..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Confirm Reject</button>
                 </div>
             </form>
         </div>

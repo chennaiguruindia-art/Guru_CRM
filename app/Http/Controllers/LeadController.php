@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LeadRequest;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\Document;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\User;
@@ -15,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeadController extends Controller
 {
@@ -24,16 +26,16 @@ class LeadController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        return $this->listing($request, 'cold_call', null);
+        return $this->listing($request, 'cold_call', Lead::CHANNELS['cold_call']);
     }
 
     /**
-     * Cold Calls / Direct Call carries every Visit whatever its channel — it
-     * took over from the old Visits list.
+     * Cold Calls / Direct Call: only shows visits with source = Cold Call.
+     * Existing Client and Promotion Email visits are excluded.
      */
     public function coldCalls(Request $request): View|JsonResponse
     {
-        return $this->listing($request, 'cold_call', null);
+        return $this->listing($request, 'cold_call', Lead::CHANNELS['cold_call']);
     }
 
     /**
@@ -164,6 +166,10 @@ class LeadController extends Controller
 
     public function store(LeadRequest $request): RedirectResponse|JsonResponse
     {
+        if ($request->hasFile('import_file')) {
+            return $this->import($request);
+        }
+
         $data = $request->validated();
         $data['lead_code'] = Lead::generateCode();
         $data['created_by_id'] = auth()->id();
@@ -180,6 +186,8 @@ class LeadController extends Controller
         // The form has no Source dropdown any more — fall back to the plain
         // Visits channel when nothing specified one.
         $data['source'] ??= Lead::DEFAULT_SOURCE;
+        $data['priority'] ??= 'Medium';
+        $data['expected_value'] ??= 0;
 
         if ($request->hasFile('visiting_card_photo')) {
             $data['visiting_card_photo'] = $request->file('visiting_card_photo')
@@ -187,6 +195,30 @@ class LeadController extends Controller
         }
 
         $lead = Lead::create($data);
+
+        // Upload any attached existing client records / documents
+        if ($request->hasFile('client_documents')) {
+            $category = $request->input('document_category', 'Existing Client Record');
+            foreach ($request->file('client_documents') as $file) {
+                if ($file && $file->isValid()) {
+                    $originalName = $file->getClientOriginalName();
+                    $extension = strtolower($file->getClientOriginalExtension());
+                    $size = $file->getSize();
+                    $path = $file->store('lead-documents', 'public');
+
+                    Document::create([
+                        'documentable_type' => Lead::class,
+                        'documentable_id' => $lead->id,
+                        'title' => pathinfo($originalName, PATHINFO_FILENAME),
+                        'category' => $category,
+                        'file_path' => $path,
+                        'file_type' => $extension,
+                        'file_size' => $size,
+                        'uploaded_by_id' => auth()->id(),
+                    ]);
+                }
+            }
+        }
 
         // Record initial activity
         LeadActivity::create([
@@ -210,6 +242,221 @@ class LeadController extends Controller
         return redirect()->route('leads.show', $lead)->with('success', 'Visit created successfully!');
     }
 
+    /**
+     * Download sample CSV data template for existing clients/leads.
+     */
+    public function downloadSampleTemplate(Request $request): StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="sample_existing_clients_template.csv"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () {
+            $handle = fopen('php://output', 'w');
+
+            // UTF-8 BOM so Excel opens with correct encoding on Windows
+            fputs($handle, "\xEF\xBB\xBF");
+
+            // CSV Columns Header
+            fputcsv($handle, [
+                'Site Name',
+                'Company Name',
+                'Contact Person',
+                'Phone',
+                'Email',
+                'WhatsApp Number',
+                'Address',
+                'City',
+                'State',
+                'Pincode',
+                'Service Type (AMC or Single Project)',
+                'Purpose of Visit',
+                'Follow-up Date (YYYY-MM-DD)',
+                'Remarks'
+            ]);
+
+            // Sample Existing Client Row 1
+            fputcsv($handle, [
+                'Taj Grand Garden - Phase 1',
+                'Taj Hotels & Resorts Ltd',
+                'Suresh Verma',
+                '9840123456',
+                'suresh@tajgardens.com',
+                '9840123456',
+                'No 10 GST Road, Guindy',
+                'Chennai',
+                'Tamil Nadu',
+                '600032',
+                'AMC',
+                'Contract Renewal',
+                now()->addDays(7)->format('Y-m-d'),
+                'Existing AMC client renewal for year 2026'
+            ]);
+
+            // Sample Existing Client Row 2
+            fputcsv($handle, [
+                'Adyar Villa Green',
+                'Adyar Living Spaces Pvt Ltd',
+                'Kavitha Ramesh',
+                '9884567890',
+                'kavitha@adyarvilla.com',
+                '9884567890',
+                '24 Beach Road, Adyar',
+                'Chennai',
+                'Tamil Nadu',
+                '600020',
+                'Single Project',
+                'Site Measurement',
+                '',
+                'Previous customer requesting terrace garden redesign'
+            ]);
+
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    /**
+     * Import existing client CSV data into the database.
+     */
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'import_file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
+            'source' => ['nullable', 'string'],
+        ]);
+
+        $file = $request->file('import_file');
+        $filePath = $file->getRealPath();
+
+        $handle = fopen($filePath, 'r');
+        if (! $handle) {
+            return back()->with('error', 'Unable to open uploaded CSV file.');
+        }
+
+        // Read and strip BOM if present
+        $bom = fread($handle, 3);
+        if ($bom !== "\xEF\xBB\xBF") {
+            rewind($handle);
+        }
+
+        $rawHeader = fgetcsv($handle);
+        if (! $rawHeader) {
+            fclose($handle);
+            return back()->with('error', 'Uploaded CSV file is empty.');
+        }
+
+        // Normalize header names to lowercase alphanumeric for flexible matching
+        $headerMap = [];
+        foreach ($rawHeader as $idx => $colName) {
+            $normalized = strtolower(trim(preg_replace('/[^a-zA-Z0-9]/', '', (string)$colName)));
+            $headerMap[$normalized] = $idx;
+        }
+
+        // Helper to get column value by probable header names or fallback column index
+        $getVal = function(array $row, array $keys, int $fallbackIdx) use ($headerMap): string {
+            foreach ($keys as $k) {
+                if (isset($headerMap[$k]) && isset($row[$headerMap[$k]])) {
+                    return trim((string)$row[$headerMap[$k]]);
+                }
+            }
+            return isset($row[$fallbackIdx]) ? trim((string)$row[$fallbackIdx]) : '';
+        };
+
+        $source = $request->input('source');
+        if (! $source || ! in_array($source, Lead::CHANNELS, true)) {
+            $source = Lead::CHANNELS['existing_client'];
+        }
+
+        $branchId = auth()->user()?->branchId();
+        $userId = auth()->id();
+        $importedCount = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (empty(array_filter($row, fn($v) => trim((string)$v) !== ''))) {
+                continue;
+            }
+
+            $siteName = $getVal($row, ['sitename', 'clientname', 'name', 'site'], 0);
+            $companyName = $getVal($row, ['companyname', 'company', 'organization', 'organisation'], 1);
+            $contactPerson = $getVal($row, ['contactperson', 'person', 'contact'], 2);
+            $phone = $getVal($row, ['phone', 'mobile', 'phonenumber', 'contactnumber'], 3);
+            $email = $getVal($row, ['email', 'emailaddress'], 4);
+            $whatsapp = $getVal($row, ['whatsappnumber', 'whatsapp', 'whatsappno'], 5);
+            $address = $getVal($row, ['address', 'street'], 6);
+            $city = $getVal($row, ['city'], 7);
+            $state = $getVal($row, ['state'], 8);
+            $pincode = $getVal($row, ['pincode', 'postalcode', 'zip'], 9);
+            $serviceType = $getVal($row, ['servicetype', 'service'], 10);
+            $purpose = $getVal($row, ['purposeofvisit', 'purpose'], 11);
+            $rawDate = $getVal($row, ['followupdate', 'nextfollowup', 'followup'], 12);
+            $remarks = $getVal($row, ['remarks', 'notes', 'comments'], 13);
+
+            // If Site Name is empty, fallback to company name or contact person
+            if (empty($siteName)) {
+                $siteName = $companyName ?: $contactPerson;
+            }
+
+            if (empty($siteName) || empty($phone)) {
+                continue;
+            }
+
+            if (! in_array($serviceType, Lead::SERVICE_TYPES, true)) {
+                $serviceType = 'AMC';
+            }
+
+            $followUpDate = null;
+            if (! empty($rawDate) && strtotime($rawDate)) {
+                $followUpDate = date('Y-m-d', strtotime($rawDate));
+            }
+
+            $lead = Lead::create([
+                'lead_code' => Lead::generateCode(),
+                'name' => $siteName,
+                'company_name' => $companyName ?: null,
+                'contact_person' => $contactPerson ?: null,
+                'phone' => $phone,
+                'email' => $email ?: null,
+                'whatsapp' => $whatsapp ?: null,
+                'address' => $address ?: null,
+                'city' => $city ?: 'Chennai',
+                'state' => $state ?: 'Tamil Nadu',
+                'pincode' => $pincode ?: null,
+                'service_type' => $serviceType,
+                'purpose_of_visit' => $purpose ?: 'Contract Renewal',
+                'follow_up_date' => $followUpDate,
+                'remarks' => $remarks ?: 'Imported existing client record',
+                'source' => $source,
+                'client_type' => 'Existing Client',
+                'status' => 'New',
+                'priority' => 'Medium',
+                'assigned_to_id' => $userId,
+                'created_by_id' => $userId,
+                'branch_id' => $branchId,
+            ]);
+
+            LeadActivity::create([
+                'lead_id' => $lead->id,
+                'user_id' => $userId,
+                'activity_type' => 'Imported',
+                'notes' => 'Existing client record imported from CSV.',
+                'follow_up_date' => $lead->follow_up_date,
+            ]);
+
+            AuditLogger::log('import', 'leads', $lead->id, null, $lead->toArray());
+            $importedCount++;
+        }
+
+        fclose($handle);
+
+        $targetRoute = $this->listRouteFor($source);
+
+        return redirect()->route($targetRoute)->with('success', "{$importedCount} Existing Client record(s) imported and saved to database successfully!");
+    }
+
     public function show(Lead $lead): View
     {
         $lead->load(['assignedTo', 'createdBy', 'convertedCustomer', 'activities.user']);
@@ -227,6 +474,7 @@ class LeadController extends Controller
     {
         $oldValues = $lead->toArray();
         $data = $request->validated();
+        $data['priority'] ??= $lead->priority ?? 'Medium';
 
         if ($request->hasFile('visiting_card_photo')) {
             $previous = $lead->visiting_card_photo;
@@ -243,6 +491,30 @@ class LeadController extends Controller
         }
 
         $lead->update($data);
+
+        // Upload any attached existing client records / documents on edit
+        if ($request->hasFile('client_documents')) {
+            $category = $request->input('document_category', 'Existing Client Record');
+            foreach ($request->file('client_documents') as $file) {
+                if ($file && $file->isValid()) {
+                    $originalName = $file->getClientOriginalName();
+                    $extension = strtolower($file->getClientOriginalExtension());
+                    $size = $file->getSize();
+                    $path = $file->store('lead-documents', 'public');
+
+                    Document::create([
+                        'documentable_type' => Lead::class,
+                        'documentable_id' => $lead->id,
+                        'title' => pathinfo($originalName, PATHINFO_FILENAME),
+                        'category' => $category,
+                        'file_path' => $path,
+                        'file_type' => $extension,
+                        'file_size' => $size,
+                        'uploaded_by_id' => auth()->id(),
+                    ]);
+                }
+            }
+        }
 
         LeadActivity::create([
             'lead_id' => $lead->id,
@@ -290,10 +562,7 @@ class LeadController extends Controller
 
     public function convert(Request $request, Lead $lead, LeadConversionService $service): RedirectResponse|JsonResponse
     {
-        // Converting hands over the customer record, so it is reserved for the
-        // Super Admin — checked here as well as by the route permission, so a
-        // grant made in the role matrix cannot widen it.
-        abort_unless($request->user()?->hasRole('super-admin'), 403);
+        abort_unless($request->user()?->can('leads.convert') || $request->user()?->hasRole(['super-admin', 'admin']), 403);
 
         $request->validate([
             'create_project' => ['nullable', 'boolean'],
@@ -311,6 +580,38 @@ class LeadController extends Controller
         }
 
         return redirect()->route('customers.show', $result['customer'])->with('success', 'Visit successfully converted to Client!');
+    }
+
+    public function reject(Request $request, Lead $lead): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $lead->update([
+            'status' => 'Lost',
+        ]);
+
+        LeadActivity::create([
+            'lead_id' => $lead->id,
+            'user_id' => auth()->id(),
+            'activity_type' => 'Status Change',
+            'notes' => 'Visit marked as Rejected / Lost.' . (!empty($validated['reason']) ? ' Reason: ' . $validated['reason'] : ''),
+        ]);
+
+        AuditLogger::log('status_change', 'leads', $lead->id, null, [
+            'status' => 'Lost',
+            'reason' => $validated['reason'] ?? null,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Visit marked as Rejected / Lost.',
+            ]);
+        }
+
+        return back()->with('success', 'Visit marked as Rejected / Lost.');
     }
 
     public function addActivity(Request $request, Lead $lead): RedirectResponse|JsonResponse

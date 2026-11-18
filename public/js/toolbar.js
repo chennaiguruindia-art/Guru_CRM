@@ -155,11 +155,82 @@
     const notifList = document.getElementById('notif-list');
     const notifBadge = document.getElementById('notif-badge');
     const notifCount = document.getElementById('notif-count');
+    const notifMarkAllBtn = document.getElementById('notif-mark-all-btn');
 
     if (notifButton && notifList) {
         const SEVERITY_ICON = { danger: 'text-danger', warning: 'text-warning', info: 'text-info' };
         let lastLoaded = 0;
         let loading = false;
+
+        function updateBadge(count) {
+            const badgeNum = document.getElementById('notif-badge-num');
+            if (notifBadge) {
+                notifBadge.hidden = count === 0;
+                if (badgeNum) badgeNum.textContent = String(count);
+            }
+            if (notifCount) notifCount.textContent = count === 0 ? 'All clear' : count + ' open';
+            if (notifMarkAllBtn) notifMarkAllBtn.hidden = count === 0;
+        }
+
+        function showEmptyState() {
+            notifList.innerHTML =
+                '<div class="notif-empty p-3 text-center text-muted">' +
+                '<i class="bi bi-check2-circle text-success fs-3 d-block mb-1"></i>' +
+                '<div><strong>Nothing needs attention</strong></div>' +
+                '<small>All caught up! No pending notifications.</small>' +
+                '</div>';
+            if (notifMarkAllBtn) notifMarkAllBtn.hidden = true;
+        }
+
+        async function markAsRead(key, elementToFade) {
+            if (elementToFade) {
+                elementToFade.style.opacity = '0.4';
+                elementToFade.style.pointerEvents = 'none';
+            }
+            try {
+                const response = await ajaxRequest('/notifications/mark-read', {
+                    method: 'POST',
+                    body: { key: key }
+                });
+
+                if (elementToFade) {
+                    elementToFade.remove();
+                }
+
+                const remaining = response && typeof response.count === 'number' ? response.count : 0;
+                updateBadge(remaining);
+
+                if (!notifList.querySelector('.notif-item')) {
+                    showEmptyState();
+                }
+            } catch (err) {
+                console.error('Failed to mark notification as read:', err);
+                if (elementToFade) {
+                    elementToFade.style.opacity = '1';
+                    elementToFade.style.pointerEvents = '';
+                }
+            }
+        }
+
+        async function markAllAsRead() {
+            if (!notifList.querySelector('.notif-item')) return;
+            const originalText = notifMarkAllBtn ? notifMarkAllBtn.textContent : '';
+            if (notifMarkAllBtn) notifMarkAllBtn.textContent = 'Clearing…';
+
+            try {
+                await ajaxRequest('/notifications/mark-read', {
+                    method: 'POST',
+                    body: { all: true }
+                });
+
+                updateBadge(0);
+                showEmptyState();
+            } catch (err) {
+                console.error('Failed to mark all as read:', err);
+            } finally {
+                if (notifMarkAllBtn) notifMarkAllBtn.textContent = originalText;
+            }
+        }
 
         async function loadNotifications(force) {
             if (loading) return;
@@ -173,38 +244,64 @@
                 const items = (data && data.items) || [];
                 const count = (data && data.count) || 0;
 
-                const badgeNum = document.getElementById('notif-badge-num');
-                if (notifBadge) {
-                    notifBadge.hidden = count === 0;
-                    if (badgeNum) badgeNum.textContent = String(count);
-                }
-                if (notifCount) notifCount.textContent = count === 0 ? 'All clear' : count + ' open';
+                updateBadge(count);
 
                 if (!items.length) {
-                    notifList.innerHTML =
-                        '<div class="notif-empty">' +
-                        '<i class="bi bi-check2-circle"></i>' +
-                        '<div><strong>Nothing needs attention</strong></div>' +
-                        '<small>Overdue invoices, tasks and visits due today will show up here.</small>' +
-                        '</div>';
+                    showEmptyState();
                     return;
                 }
 
                 notifList.innerHTML = items.map((item) =>
-                    '<a href="' + esc(item.url) + '" class="list-group-item list-group-item-action notif-item p-2">' +
+                    '<div class="list-group-item list-group-item-action notif-item p-2 d-flex align-items-center justify-content-between gap-2" data-key="' + esc(item.key) + '">' +
+                    '<a href="' + esc(item.url) + '" class="d-flex align-items-center gap-2 text-decoration-none flex-grow-1 overflow-hidden notif-link" data-key="' + esc(item.key) + '">' +
                     '<span class="notif-dot ' + esc(SEVERITY_ICON[item.severity] || 'text-info') + '">' +
                     '<i class="bi ' + esc(item.icon) + '"></i></span>' +
                     '<span class="flex-grow-1 overflow-hidden">' +
                     '<span class="d-block fw-semibold text-dark text-truncate">' + esc(item.title) + '</span>' +
-                    '<span class="d-block text-muted text-truncate" style="font-size:0.75rem">' + esc(item.label) + ' · ' + esc(item.meta) + '</span>' +
+                    '<span class="d-block text-muted text-truncate" style="font-size:0.75rem">' + esc(item.label) + (item.meta ? ' · ' + esc(item.meta) : '') + '</span>' +
                     '</span>' +
-                    '</a>'
+                    '</a>' +
+                    '<button type="button" class="btn btn-sm btn-light border text-success notif-read-btn flex-shrink-0" title="Mark as read" data-key="' + esc(item.key) + '" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 6px;">' +
+                    '<i class="bi bi-check2 me-1"></i>Mark read' +
+                    '</button>' +
+                    '</div>'
                 ).join('');
             } catch (error) {
                 notifList.innerHTML = '<div class="p-3 text-muted small mb-0">Could not load notifications.</div>';
             } finally {
                 loading = false;
             }
+        }
+
+        notifList.addEventListener('click', (e) => {
+            const readBtn = e.target.closest('.notif-read-btn');
+            if (readBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const key = readBtn.getAttribute('data-key');
+                const row = readBtn.closest('.notif-item');
+                markAsRead(key, row);
+                return;
+            }
+
+            const link = e.target.closest('.notif-link');
+            if (link) {
+                const key = link.getAttribute('data-key');
+                if (key) {
+                    ajaxRequest('/notifications/mark-read', {
+                        method: 'POST',
+                        body: { key: key }
+                    }).catch(() => {});
+                }
+            }
+        });
+
+        if (notifMarkAllBtn) {
+            notifMarkAllBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                markAllAsRead();
+            });
         }
 
         notifButton.addEventListener('click', () => loadNotifications(false));

@@ -133,9 +133,16 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // CRM Section
+    Route::get('/leads/sample-template', [LeadController::class, 'downloadSampleTemplate'])
+        ->name('leads.sample_template')->middleware('permission:leads.view');
+    Route::post('/leads/import', [LeadController::class, 'import'])
+        ->name('leads.import')->middleware('permission:' . $pickPermission('leads', 'create'));
+
     $resourceWithPerms('leads', LeadController::class, 'leads');
     Route::post('/leads/{lead}/convert', [LeadController::class, 'convert'])
         ->name('leads.convert')->middleware('permission:leads.convert');
+    Route::post('/leads/{lead}/reject', [LeadController::class, 'reject'])
+        ->name('leads.reject')->middleware('permission:' . $pickPermission('leads', 'edit', 'delete'));
     Route::post('/leads/{lead}/activity', [LeadController::class, 'addActivity'])
         ->name('leads.activity')->middleware('permission:' . $pickPermission('leads', 'edit', 'create'));
 
@@ -222,6 +229,7 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
     // filter their own results down to what the caller is allowed to see.
     Route::get('/search', SearchController::class)->name('search');
     Route::get('/notifications', NotificationController::class)->name('notifications');
+    Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
 });
 
 Route::get('/run-migrations', function () {

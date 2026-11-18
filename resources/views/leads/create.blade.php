@@ -20,10 +20,19 @@
         </ol></nav>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
+        <a href="{{ route('leads.sample_template') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Sample Data (CSV)
+        </a>
         <span class="badge bg-soft-info text-info border"><i class="bi bi-inbox me-1"></i>Saved under {{ $channelLabel }}</span>
         <a href="{{ route($channelRoute) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
     </div>
 </div>
+
+{{-- Standalone form for CSV bulk import so it never triggers single-visit validation on Site Name/Phone --}}
+<form id="bulk-csv-form" method="POST" action="{{ route('leads.import') }}" enctype="multipart/form-data">
+    @csrf
+    <input type="hidden" name="source" value="{{ $source }}">
+</form>
 
 <form method="POST" action="{{ route('leads.store') }}" id="lead-form" enctype="multipart/form-data">
     @csrf
@@ -90,6 +99,110 @@
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold text-secondary">Pincode</label>
                             <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}" placeholder="560001">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Existing Client Old Records & Data Upload --}}
+            <div class="card border-0 shadow-sm mb-4 border-top border-4 border-primary" id="existing-client-docs-card">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="mb-0 fw-semibold text-primary">
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>Existing Client Old Records & Data Upload
+                        </h6>
+                        <small class="text-muted">Sample data download panni, client data fill panni upload panna direct-aa DB-la store aagidum.</small>
+                    </div>
+                    <a href="{{ route('leads.sample_template') }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Sample Data (CSV)
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    {{-- Nav Tabs --}}
+                    <ul class="nav nav-pills mb-3 gap-2" id="clientRecordTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active small py-1 px-3" id="tab-csv-import" data-bs-toggle="pill" data-bs-target="#pane-csv-import" type="button" role="tab">
+                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>1. Bulk Upload Sample CSV to DB
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link small py-1 px-3" id="tab-doc-upload" data-bs-toggle="pill" data-bs-target="#pane-doc-upload" type="button" role="tab">
+                                <i class="bi bi-paperclip me-1"></i>2. Attach Old Documents / Files
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="clientRecordTabContent">
+                        {{-- Pane 1: CSV Bulk Import --}}
+                        <div class="tab-pane fade show active" id="pane-csv-import" role="tabpanel">
+                            <div class="p-3 bg-light rounded border mb-3">
+                                <div class="row align-items-center g-3">
+                                    <div class="col-md-7">
+                                        <div class="fw-semibold text-dark small mb-1">
+                                            <i class="bi bi-info-circle-fill text-primary me-1"></i>How to upload and store in Database:
+                                        </div>
+                                        <ol class="small text-muted mb-0 ps-3">
+                                            <li>Click <strong>Download Sample Data</strong> to get the sample CSV format.</li>
+                                            <li>Fill in existing clients' details (Name, Phone, Address, Service, Follow-up date).</li>
+                                            <li>Select the filled CSV below and click <strong>Upload & Save to DB</strong>.</li>
+                                        </ol>
+                                    </div>
+                                    <div class="col-md-5 text-md-end">
+                                        <a href="{{ route('leads.sample_template') }}" class="btn btn-success btn-sm w-100 py-2 fw-semibold">
+                                            <i class="bi bi-download me-1"></i>Download Sample Template (CSV)
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-8">
+                                    <label class="form-label small fw-semibold text-secondary">Select Filled Sample CSV File</label>
+                                    <input type="file" name="import_file" id="import_file" form="bulk-csv-form" class="form-control" accept=".csv,.txt" required>
+                                </div>
+                                <div class="col-md-4 pt-md-4">
+                                    <button type="submit" form="bulk-csv-form" formnovalidate class="btn btn-primary w-100 py-2 fw-semibold shadow-sm">
+                                        <i class="bi bi-database-fill-add me-1"></i>Upload & Save to DB
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Pane 2: Attach Old Files & Documents --}}
+                        <div class="tab-pane fade" id="pane-doc-upload" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-semibold text-secondary">Record / Document Category</label>
+                                    <select name="document_category" class="form-select">
+                                        <option value="Past Agreement / Contract" selected>Past Agreement / Contract</option>
+                                        <option value="Previous Quotation / Estimate">Previous Quotation / Estimate</option>
+                                        <option value="Old Invoices & Payment History">Old Invoices & Payment History</option>
+                                        <option value="Site Plans & Garden Photos">Site Plans & Garden Photos</option>
+                                        <option value="Maintenance / Service Log">Maintenance / Service Log</option>
+                                        <option value="Existing Client Record">Other Old Record</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-7">
+                                    <label for="client_documents" class="form-label small fw-semibold text-secondary">
+                                        Select Files (CSV, Excel, PDF, Word, Photos)
+                                    </label>
+                                    <input type="file" name="client_documents[]" id="client_documents"
+                                           class="form-control @error('client_documents.*') is-invalid @enderror"
+                                           multiple
+                                           accept=".csv,.txt,.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+                                           onchange="handleClientFilesSelect(this)">
+                                    @error('client_documents.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    <div class="form-text">CSV, Excel, PDF, Word, JPG, PNG up to 10 MB each. Select multiple files together.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div id="selected-files-list" class="p-3 bg-light rounded border d-none">
+                                        <div class="small fw-semibold text-secondary mb-2"><i class="bi bi-paperclip me-1"></i>Selected Files to Upload:</div>
+                                        <div id="selected-files-items" class="d-flex flex-column gap-2"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -187,33 +300,13 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Priority <span class="text-danger">*</span></label>
-                        <select name="priority" class="form-select" required>
-                            @foreach(['Low','Medium','High','Urgent'] as $p)
-                                <option value="{{ $p }}" @selected(old('priority','Medium')===$p)>{{ $p }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="mb-0 fw-semibold"><i class="bi bi-calendar3 text-info me-2"></i>Expected Timeline</h6>
-                </div>
-                <div class="card-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Expected Value (₹)</label>
-                        <input type="number" name="expected_value" class="form-control" value="{{ old('expected_value',0) }}" min="0" step="1000">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Expected Closing Date</label>
-                        <input type="date" name="expected_closing_date" class="form-control" value="{{ old('expected_closing_date') }}">
-                    </div>
                     <div class="mb-0">
-                        <label class="form-label small fw-semibold text-secondary">Follow-up Date</label>
-                        <input type="date" name="follow_up_date" class="form-control" value="{{ old('follow_up_date', now()->format('Y-m-d')) }}">
+                        <label for="follow_up_date" class="form-label small fw-semibold text-secondary">Follow-up Date <span class="text-muted fw-normal">(optional)</span></label>
+                        <input type="date" name="follow_up_date" id="follow_up_date"
+                               class="form-control @error('follow_up_date') is-invalid @enderror"
+                               value="{{ old('follow_up_date') }}">
+                        <div class="form-text">Optional. If the customer agreed on a follow-up date, pick it here. On that date, an alert reminder will notify you automatically.</div>
+                        @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </div>
@@ -229,6 +322,51 @@
 
 @push('scripts')
 <script>
+    function handleClientFilesSelect(input) {
+        const container = document.getElementById('selected-files-list');
+        const items = document.getElementById('selected-files-items');
+        if (!container || !items) return;
+
+        items.innerHTML = '';
+        if (!input.files || input.files.length === 0) {
+            container.classList.add('d-none');
+            return;
+        }
+
+        container.classList.remove('d-none');
+        Array.from(input.files).forEach((file) => {
+            const ext = file.name.split('.').pop().toLowerCase();
+            let iconClass = 'bi-file-earmark text-secondary';
+            if (['pdf'].includes(ext)) iconClass = 'bi-file-earmark-pdf text-danger';
+            else if (['doc', 'docx'].includes(ext)) iconClass = 'bi-file-earmark-word text-primary';
+            else if (['csv', 'txt', 'xls', 'xlsx'].includes(ext)) iconClass = 'bi-file-earmark-spreadsheet text-success';
+            else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) iconClass = 'bi-file-earmark-image text-info';
+
+            const sizeKb = (file.size / 1024).toFixed(1);
+            const sizeStr = sizeKb > 1024 ? (sizeKb / 1024).toFixed(2) + ' MB' : sizeKb + ' KB';
+
+            const row = document.createElement('div');
+            row.className = 'd-flex align-items-center justify-content-between p-2 bg-white rounded border small';
+            row.innerHTML = `
+                <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                    <i class="bi ${iconClass} fs-5"></i>
+                    <div>
+                        <div class="fw-semibold text-dark text-truncate" style="max-width: 320px;">${escHtml(file.name)}</div>
+                        <span class="text-muted" style="font-size: 0.72rem;">${sizeStr} · .${ext.toUpperCase()}</span>
+                    </div>
+                </div>
+                <span class="badge bg-success-subtle text-success border">Ready to upload</span>
+            `;
+            items.appendChild(row);
+        });
+    }
+
+    function escHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     function previewCard(input, previewId) {
         const preview = document.getElementById(previewId);
         if (!preview) return;

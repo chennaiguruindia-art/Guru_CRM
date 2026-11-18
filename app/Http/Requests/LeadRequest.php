@@ -33,13 +33,18 @@ class LeadRequest extends FormRequest
             'service_type' => ['nullable', 'string', 'in:' . implode(',', \App\Models\Lead::SERVICE_TYPES)],
             'interested_service' => ['nullable', 'string'],
             'status' => ['required', 'string'],
-            'priority' => ['required', 'string'],
+            'priority' => ['nullable', 'string'],
             'expected_value' => ['nullable', 'numeric', 'min:0'],
             'expected_closing_date' => ['nullable', 'date'],
             'follow_up_date' => ['nullable', 'date'],
             'remarks' => ['nullable', 'string'],
             // Photograph of the card handed over on site.
             'visiting_card_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            // Existing client documents & old records (multiple files).
+            'document_category' => ['nullable', 'string', 'max:100'],
+            'client_documents' => ['nullable', 'array'],
+            'client_documents.*' => ['file', 'mimes:csv,txt,pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
+            'import_file' => ['nullable', 'file', 'mimes:csv,txt', 'max:10240'],
         ];
     }
 

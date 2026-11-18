@@ -120,6 +120,7 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
         // Global Search & Notifications
         Route::get('search', SearchController::class)->name('api.search');
         Route::get('notifications', NotificationController::class)->name('api.notifications');
+        Route::post('notifications/mark-read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark_read');
 
         // ─── CRM & Clients ──────────────────────────────────────────────
         $apiResourceWithPerms('leads', LeadController::class, 'leads');

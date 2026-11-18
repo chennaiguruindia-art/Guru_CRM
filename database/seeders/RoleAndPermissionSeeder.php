@@ -66,12 +66,11 @@ class RoleAndPermissionSeeder extends Seeder
         // Super Admin bypasses hasPermission() entirely, but is granted the
         // full set anyway so the Roles & Permissions matrix reads correctly.
         //
-        // `leads.convert` is held by Super Admin alone — converting hands over
-        // the customer record, so it is withheld from Admin too.
-        $superAdminOnly = ['leads.convert'];
+        // Roles and permissions matrix
+        $superAdminOnly = [];
 
         // Held by Admin and Super Admin but never by a Field Marketer: the
-        // two extra CRM channels. sync() below replaces each role's set
+        // two extra CRM channels and lead conversion. sync() below replaces each role's set
         // outright, so a re-run also clears anything left behind earlier.
         $adminAndAbove = ['leads.convert', 'leads.promotion', 'leads.existing_client'];
 

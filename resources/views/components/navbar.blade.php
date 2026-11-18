@@ -47,12 +47,17 @@
                     <span class="visually-hidden">items need attention</span>
                 </span>
             </button>
-            <div class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0" style="width: 340px; max-width: calc(100vw - 20px);">
+            <div class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0" style="width: 360px; max-width: calc(100vw - 20px);">
                 <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light rounded-top">
-                    <h6 class="mb-0 fw-semibold">Needs Attention</h6>
-                    <span id="notif-count" class="badge bg-success-subtle text-success">…</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0 fw-semibold">Needs Attention</h6>
+                        <span id="notif-count" class="badge bg-success-subtle text-success">…</span>
+                    </div>
+                    <button type="button" id="notif-mark-all-btn" class="btn btn-link btn-sm text-decoration-none text-muted p-0 small fw-medium" title="Mark all notifications as read" style="font-size: 0.78rem;">
+                        Mark all as read
+                    </button>
                 </div>
-                <div id="notif-list" class="list-group list-group-flush small" style="max-height: 320px; overflow-y: auto;">
+                <div id="notif-list" class="list-group list-group-flush small" style="max-height: 340px; overflow-y: auto;">
                     <div class="p-3 text-muted small mb-0">Loading…</div>
                 </div>
                 <div class="p-2 text-center border-top">

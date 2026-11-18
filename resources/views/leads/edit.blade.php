@@ -98,6 +98,51 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Client Documents & Records --}}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-semibold text-primary"><i class="bi bi-folder2-open me-2"></i>Client Documents & Old Records</h6>
+                    <span class="badge bg-primary-subtle text-primary">Multi-file upload</span>
+                </div>
+                <div class="card-body p-4">
+                    @if($lead->documents && $lead->documents->count())
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Existing Uploaded Files ({{ $lead->documents->count() }})</label>
+                            <div class="list-group list-group-flush border rounded small">
+                                @foreach($lead->documents as $doc)
+                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <div class="d-flex align-items-center gap-2 text-truncate">
+                                            <i class="bi bi-file-earmark-check text-success fs-5"></i>
+                                            <span class="fw-semibold text-dark text-truncate" style="max-width: 280px;">{{ $doc->title }}</span>
+                                            <span class="badge bg-light text-secondary border">{{ $doc->category }}</span>
+                                        </div>
+                                        <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="btn btn-sm btn-link text-decoration-none">View</a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-secondary">Document Category</label>
+                            <select name="document_category" class="form-select">
+                                <option value="Past Agreement / Contract" selected>Past Agreement / Contract</option>
+                                <option value="Previous Quotation / Estimate">Previous Quotation / Estimate</option>
+                                <option value="Old Invoices & Payment History">Old Invoices & Payment History</option>
+                                <option value="Site Plans & Garden Photos">Site Plans & Garden Photos</option>
+                                <option value="Maintenance / Service Log">Maintenance / Service Log</option>
+                                <option value="Existing Client Record">Other Old Record</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-secondary">Upload More Files (CSV, Excel, PDF, Photos)</label>
+                            <input type="file" name="client_documents[]" class="form-control" multiple accept=".csv,.txt,.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-12 col-lg-4">
@@ -162,26 +207,13 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Priority <span class="text-danger">*</span></label>
-                        <select name="priority" class="form-select" required>
-                            @foreach(['Low','Medium','High','Urgent'] as $p)
-                                <option value="{{ $p }}" @selected(old('priority',$lead->priority)===$p)>{{ $p }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <hr>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Expected Value (₹)</label>
-                        <input type="number" name="expected_value" class="form-control" value="{{ old('expected_value',$lead->expected_value) }}" min="0">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Expected Closing Date</label>
-                        <input type="date" name="expected_closing_date" class="form-control" value="{{ old('expected_closing_date', $lead->expected_closing_date?->format('Y-m-d')) }}">
-                    </div>
                     <div class="mb-0">
-                        <label class="form-label small fw-semibold text-secondary">Follow-up Date</label>
-                        <input type="date" name="follow_up_date" class="form-control" value="{{ old('follow_up_date', $lead->follow_up_date?->format('Y-m-d')) }}">
+                        <label for="follow_up_date" class="form-label small fw-semibold text-secondary">Follow-up Date <span class="text-muted fw-normal">(optional)</span></label>
+                        <input type="date" name="follow_up_date" id="follow_up_date"
+                               class="form-control @error('follow_up_date') is-invalid @enderror"
+                               value="{{ old('follow_up_date', $lead->follow_up_date?->format('Y-m-d')) }}">
+                        <div class="form-text">Optional. If customer gives a follow-up date, set it here to get automated reminders.</div>
+                        @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </div>

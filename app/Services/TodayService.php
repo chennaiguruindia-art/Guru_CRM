@@ -27,7 +27,7 @@ class TodayService
      *
      * @return array<int, array{type:string,icon:string,severity:string,label:string,title:string,meta:string,url:string}>
      */
-    public function items(int $limit = 15): array
+    public function items(int $limit = 15, ?int $userId = null): array
     {
         $items = [];
 
@@ -37,6 +37,20 @@ class TodayService
         $items = array_merge($items, $this->expiringAmc());
         $items = array_merge($items, $this->openComplaints());
         $items = array_merge($items, $this->lowStock());
+
+        $userId ??= auth()->id();
+        if ($userId) {
+            $readKeys = $this->safe(fn () =>
+                \Illuminate\Support\Facades\DB::table('notification_reads')
+                    ->where('user_id', $userId)
+                    ->pluck('notification_key')
+                    ->all()
+            );
+            if (!empty($readKeys)) {
+                $readMap = array_flip($readKeys);
+                $items = array_values(array_filter($items, fn ($i) => !isset($readMap[$i['key']])));
+            }
+        }
 
         usort($items, function ($a, $b) {
             $bySeverity = self::SEVERITY_ORDER[$a['severity']] <=> self::SEVERITY_ORDER[$b['severity']];
@@ -64,19 +78,23 @@ class TodayService
     private function leadFollowUps(): array
     {
         return $this->safe(function () {
+            $today = now()->toDateString();
+
             return Lead::with('assignedTo')
-                ->whereDate('follow_up_date', now()->toDateString())
+                ->whereNotNull('follow_up_date')
+                ->whereDate('follow_up_date', '<=', $today)
                 ->whereNotIn('status', ['Converted', 'Lost'])
                 ->orderBy('follow_up_date')
-                ->limit(5)
+                ->limit(10)
                 ->get()
                 ->map(fn (Lead $l) => $this->make(
-                    'lead', 'bi-funnel',
-                    'warning',
-                    'Visit follow-up today',
+                    'lead', 'bi-calendar-check',
+                    $l->follow_up_date && $l->follow_up_date->lt(now()->startOfDay()) ? 'danger' : 'warning',
+                    $l->follow_up_date && $l->follow_up_date->lt(now()->startOfDay()) ? 'Visit follow-up overdue' : 'Visit follow-up today',
                     $l->name,
-                    $this->join([$l->lead_code, $l->status, $l->assignedTo?->name]),
+                    $this->join([$l->lead_code, $l->follow_up_date?->format('d M Y'), $l->status, $l->assignedTo?->name]),
                     route('leads.show', $l),
+                    'lead-' . $l->id . '-' . ($l->follow_up_date?->format('Y-m-d') ?? 'due'),
                 ))->all();
         });
     }
@@ -101,6 +119,7 @@ class TodayService
                     $t->title,
                     $this->join([$t->due_date->format('d M Y'), $t->priority, $t->status]),
                     route('tasks.show', $t),
+                    'task-' . $t->id . '-' . ($t->due_date?->format('Y-m-d') ?? 'due'),
                 ))->all();
         });
     }
@@ -126,6 +145,7 @@ class TodayService
                     $i->customer?->name ?? $i->invoice_number,
                     $this->join([$i->invoice_number, '₹' . number_format((float) $i->balance_amount, 2) . ' due', $i->due_date?->format('d M Y')]),
                     route('invoices.show', $i),
+                    'invoice-' . $i->id,
                 ))->all();
         });
     }
@@ -148,6 +168,7 @@ class TodayService
                     $c->customer?->name ?? $c->amc_number,
                     $this->join([$c->amc_number, 'ends ' . $c->end_date->format('d M Y')]),
                     route('amc.show', $c),
+                    'amc-' . $c->id,
                 ))->all();
         });
     }
@@ -171,6 +192,7 @@ class TodayService
                     $c->subject,
                     $this->join([$c->ticket_number, $c->priority, $c->status]),
                     route('complaints.show', $c),
+                    'complaint-' . $c->id,
                 ))->all();
         });
     }
@@ -192,13 +214,15 @@ class TodayService
                     $i->name,
                     $this->join([$i->sku, $i->current_stock . ' left (min ' . $i->minimum_stock . ')']),
                     route('inventory.show', $i),
+                    'stock-' . $i->id,
                 ))->all();
         });
     }
 
-    private function make(string $type, string $icon, string $severity, string $label, string $title, string $meta, string $url): array
+    private function make(string $type, string $icon, string $severity, string $label, string $title, string $meta, string $url, ?string $key = null): array
     {
-        return compact('type', 'icon', 'severity', 'label', 'title', 'meta', 'url');
+        $key = $key ?: ($type . '-' . md5($label . $title . $url));
+        return compact('type', 'icon', 'severity', 'label', 'title', 'meta', 'url', 'key');
     }
 
     private function join(array $parts): string

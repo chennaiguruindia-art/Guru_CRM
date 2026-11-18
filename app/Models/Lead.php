@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Lead extends Model
@@ -137,6 +138,11 @@ class Lead extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(LeadActivity::class)->latest();
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable')->latest();
     }
 
     /**

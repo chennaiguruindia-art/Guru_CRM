@@ -23,9 +23,14 @@
         <h4 class="fw-bold mb-0 text-dark"><i class="bi {{ $pageIcon }} text-success me-2"></i>{{ $pageTitle }}</h4>
         <p class="text-muted small mb-0">{{ $pageSubtitle }}</p>
     </div>
-    <a href="{{ $createUrl }}" class="btn btn-success shadow-sm">
-        <i class="bi bi-plus-lg me-1"></i> Add New Visit
-    </a>
+    <div class="d-flex gap-2 align-items-center">
+        <a href="{{ route('leads.sample_template') }}" class="btn btn-outline-success shadow-sm" title="Download Sample CSV Data Template">
+            <i class="bi bi-file-earmark-arrow-down me-1"></i> Sample CSV
+        </a>
+        <a href="{{ $createUrl }}" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add New Visit
+        </a>
+    </div>
 </div>
 
 {{-- Filters --}}
@@ -33,10 +38,10 @@
     <div class="card-body py-3">
         <form method="GET" action="{{ route($listRoute) }}" id="filter-form">
             <div class="row g-2">
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-5">
                     <input type="text" name="search" class="form-control form-control-sm" placeholder="Search name, phone, company…" value="{{ request('search') }}">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-3">
                     <select name="status" class="form-select form-select-sm">
                         <option value="">All Statuses</option>
                         @foreach(['New','Contacted','Qualified','Site Visit Required','Quotation Required','Converted','Lost'] as $s)
@@ -44,16 +49,6 @@
                         @endforeach
                     </select>
                 </div>
-                @if($channel === 'cold_call')
-                <div class="col-6 col-md-2">
-                    <select name="source" class="form-select form-select-sm">
-                        <option value="">All Sources</option>
-                        @foreach($sources as $src)
-                            <option value="{{ $src }}" @selected(request('source')===$src)>{{ $src }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                @endif
                 @if($branches->isNotEmpty())
                 <div class="col-6 col-md-2">
                     <select name="branch_id" class="form-select form-select-sm">
@@ -64,14 +59,6 @@
                     </select>
                 </div>
                 @endif
-                <div class="col-6 col-md-2">
-                    <select name="priority" class="form-select form-select-sm">
-                        <option value="">All Priorities</option>
-                        @foreach(['Low','Medium','High','Urgent'] as $p)
-                            <option value="{{ $p }}" @selected(request('priority')===$p)>{{ $p }}</option>
-                        @endforeach
-                    </select>
-                </div>
                 <div class="col-6 col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-success btn-sm flex-fill"><i class="bi bi-search me-1"></i>Filter</button>
                     <a href="{{ route($listRoute) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a>
@@ -104,7 +91,6 @@
                     <th>Source</th>
                     <th>Service Interest</th>
                     <th>Status</th>
-                    <th>Priority</th>
                     <th>Assigned To</th>
                     <th>Follow-up</th>
                     <th class="text-end">Actions</th>
@@ -124,9 +110,6 @@
                     <td>
                         <span class="badge badge-status {{ $lead->status_badge_class }}">{{ $lead->status }}</span>
                     </td>
-                    <td>
-                        <span class="badge {{ $lead->priority_badge_class }}">{{ $lead->priority }}</span>
-                    </td>
                     <td class="small">{{ $lead->assignedTo?->name ?? '—' }}</td>
                     <td class="small {{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
                         {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
@@ -137,10 +120,17 @@
                             <a href="{{ route('leads.edit',$lead) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                             @can('leads.convert')
                             @if($lead->status !== 'Converted')
-                            <button class="btn btn-sm btn-outline-warning btn-convert" data-id="{{ $lead->id }}" data-name="{{ $lead->name }}" data-service="{{ $lead->service_type }}" title="Convert to Client"><i class="bi bi-arrow-up-right-circle"></i></button>
+                            <button class="btn btn-sm btn-outline-success btn-convert" data-id="{{ $lead->id }}" data-name="{{ $lead->name }}" data-service="{{ $lead->service_type }}" title="Convert to Client"><i class="bi bi-person-check"></i></button>
+                            @if($lead->status !== 'Lost')
+                            <button class="btn btn-sm btn-outline-danger btn-reject" data-id="{{ $lead->id }}" data-name="{{ $lead->name }}" title="Reject / Mark as Lost"><i class="bi bi-x-circle"></i></button>
+                            @endif
+                            @else
+                            @if($lead->converted_customer_id)
+                            <a href="{{ route('customers.show', $lead->converted_customer_id) }}" class="btn btn-sm btn-success text-white" title="Client: {{ $lead->convertedCustomer?->customer_code }}"><i class="bi bi-person-check-fill"></i></a>
+                            @endif
                             @endif
                             @endcan
-                            <button class="btn btn-sm btn-outline-danger btn-delete" data-id="{{ $lead->id }}" data-name="{{ $lead->name }}" title="Delete"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-sm btn-outline-secondary btn-delete" data-id="{{ $lead->id }}" data-name="{{ $lead->name }}" title="Delete"><i class="bi bi-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -169,7 +159,7 @@
         <div class="modal-content">
             <form id="convert-form" method="POST">
                 @csrf
-                <div class="modal-header"><h5 class="modal-title fw-semibold"><i class="bi bi-arrow-up-right-circle text-warning me-2"></i>Convert Visit to Client</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header"><h5 class="modal-title fw-semibold text-success"><i class="bi bi-person-check-fill text-success me-2"></i>Convert Visit to Client</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <p class="text-muted small">Converting: <strong id="convert-lead-name"></strong></p>
                     <p class="small d-none mb-0 py-2 px-3 rounded border bg-light" id="convert-service-note"></p>
@@ -194,6 +184,29 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2-circle me-1"></i>Convert Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Reject Modal --}}
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="reject-form" method="POST">
+                @csrf
+                <div class="modal-header"><h5 class="modal-title fw-semibold text-danger"><i class="bi bi-x-circle text-danger me-2"></i>Reject / Mark as Lost</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Are you sure you want to mark visit <strong id="reject-lead-name"></strong> as Lost / Rejected?</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Reason (Optional)</label>
+                        <textarea name="reason" rows="3" class="form-control" placeholder="e.g. Client not interested, budget mismatch, chose competitor..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Confirm Reject</button>
                 </div>
             </form>
         </div>
@@ -255,6 +268,15 @@ function bindVisitRowButtons() {
             }
 
             new bootstrap.Modal(document.getElementById('convertModal')).show();
+        });
+    });
+
+    document.querySelectorAll('.btn-reject').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            document.getElementById('reject-lead-name').textContent = this.dataset.name;
+            document.getElementById('reject-form').action = `/leads/${id}/reject`;
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
         });
     });
 

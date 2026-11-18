@@ -131,8 +131,8 @@
                         </span>
                     </div>
                     <div class="col-sm-6">
-                        <label class="text-muted small d-block">Assigned To</label>
-                        <span>{{ $lead->assignedTo?->name ?? '—' }}</span>
+                        <label class="text-muted small d-block">Employee (Handled By)</label>
+                        <span>{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</span>
                     </div>
                     @if($lead->address)
                     <div class="col-12">

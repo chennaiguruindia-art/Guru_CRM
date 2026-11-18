@@ -51,17 +51,17 @@
                 <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By) <span class="text-danger">*</span></label>
-                            <select name="assigned_to_id" class="form-select @error('assigned_to_id') is-invalid @enderror" required>
-                                <option value="">-- Select Employee --</option>
+                            <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By)</label>
+                            <input type="text" name="employee_name" list="employee-list" class="form-control @error('employee_name') is-invalid @enderror"
+                                   value="{{ old('employee_name', auth()->user()?->name) }}"
+                                   placeholder="Type employee name who spoke with lead">
+                            <datalist id="employee-list">
                                 @foreach($users as $user)
-                                    <option value="{{ $user->id }}" @selected(old('assigned_to_id', auth()->id()) == $user->id)>
-                                        {{ $user->name }} ({{ $user->email }})
-                                    </option>
+                                    <option value="{{ $user->name }}">{{ $user->email }}</option>
                                 @endforeach
-                            </select>
-                            <div class="form-text">Select which employee or staff member spoke with this lead.</div>
-                            @error('assigned_to_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </datalist>
+                            <div class="form-text">Type employee name directly, or select from suggestions.</div>
+                            @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>

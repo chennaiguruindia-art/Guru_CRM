@@ -14,6 +14,7 @@ class LeadRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'employee_name' => ['nullable', 'string', 'max:255'],
             'assigned_to_id' => ['nullable', 'exists:users,id'],
             'name' => ['required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],

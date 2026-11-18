@@ -54,7 +54,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">State</label>
-                            <input type="text" name="state" class="form-control" value="{{ old('state', 'Karnataka') }}">
+                            <input type="text" name="state" class="form-control" value="{{ old('state', 'TamilNadu') }}">
                         </div>
                     </div>
                 </div>

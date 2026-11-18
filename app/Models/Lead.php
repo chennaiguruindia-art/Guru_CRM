@@ -83,6 +83,7 @@ class Lead extends Model
         'interested_service',
         'status',
         'priority',
+        'employee_name',
         'assigned_to_id',
         'created_by_id',
         'branch_id',

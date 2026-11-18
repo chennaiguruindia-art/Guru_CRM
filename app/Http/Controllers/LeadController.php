@@ -182,7 +182,18 @@ class LeadController extends Controller
         $data['created_by_id'] = auth()->id();
 
         // Employee who spoke with or handled this lead
-        $data['assigned_to_id'] = $request->input('assigned_to_id') ?: auth()->id();
+        $empName = trim($request->input('employee_name') ?? '');
+        $data['employee_name'] = $empName ?: null;
+
+        if (! empty($empName)) {
+            $matchedUser = User::where('name', $empName)
+                ->orWhere('username', $empName)
+                ->orWhere('email', $empName)
+                ->first();
+            $data['assigned_to_id'] = $matchedUser?->id ?: ($request->input('assigned_to_id') ?: auth()->id());
+        } else {
+            $data['assigned_to_id'] = $request->input('assigned_to_id') ?: auth()->id();
+        }
 
         // …and it belongs to the branch they work out of. Stamped rather than
         // chosen, so a later reassignment cannot move a visit into somebody
@@ -490,7 +501,19 @@ class LeadController extends Controller
         $data = $request->validated();
         $data['priority'] ??= $lead->priority ?? 'Medium';
 
-        if ($request->filled('assigned_to_id')) {
+        if ($request->has('employee_name')) {
+            $empName = trim($request->input('employee_name') ?? '');
+            $data['employee_name'] = $empName ?: null;
+            if (! empty($empName)) {
+                $matchedUser = User::where('name', $empName)
+                    ->orWhere('username', $empName)
+                    ->orWhere('email', $empName)
+                    ->first();
+                if ($matchedUser) {
+                    $data['assigned_to_id'] = $matchedUser->id;
+                }
+            }
+        } elseif ($request->filled('assigned_to_id')) {
             $data['assigned_to_id'] = $request->input('assigned_to_id');
         }
 

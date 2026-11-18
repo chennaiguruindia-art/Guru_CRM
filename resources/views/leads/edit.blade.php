@@ -33,15 +33,16 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By)</label>
-                            <select name="assigned_to_id" class="form-select @error('assigned_to_id') is-invalid @enderror">
-                                <option value="">-- Select Employee --</option>
+                            <input type="text" name="employee_name" list="employee-list-edit" class="form-control @error('employee_name') is-invalid @enderror"
+                                   value="{{ old('employee_name', $lead->employee_name ?: $lead->assignedTo?->name) }}"
+                                   placeholder="Type employee name who spoke with lead">
+                            <datalist id="employee-list-edit">
                                 @foreach($users as $user)
-                                    <option value="{{ $user->id }}" @selected(old('assigned_to_id', $lead->assigned_to_id) == $user->id)>
-                                        {{ $user->name }} ({{ $user->email }})
-                                    </option>
+                                    <option value="{{ $user->name }}">{{ $user->email }}</option>
                                 @endforeach
-                            </select>
-                            @error('assigned_to_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </datalist>
+                            <div class="form-text">Type employee name directly, or select from suggestions.</div>
+                            @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>

@@ -91,7 +91,7 @@
                     <th>Source</th>
                     <th>Service Interest</th>
                     <th>Status</th>
-                    <th>Assigned To</th>
+                    <th>Employee</th>
                     <th>Follow-up</th>
                     <th class="text-end">Actions</th>
                 </tr>
@@ -110,7 +110,7 @@
                     <td>
                         <span class="badge badge-status {{ $lead->status_badge_class }}">{{ $lead->status }}</span>
                     </td>
-                    <td class="small">{{ $lead->assignedTo?->name ?? '—' }}</td>
+                    <td class="small">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</td>
                     <td class="small {{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
                         {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
                     </td>

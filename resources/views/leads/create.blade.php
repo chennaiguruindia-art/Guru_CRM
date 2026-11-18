@@ -46,50 +46,126 @@
             {{-- Contact Details --}}
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="mb-0 fw-semibold"><i class="bi bi-person text-success me-2"></i>Visit Contact Details</h6>
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi {{ $channel === 'promotion_email' ? 'bi-megaphone text-primary' : 'bi-person text-success' }} me-2"></i>
+                        {{ $channel === 'promotion_email' ? 'Promotion Email / Call Details' : 'Visit Contact Details' }}
+                    </h6>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By)</label>
-                            <input type="text" name="employee_name" list="employee-list" class="form-control @error('employee_name') is-invalid @enderror"
-                                   value="{{ old('employee_name', auth()->user()?->name) }}"
-                                   placeholder="Type employee name who spoke with lead">
-                            <datalist id="employee-list">
-                                @foreach($users as $user)
-                                    <option value="{{ $user->name }}">{{ $user->email }}</option>
-                                @endforeach
-                            </datalist>
-                            <div class="form-text">Type employee name directly, or select from suggestions.</div>
-                            @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="Site or client name" required>
-                            @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Company Name</label>
-                            <input type="text" name="company_name" class="form-control" value="{{ old('company_name') }}" placeholder="Company or organisation name">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Contact Person</label>
-                            <input type="text" name="contact_person" class="form-control" value="{{ old('contact_person') }}" placeholder="Decision maker name">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Email</label>
-                            <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" placeholder="email@example.com">
-                            @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Phone <span class="text-danger">*</span></label>
-                            <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}" placeholder="+91 98765 43210" required>
-                            @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">WhatsApp Number</label>
-                            <input type="text" name="whatsapp" class="form-control" value="{{ old('whatsapp') }}" placeholder="WhatsApp number (if different)">
-                        </div>
+                        @if($channel === 'promotion_email')
+                            {{-- 1st: Mode of Approach --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Mode of Approach <span class="text-danger">*</span></label>
+                                <select name="mode_of_approach" class="form-select @error('mode_of_approach') is-invalid @enderror" required>
+                                    <option value="Call" @selected(old('mode_of_approach')==='Call')>Call</option>
+                                    <option value="Email" @selected(old('mode_of_approach','Email')==='Email')>Email</option>
+                                    <option value="Call & Email" @selected(old('mode_of_approach')==='Call & Email')>Call & Email</option>
+                                    <option value="WhatsApp" @selected(old('mode_of_approach')==='WhatsApp')>WhatsApp</option>
+                                </select>
+                                @error('mode_of_approach')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 2nd: Company Name --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Company Name <span class="text-danger">*</span></label>
+                                <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name') }}" placeholder="Company name" required>
+                                @error('company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 3rd: Contact Person --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Contact Person <span class="text-danger">*</span></label>
+                                <input type="text" name="contact_person" class="form-control @error('contact_person') is-invalid @enderror" value="{{ old('contact_person') }}" placeholder="Contact person name" required>
+                                @error('contact_person')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 4th: Contact Person Designation --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Contact Person Designation</label>
+                                <input type="text" name="designation" class="form-control @error('designation') is-invalid @enderror" value="{{ old('designation') }}" placeholder="e.g. Managing Director, Manager, Owner">
+                                @error('designation')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 5th: Email --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Email</label>
+                                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" placeholder="email@example.com">
+                                @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 6th: Phone --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Phone <span class="text-danger">*</span></label>
+                                <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}" placeholder="+91 98765 43210" required>
+                                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 7th: WhatsApp --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">WhatsApp Number</label>
+                                <input type="text" name="whatsapp" class="form-control" value="{{ old('whatsapp') }}" placeholder="WhatsApp number (if different)">
+                            </div>
+
+                            {{-- Employee Name --}}
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Employee Name (Handled By)</label>
+                                <input type="text" name="employee_name" list="employee-list" class="form-control @error('employee_name') is-invalid @enderror"
+                                       value="{{ old('employee_name', auth()->user()?->name) }}"
+                                       placeholder="Employee name who approached">
+                                <datalist id="employee-list">
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->name }}">{{ $user->email }}</option>
+                                    @endforeach
+                                </datalist>
+                                @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                        @else
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary">Employee Name (Spoke with Lead / Handled By)</label>
+                                <input type="text" name="employee_name" list="employee-list" class="form-control @error('employee_name') is-invalid @enderror"
+                                       value="{{ old('employee_name', auth()->user()?->name) }}"
+                                       placeholder="Type employee name who spoke with lead">
+                                <datalist id="employee-list">
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->name }}">{{ $user->email }}</option>
+                                    @endforeach
+                                </datalist>
+                                <div class="form-text">Type employee name directly, or select from suggestions.</div>
+                                @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="Site or client name" required>
+                                @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Company Name</label>
+                                <input type="text" name="company_name" class="form-control" value="{{ old('company_name') }}" placeholder="Company or organisation name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Contact Person</label>
+                                <input type="text" name="contact_person" class="form-control" value="{{ old('contact_person') }}" placeholder="Decision maker name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Contact Person Designation</label>
+                                <input type="text" name="designation" class="form-control" value="{{ old('designation') }}" placeholder="e.g. Manager, Owner">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Email</label>
+                                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" placeholder="email@example.com">
+                                @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Phone <span class="text-danger">*</span></label>
+                                <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}" placeholder="+91 98765 43210" required>
+                                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">WhatsApp Number</label>
+                                <input type="text" name="whatsapp" class="form-control" value="{{ old('whatsapp') }}" placeholder="WhatsApp number (if different)">
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -111,7 +187,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold text-secondary">State</label>
-                            <input type="text" name="state" class="form-control" value="{{ old('state','Karnataka') }}" placeholder="State">
+                            <input type="text" name="state" class="form-control" value="{{ old('state','TamilNadu') }}" placeholder="State">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold text-secondary">Pincode</label>
@@ -257,6 +333,27 @@
 
         {{-- Right Column --}}
         <div class="col-12 col-lg-4">
+            @if($channel === 'promotion_email')
+            <div class="card border-0 shadow-sm mb-4 border-top border-3 border-success">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-semibold text-success"><i class="bi bi-calendar-check me-2"></i>Follow-up Date</h6>
+                </div>
+                <div class="card-body p-4">
+                    <input type="hidden" name="source" value="{{ $source }}">
+                    <input type="hidden" name="client_type" value="New Client">
+                    <input type="hidden" name="status" value="Contacted">
+
+                    <div class="mb-0">
+                        <label for="follow_up_date" class="form-label small fw-semibold text-secondary">Follow-up Date <span class="text-muted fw-normal">(optional)</span></label>
+                        <input type="date" name="follow_up_date" id="follow_up_date"
+                               class="form-control @error('follow_up_date') is-invalid @enderror"
+                               value="{{ old('follow_up_date') }}">
+                        <div class="form-text">Pick a follow-up date to receive automated notifications.</div>
+                        @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </div>
+            @else
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom py-3">
                     <h6 class="mb-0 fw-semibold"><i class="bi bi-sliders text-warning me-2"></i>Visit Classification</h6>
@@ -319,6 +416,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-success py-2 fw-semibold"><i class="bi bi-check2-circle me-1"></i>Save Visit</button>

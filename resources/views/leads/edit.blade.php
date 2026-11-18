@@ -58,6 +58,20 @@
                             <input type="text" name="contact_person" class="form-control" value="{{ old('contact_person',$lead->contact_person) }}">
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Contact Person Designation</label>
+                            <input type="text" name="designation" class="form-control" value="{{ old('designation', $lead->designation) }}" placeholder="e.g. Managing Director, Manager">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Mode of Approach</label>
+                            <select name="mode_of_approach" class="form-select">
+                                <option value="">-- Select Mode --</option>
+                                <option value="Call" @selected(old('mode_of_approach', $lead->mode_of_approach)==='Call')>Call</option>
+                                <option value="Email" @selected(old('mode_of_approach', $lead->mode_of_approach)==='Email')>Email</option>
+                                <option value="Call & Email" @selected(old('mode_of_approach', $lead->mode_of_approach)==='Call & Email')>Call & Email</option>
+                                <option value="WhatsApp" @selected(old('mode_of_approach', $lead->mode_of_approach)==='WhatsApp')>WhatsApp</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Email</label>
                             <input type="email" name="email" class="form-control" value="{{ old('email',$lead->email) }}">
                         </div>

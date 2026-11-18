@@ -181,6 +181,11 @@ class LeadController extends Controller
         $data['lead_code'] = Lead::generateCode();
         $data['created_by_id'] = auth()->id();
 
+        // Ensure name is present (falls back to company_name or contact_person if site name empty)
+        if (empty($data['name'])) {
+            $data['name'] = $data['company_name'] ?: ($data['contact_person'] ?: 'Promotion Lead');
+        }
+
         // Employee who spoke with or handled this lead
         $empName = trim($request->input('employee_name') ?? '');
         $data['employee_name'] = $empName ?: null;
@@ -203,6 +208,7 @@ class LeadController extends Controller
         // The form has no Source dropdown any more — fall back to the plain
         // Visits channel when nothing specified one.
         $data['source'] ??= Lead::DEFAULT_SOURCE;
+        $data['status'] = $request->input('status') ?: ($data['source'] === Lead::CHANNELS['promotion_email'] ? 'Contacted' : 'New');
         $data['client_type'] ??= 'New Client';
         $data['priority'] ??= 'Medium';
         $data['expected_value'] ??= 0;

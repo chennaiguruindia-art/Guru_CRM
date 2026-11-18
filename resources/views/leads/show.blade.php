@@ -69,7 +69,19 @@
                     @if($lead->company_name)
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Company</label>
-                        <span>{{ $lead->company_name }}</span>
+                        <span class="fw-semibold">{{ $lead->company_name }}</span>
+                    </div>
+                    @endif
+                    @if($lead->contact_person)
+                    <div class="col-sm-6">
+                        <label class="text-muted small d-block">Contact Person</label>
+                        <span>{{ $lead->contact_person }} @if($lead->designation)<span class="text-muted">({{ $lead->designation }})</span>@endif</span>
+                    </div>
+                    @endif
+                    @if($lead->mode_of_approach)
+                    <div class="col-sm-6">
+                        <label class="text-muted small d-block">Mode of Approach</label>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ $lead->mode_of_approach }}</span>
                     </div>
                     @endif
                     <div class="col-sm-6">

@@ -85,35 +85,90 @@
         <table class="table table-crm align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Visit ID</th>
-                    <th>Site / Company</th>
-                    <th>Phone</th>
-                    <th>Source</th>
-                    <th>Service Interest</th>
-                    <th>Status</th>
-                    <th>Employee</th>
-                    <th>Follow-up</th>
-                    <th class="text-end">Actions</th>
+                    @if($channel === 'promotion_email')
+                        <th>Lead ID</th>
+                        <th>Mode of Approach</th>
+                        <th>Company Name</th>
+                        <th>Contact Person & Designation</th>
+                        <th>Email & Phone</th>
+                        <th>Location</th>
+                        <th>Employee</th>
+                        <th>Follow-up</th>
+                        <th class="text-end">Actions</th>
+                    @else
+                        <th>Visit ID</th>
+                        <th>Site / Company</th>
+                        <th>Phone</th>
+                        <th>Source</th>
+                        <th>Service Interest</th>
+                        <th>Status</th>
+                        <th>Employee</th>
+                        <th>Follow-up</th>
+                        <th class="text-end">Actions</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
                 @forelse($leads as $lead)
                 <tr id="lead-row-{{ $lead->id }}">
-                    <td><a href="{{ route('leads.show',$lead) }}" class="fw-semibold text-success text-decoration-none">{{ $lead->lead_code }}</a></td>
-                    <td>
-                        <div class="fw-semibold text-dark">{{ $lead->name }}</div>
-                        @if($lead->company_name)<div class="small text-muted">{{ $lead->company_name }}</div>@endif
-                    </td>
-                    <td class="small">{{ $lead->phone }}</td>
-                    <td><span class="badge bg-light text-dark border">{{ $lead->source }}</span></td>
-                    <td class="small">{{ $lead->interested_service ?: '—' }}</td>
-                    <td>
-                        <span class="badge badge-status {{ $lead->status_badge_class }}">{{ $lead->status }}</span>
-                    </td>
-                    <td class="small">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</td>
-                    <td class="small {{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
-                        {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
-                    </td>
+                    @if($channel === 'promotion_email')
+                        <td><a href="{{ route('leads.show',$lead) }}" class="fw-semibold text-success text-decoration-none">{{ $lead->lead_code }}</a></td>
+                        <td>
+                            @php
+                                $mode = $lead->mode_of_approach ?: 'Email';
+                                $badgeClass = match($mode) {
+                                    'Call' => 'bg-info-subtle text-info-emphasis border border-info-subtle',
+                                    'Email' => 'bg-primary-subtle text-primary border border-primary-subtle',
+                                    'WhatsApp' => 'bg-success-subtle text-success border border-success-subtle',
+                                    default => 'bg-secondary-subtle text-secondary border'
+                                };
+                                $modeIcon = match($mode) {
+                                    'Call' => 'bi-telephone-fill',
+                                    'Email' => 'bi-envelope-fill',
+                                    'WhatsApp' => 'bi-whatsapp',
+                                    default => 'bi-chat-dots-fill'
+                                };
+                            @endphp
+                            <span class="badge {{ $badgeClass }}"><i class="bi {{ $modeIcon }} me-1"></i>{{ $mode }}</span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ $lead->company_name ?: $lead->name }}</div>
+                            @if($lead->company_name && $lead->name && $lead->name !== $lead->company_name)
+                                <div class="small text-muted">{{ $lead->name }}</div>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ $lead->contact_person ?: '—' }}</div>
+                            @if($lead->designation)
+                                <div class="small text-muted">{{ $lead->designation }}</div>
+                            @endif
+                        </td>
+                        <td>
+                            @if($lead->email)<div class="small text-dark"><i class="bi bi-envelope me-1 text-muted"></i>{{ $lead->email }}</div>@endif
+                            <div class="small text-muted"><i class="bi bi-telephone me-1 text-muted"></i>{{ $lead->phone }}</div>
+                        </td>
+                        <td class="small">{{ $lead->city ?: ($lead->state ?: '—') }}</td>
+                        <td class="small">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</td>
+                        <td class="small {{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
+                            {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
+                        </td>
+                    @else
+                        <td><a href="{{ route('leads.show',$lead) }}" class="fw-semibold text-success text-decoration-none">{{ $lead->lead_code }}</a></td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ $lead->name }}</div>
+                            @if($lead->company_name)<div class="small text-muted">{{ $lead->company_name }}</div>@endif
+                        </td>
+                        <td class="small">{{ $lead->phone }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ $lead->source }}</span></td>
+                        <td class="small">{{ $lead->interested_service ?: '—' }}</td>
+                        <td>
+                            <span class="badge badge-status {{ $lead->status_badge_class }}">{{ $lead->status }}</span>
+                        </td>
+                        <td class="small">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</td>
+                        <td class="small {{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
+                            {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
+                        </td>
+                    @endif
                     <td class="text-end">
                         <div class="d-flex justify-content-end gap-1">
                             <a href="{{ route('leads.show',$lead) }}" class="btn btn-sm btn-outline-success" title="View"><i class="bi bi-eye"></i></a>

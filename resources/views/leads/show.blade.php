@@ -72,12 +72,26 @@
                         <span class="fw-semibold">{{ $lead->company_name }}</span>
                     </div>
                     @endif
-                    @if($lead->contact_person)
                     <div class="col-sm-6">
-                        <label class="text-muted small d-block">Contact Person</label>
-                        <span>{{ $lead->contact_person }} @if($lead->designation)<span class="text-muted">({{ $lead->designation }})</span>@endif</span>
+                        <label class="text-muted small d-block">Site Contact Person</label>
+                        <div class="fw-semibold text-dark">
+                            {{ $lead->contact_person ?: ($lead->designation ? '—' : '—') }}
+                            @if($lead->designation)
+                                <span class="badge bg-secondary-subtle text-secondary border ms-1" title="Designation">{{ $lead->designation }}</span>
+                            @endif
+                        </div>
                     </div>
-                    @endif
+                    <div class="col-sm-6">
+                        <label class="text-muted small d-block">Contact Phone</label>
+                        @if($lead->phone && $lead->phone !== '—')
+                            <a href="tel:{{ $lead->phone }}" class="text-decoration-none fw-semibold"><i class="bi bi-telephone me-1"></i>{{ $lead->phone }}</a>
+                            @if($lead->whatsapp)
+                            <a href="https://wa.me/{{ preg_replace('/\D/','',$lead->whatsapp) }}" target="_blank" class="ms-2 text-success" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                            @endif
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </div>
                     @if($lead->mode_of_approach)
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Mode of Approach</label>
@@ -85,20 +99,22 @@
                     </div>
                     @endif
                     <div class="col-sm-6">
-                        <label class="text-muted small d-block">Phone</label>
-                        <a href="tel:{{ $lead->phone }}" class="text-decoration-none fw-semibold">{{ $lead->phone }}</a>
-                        @if($lead->whatsapp)
-                        <a href="https://wa.me/{{ preg_replace('/\D/','',$lead->whatsapp) }}" target="_blank" class="ms-2 text-success" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
-                        @endif
-                    </div>
-                    <div class="col-sm-6">
                         <label class="text-muted small d-block">Email</label>
                         @if($lead->email)<a href="mailto:{{ $lead->email }}" class="text-decoration-none">{{ $lead->email }}</a>@else<span class="text-muted">—</span>@endif
                     </div>
                     <div class="col-sm-6">
-                        <label class="text-muted small d-block">Source</label>
+                        <label class="text-muted small d-block">{{ $lead->source === 'Existing Client' ? 'Operation Team Employee' : 'Employee (Handled By)' }}</label>
+                        <span class="fw-semibold text-dark">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="text-muted small d-block">Channel / Source</label>
                         <span class="badge bg-light text-dark border">{{ $lead->source }}</span>
                     </div>
+                    <div class="col-sm-6">
+                        <label class="text-muted small d-block">Purpose of Visit</label>
+                        <span class="badge bg-soft-info text-info border">{{ $lead->purpose_of_visit ?: 'Routine Inspection' }}</span>
+                    </div>
+                    @if($lead->source !== 'Existing Client')
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">New or Existing Client</label>
                         @if($lead->client_type === 'Existing Client')
@@ -108,10 +124,6 @@
                         @else
                             <span>—</span>
                         @endif
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="text-muted small d-block">Purpose of Visit</label>
-                        <span>{{ $lead->purpose_of_visit ?: '—' }}</span>
                     </div>
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Type of Service</label>
@@ -135,16 +147,13 @@
                         <label class="text-muted small d-block">Expected Closing</label>
                         <span>{{ $lead->expected_closing_date ? $lead->expected_closing_date->format('d M Y') : '—' }}</span>
                     </div>
+                    @endif
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Follow-up Date</label>
                         <span class="{{ $lead->follow_up_date && $lead->follow_up_date->isPast() ? 'text-danger fw-semibold' : '' }}">
                             {{ $lead->follow_up_date ? $lead->follow_up_date->format('d M Y') : '—' }}
                             @if($lead->follow_up_date && $lead->follow_up_date->isPast()) <span class="badge bg-danger ms-1">Overdue</span>@endif
                         </span>
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="text-muted small d-block">Employee (Handled By)</label>
-                        <span>{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</span>
                     </div>
                     @if($lead->address || $lead->area)
                     <div class="col-12">

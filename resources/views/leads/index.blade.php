@@ -98,7 +98,8 @@
                     @elseif($channel === 'existing_client')
                         <th>Visit ID</th>
                         <th>Site Name</th>
-                        <th>Operation Team / Employee</th>
+                        <th>Site Contact Person</th>
+                        <th>Operation Team Employee</th>
                         <th>Purpose of Visit</th>
                         <th>Area & Location</th>
                         <th>Remarks</th>
@@ -168,10 +169,18 @@
                             @if($lead->company_name)<div class="small text-muted">{{ $lead->company_name }}</div>@endif
                         </td>
                         <td>
-                            <div class="fw-semibold text-dark">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</div>
-                            @if($lead->designation)
-                                <div class="small text-muted">{{ $lead->designation }}</div>
+                            <div class="fw-semibold text-dark">
+                                {{ $lead->contact_person ?: ($lead->designation ? '—' : '—') }}
+                                @if($lead->designation)
+                                    <span class="badge bg-secondary-subtle text-secondary border ms-1" style="font-size:0.75rem;">{{ $lead->designation }}</span>
+                                @endif
+                            </div>
+                            @if($lead->phone && $lead->phone !== '—')
+                                <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $lead->phone }}</div>
                             @endif
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ $lead->employee_name ?: ($lead->assignedTo?->name ?? '—') }}</div>
                         </td>
                         <td>
                             <span class="badge bg-soft-info text-info border">{{ $lead->purpose_of_visit ?: 'Routine Inspection' }}</span>

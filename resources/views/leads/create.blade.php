@@ -68,23 +68,7 @@
                                 @error('employee_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- 2. Designation --}}
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold text-secondary">Designation</label>
-                                <input type="text" name="designation" class="form-control @error('designation') is-invalid @enderror"
-                                       value="{{ old('designation') }}" placeholder="e.g. Operations Executive / Field Engineer">
-                                @error('designation')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
-
-                            {{-- 3. Site Name --}}
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
-                                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                                       value="{{ old('name') }}" placeholder="Site name (e.g. Taj Grand, Adyar Villa)" required>
-                                @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
-
-                            {{-- 4. Purpose of Visit --}}
+                            {{-- 2. Purpose of Visit --}}
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Purpose of Visit <span class="text-danger">*</span></label>
                                 <select name="purpose_of_visit" class="form-select @error('purpose_of_visit') is-invalid @enderror" required>
@@ -96,13 +80,27 @@
                                 @error('purpose_of_visit')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
-                            {{-- Contact Person & Phone --}}
-                            <div class="col-md-6">
+                            {{-- 3. Site Name --}}
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary">Site Name <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
+                                       value="{{ old('name') }}" placeholder="Site name (e.g. Taj Grand, Adyar Villa)" required>
+                                @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- 4. Client Site Contact Person Details: Name, Designation, Phone --}}
+                            <div class="col-md-4">
                                 <label class="form-label small fw-semibold text-secondary">Contact Person at Site</label>
                                 <input type="text" name="contact_person" class="form-control" value="{{ old('contact_person') }}" placeholder="Client / Site in-charge name">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold text-secondary">Contact Phone</label>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-secondary">Contact Person Designation</label>
+                                <input type="text" name="designation" class="form-control @error('designation') is-invalid @enderror"
+                                       value="{{ old('designation') }}" placeholder="e.g. Facility Manager / Secretary / Site In-charge">
+                                @error('designation')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-secondary">Contact Phone Number</label>
                                 <input type="text" name="phone" class="form-control" value="{{ old('phone') }}" placeholder="+91 98765 43210">
                             </div>
 

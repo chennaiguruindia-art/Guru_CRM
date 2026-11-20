@@ -41,6 +41,7 @@ class EmployeeController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'employee_code' => ['nullable', 'string', 'max:50', 'unique:employees,employee_code'],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -55,7 +56,11 @@ class EmployeeController extends BaseApiController
             'status' => ['required', 'string', 'in:active,inactive'],
         ]);
 
-        $validated['employee_code'] = Employee::generateCode();
+        if (! empty($validated['employee_code'])) {
+            $validated['employee_code'] = trim($validated['employee_code']);
+        } else {
+            $validated['employee_code'] = Employee::generateCode();
+        }
 
         $employee = Employee::create($validated);
 
@@ -78,6 +83,7 @@ class EmployeeController extends BaseApiController
     public function update(Request $request, Employee $employee): JsonResponse
     {
         $validated = $request->validate([
+            'employee_code' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:employees,employee_code,' . $employee->id],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'phone' => ['sometimes', 'required', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],

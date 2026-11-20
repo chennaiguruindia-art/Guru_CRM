@@ -87,6 +87,7 @@ class EmployeeController extends Controller
         ]);
 
         $validated = $request->validate([
+            'employee_code' => ['nullable', 'string', 'max:50', 'unique:employees,employee_code'],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30', 'regex:/^\d{10,15}$/'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -120,7 +121,11 @@ class EmployeeController extends Controller
             $validated['branch_id'] = $branchId;
         }
 
-        $validated['employee_code'] = Employee::generateCode();
+        if (! empty($validated['employee_code'])) {
+            $validated['employee_code'] = trim($validated['employee_code']);
+        } else {
+            $validated['employee_code'] = Employee::generateCode();
+        }
         $validated['status'] = 'active';
 
         $emp = Employee::create($validated);
@@ -151,7 +156,9 @@ class EmployeeController extends Controller
 
         // employees.email is optional, but users.email is required and unique —
         // fall back to a non-routable placeholder keyed on the Employee ID.
-        $email = $emp->email ?: ($emp->employee_code . '@horti.local');
+        // Replace special characters like '/' with '-' for a valid email format.
+        $sanitizedCode = strtolower(preg_replace('/[^a-zA-Z0-9_\.]/', '-', $emp->employee_code));
+        $email = $emp->email ?: ($sanitizedCode . '@horti.local');
 
         if (User::where('email', $email)->exists()) {
             return null;
@@ -232,6 +239,7 @@ class EmployeeController extends Controller
         ]);
 
         $validated = $request->validate([
+            'employee_code' => ['nullable', 'string', 'max:50', 'unique:employees,employee_code,' . $employee->id],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30', 'regex:/^\d{10,15}$/'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -247,6 +255,15 @@ class EmployeeController extends Controller
             'emergency_contact' => ['nullable', 'string', 'max:100'],
             'status' => ['required', 'in:active,inactive'],
         ]);
+
+        if (! empty($validated['employee_code'])) {
+            $validated['employee_code'] = trim($validated['employee_code']);
+            if ($employee->user && $employee->user->username === $employee->employee_code) {
+                $employee->user->update(['username' => $validated['employee_code']]);
+            }
+        } else {
+            unset($validated['employee_code']);
+        }
 
         if (empty($validated['department'])) {
             $validated['department'] = $employee->department ?? 'General';

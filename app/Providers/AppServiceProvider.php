@@ -44,6 +44,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Enforce Indian Standard Time (IST UTC+5:30) across entire application
+        date_default_timezone_set('Asia/Kolkata');
+
         // Automatically ensure missing columns exist on the users table (e.g., soft deletes on production)
         try {
             if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'deleted_at')) {

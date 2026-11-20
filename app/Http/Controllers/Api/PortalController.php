@@ -19,7 +19,7 @@ class PortalController extends BaseApiController
         $user = $request->user();
         $employee = $user->employee ?? Employee::with('branch')->where('user_id', $user->id)->first();
 
-        $today = now()->toDateString();
+        $today = now('Asia/Kolkata')->toDateString();
         $todayAttendance = null;
         $monthAttendances = collect();
         $presentDays = 0;
@@ -32,8 +32,8 @@ class PortalController extends BaseApiController
                 ->where('date', $today)
                 ->first();
 
-            $startOfMonth = now()->startOfMonth()->toDateString();
-            $endOfMonth = now()->endOfMonth()->toDateString();
+            $startOfMonth = now('Asia/Kolkata')->startOfMonth()->toDateString();
+            $endOfMonth = now('Asia/Kolkata')->endOfMonth()->toDateString();
 
             $monthAttendances = Attendance::where('employee_id', $employee->id)
                 ->whereBetween('date', [$startOfMonth, $endOfMonth])
@@ -52,7 +52,7 @@ class PortalController extends BaseApiController
             'has_checked_in' => $todayAttendance && !empty($todayAttendance->check_in),
             'has_checked_out' => $todayAttendance && !empty($todayAttendance->check_out),
             'stats' => [
-                'month' => now()->format('F Y'),
+                'month' => now('Asia/Kolkata')->format('F Y'),
                 'present_days' => $presentDays,
                 'half_days' => $halfDays,
                 'absent_days' => $absentDays,
@@ -75,8 +75,8 @@ class PortalController extends BaseApiController
             return $this->errorResponse('No active employee profile is linked to your user account. Please contact your Branch Admin.', 422);
         }
 
-        $today = now()->toDateString();
-        $nowTime = now()->format('H:i:s');
+        $today = $request->input('date') ?? now('Asia/Kolkata')->toDateString();
+        $nowTime = $request->input('punch_time') ?? $request->input('time') ?? now('Asia/Kolkata')->format('H:i:s');
 
         $attendance = Attendance::firstOrNew([
             'employee_id' => $employee->id,
@@ -84,7 +84,7 @@ class PortalController extends BaseApiController
         ]);
 
         if ($attendance->check_in) {
-            return $this->errorResponse('You have already punched in today at ' . Carbon::parse($attendance->check_in)->format('h:i A'), 422, [
+            return $this->errorResponse('You have already punched in today at ' . Carbon::parse($attendance->check_in, 'Asia/Kolkata')->format('h:i A'), 422, [
                 'attendance' => $attendance,
             ]);
         }
@@ -116,7 +116,7 @@ class PortalController extends BaseApiController
 
         return $this->successResponse([
             'attendance' => $attendance->fresh(),
-            'message' => 'Punched in successfully at ' . now()->format('h:i A') . '! Location captured.',
+            'message' => 'Punched in successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Location captured.',
         ], 'Punched in successfully');
     }
 
@@ -132,8 +132,8 @@ class PortalController extends BaseApiController
             return $this->errorResponse('No active employee profile is linked to your user account.', 422);
         }
 
-        $today = now()->toDateString();
-        $nowTime = now()->format('H:i:s');
+        $today = $request->input('date') ?? now('Asia/Kolkata')->toDateString();
+        $nowTime = $request->input('punch_time') ?? $request->input('time') ?? now('Asia/Kolkata')->format('H:i:s');
 
         $attendance = Attendance::where('employee_id', $employee->id)
             ->where('date', $today)
@@ -144,7 +144,7 @@ class PortalController extends BaseApiController
         }
 
         if ($attendance->check_out) {
-            return $this->errorResponse('You have already punched out today at ' . Carbon::parse($attendance->check_out)->format('h:i A'), 422, [
+            return $this->errorResponse('You have already punched out today at ' . Carbon::parse($attendance->check_out, 'Asia/Kolkata')->format('h:i A'), 422, [
                 'attendance' => $attendance,
             ]);
         }
@@ -175,7 +175,7 @@ class PortalController extends BaseApiController
 
         return $this->successResponse([
             'attendance' => $attendance->fresh(),
-            'message' => 'Punched out successfully at ' . now()->format('h:i A') . '! Location captured.',
+            'message' => 'Punched out successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Location captured.',
         ], 'Punched out successfully');
     }
 

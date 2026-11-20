@@ -33,11 +33,18 @@
     <div class="tab-pane fade {{ !$isAdminActive ? 'show active' : '' }}" id="employee-login-pane" role="tabpanel" aria-labelledby="employee-tab">
         <div class="text-center mb-3">
             <h5 class="fw-bold text-dark mb-1">Employee Attendance Login</h5>
-            <p class="text-muted small mb-0">Enter your Employee ID to punch Check-In / Check-Out.</p>
+            <p class="text-muted small mb-1">Enter your Employee ID to punch Check-In / Check-Out.</p>
+            <div id="loginGpsBadge" class="badge bg-light text-secondary border px-2 py-1 small d-inline-flex align-items-center gap-1">
+                <span class="spinner-border spinner-border-sm text-success" role="status" style="width: 0.8rem; height: 0.8rem;"></span>
+                <span id="loginGpsText">Detecting location...</span>
+            </div>
         </div>
 
         <form method="POST" action="{{ route('employee.login') }}">
             @csrf
+            <input type="hidden" name="latitude" id="login_lat">
+            <input type="hidden" name="longitude" id="login_lng">
+            <input type="hidden" name="address" id="login_addr">
 
             <div class="mb-3">
                 <label for="employee_code" class="form-label small fw-semibold text-secondary">Employee ID Number <span class="text-danger">*</span></label>
@@ -155,6 +162,52 @@
                 e.target.classList.remove('text-secondary');
             });
         });
+
+        // Live Geolocation detection during Employee Login
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async function (pos) {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+
+                    const latEl = document.getElementById('login_lat');
+                    const lngEl = document.getElementById('login_lng');
+                    const addrEl = document.getElementById('login_addr');
+                    const badge = document.getElementById('loginGpsBadge');
+                    const text = document.getElementById('loginGpsText');
+
+                    if (latEl) latEl.value = lat;
+                    if (lngEl) lngEl.value = lng;
+
+                    let displayAddr = `Pin: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data && data.address) {
+                                const addr = data.address;
+                                const shortName = [addr.suburb || addr.neighbourhood || addr.road, addr.city || addr.town || addr.county, addr.state].filter(Boolean).join(', ');
+                                if (shortName) displayAddr = shortName;
+                            }
+                        }
+                    } catch (e) {}
+
+                    if (addrEl) addrEl.value = displayAddr;
+                    if (badge) badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small';
+                    if (text) text.innerHTML = `<i class="bi bi-geo-alt-fill text-danger me-1"></i> ${displayAddr}`;
+                },
+                function (err) {
+                    const badge = document.getElementById('loginGpsBadge');
+                    const text = document.getElementById('loginGpsText');
+                    if (badge) badge.className = 'badge bg-light text-muted border px-2 py-1 small';
+                    if (text) text.textContent = 'Location optional';
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
     });
 </script>
 @endsection

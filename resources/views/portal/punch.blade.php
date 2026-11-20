@@ -12,7 +12,7 @@
                     <i class="bi bi-fingerprint me-1"></i> Staff Punch Terminal
                 </div>
                 <h3 class="fw-bold mb-1">Daily Attendance</h3>
-                <div class="text-white-50 small">{{ now()->format('l, d F Y') }}</div>
+                <div class="text-white-50 small">{{ now('Asia/Kolkata')->format('l, d F Y') }}</div>
 
                 <!-- Live Clock -->
                 <div class="my-3 py-2 px-4 rounded-pill d-inline-block bg-black bg-opacity-25 border border-white border-opacity-25 font-monospace fs-2 fw-bold text-white shadow-inner" id="livePunchClock">
@@ -85,9 +85,9 @@
                         {{-- ENABLED --}}
                         <form method="POST" action="{{ route('portal.punch_in') }}" id="punchInForm">
                             @csrf
-                            <input type="hidden" name="latitude" class="geo-lat">
-                            <input type="hidden" name="longitude" class="geo-lng">
-                            <input type="hidden" name="address" class="geo-addr">
+                            <input type="hidden" name="latitude" class="geo-lat" value="{{ session('login_latitude') }}">
+                            <input type="hidden" name="longitude" class="geo-lng" value="{{ session('login_longitude') }}">
+                            <input type="hidden" name="address" class="geo-addr" value="{{ session('login_address') }}">
 
                             <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-box-arrow-in-right fs-4"></i>
@@ -113,9 +113,9 @@
                         {{-- ENABLED (Ready for checkout) --}}
                         <form method="POST" action="{{ route('portal.punch_out') }}" id="punchOutForm">
                             @csrf
-                            <input type="hidden" name="latitude" class="geo-lat">
-                            <input type="hidden" name="longitude" class="geo-lng">
-                            <input type="hidden" name="address" class="geo-addr">
+                            <input type="hidden" name="latitude" class="geo-lat" value="{{ session('login_latitude') }}">
+                            <input type="hidden" name="longitude" class="geo-lng" value="{{ session('login_longitude') }}">
+                            <input type="hidden" name="address" class="geo-addr" value="{{ session('login_address') }}">
 
                             <button type="submit" class="btn btn-warning text-dark btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); border: none;">
                                 <i class="bi bi-box-arrow-right fs-4 text-dark"></i>

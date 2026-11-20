@@ -50,6 +50,23 @@
             </div>
 
             <div class="row g-3">
+                {{-- Employee ID / Code --}}
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">
+                        Employee ID / Code
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-upc-scan"></i></span>
+                        <input type="text" 
+                               name="employee_code" 
+                               class="form-control border-start-0 @error('employee_code') is-invalid @enderror" 
+                               placeholder="e.g. ch/m/228 (leave blank for auto EMP-xxxx)" 
+                               value="{{ old('employee_code') }}">
+                    </div>
+                    <div class="form-text small text-muted">Custom ID like <code>ch/m/228</code>, or leave blank to auto-generate.</div>
+                    @error('employee_code') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+
                 {{-- Full Name --}}
                 <div class="col-12 col-md-6">
                     <label class="form-label small fw-semibold text-secondary">
@@ -85,7 +102,7 @@
                 </div>
 
                 {{-- Email Address --}}
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-6">
                     <label class="form-label small fw-semibold text-secondary">
                         Email Address
                     </label>
@@ -101,7 +118,7 @@
                 </div>
 
                 {{-- Date of Birth (DOB) --}}
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-6">
                     <label class="form-label small fw-semibold text-secondary">
                         Date of Birth (DOB)
                     </label>
@@ -116,7 +133,7 @@
                 </div>
 
                 {{-- Blood Group --}}
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-6">
                     <label class="form-label small fw-semibold text-secondary">
                         Blood Group
                     </label>

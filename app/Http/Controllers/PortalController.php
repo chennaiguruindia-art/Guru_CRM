@@ -20,7 +20,7 @@ class PortalController extends Controller
         $user = $request->user();
         $employee = $user->employee ?? Employee::with('branch')->where('user_id', $user->id)->first();
 
-        $today = now()->toDateString();
+        $today = now('Asia/Kolkata')->toDateString();
         $todayAttendance = null;
         $hasCheckedIn = false;
         $hasCheckedOut = false;
@@ -50,7 +50,7 @@ class PortalController extends Controller
         $user = $request->user();
         $employee = $user->employee ?? Employee::with('branch')->where('user_id', $user->id)->first();
 
-        $today = now()->toDateString();
+        $today = now('Asia/Kolkata')->toDateString();
         $todayAttendance = null;
         $monthAttendances = collect();
         $presentDays = 0;
@@ -63,8 +63,8 @@ class PortalController extends Controller
                 ->where('date', $today)
                 ->first();
 
-            $startOfMonth = now()->startOfMonth()->toDateString();
-            $endOfMonth = now()->endOfMonth()->toDateString();
+            $startOfMonth = now('Asia/Kolkata')->startOfMonth()->toDateString();
+            $endOfMonth = now('Asia/Kolkata')->endOfMonth()->toDateString();
 
             $monthAttendances = Attendance::where('employee_id', $employee->id)
                 ->whereBetween('date', [$startOfMonth, $endOfMonth])
@@ -100,8 +100,8 @@ class PortalController extends Controller
             return back()->with('error', 'No active employee profile linked to your account.');
         }
 
-        $today = now()->toDateString();
-        $nowTime = now()->format('H:i:s');
+        $today = now('Asia/Kolkata')->toDateString();
+        $nowTime = now('Asia/Kolkata')->format('H:i:s');
 
         $attendance = Attendance::firstOrNew([
             'employee_id' => $employee->id,
@@ -109,7 +109,7 @@ class PortalController extends Controller
         ]);
 
         if ($attendance->check_in) {
-            return back()->with('info', 'You have already punched in today at ' . Carbon::parse($attendance->check_in)->format('h:i A'));
+            return back()->with('info', 'You have already punched in today at ' . Carbon::parse($attendance->check_in, 'Asia/Kolkata')->format('h:i A'));
         }
 
         $attendance->status = 'Present';
@@ -134,7 +134,7 @@ class PortalController extends Controller
             'longitude' => $attendance->check_in_longitude,
         ]);
 
-        return back()->with('success', 'Punched in successfully at ' . now()->format('h:i A') . '! Live location captured.');
+        return back()->with('success', 'Punched in successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Live location captured.');
     }
 
     /**
@@ -149,8 +149,8 @@ class PortalController extends Controller
             return back()->with('error', 'No active employee profile linked to your account.');
         }
 
-        $today = now()->toDateString();
-        $nowTime = now()->format('H:i:s');
+        $today = now('Asia/Kolkata')->toDateString();
+        $nowTime = now('Asia/Kolkata')->format('H:i:s');
 
         $attendance = Attendance::where('employee_id', $employee->id)
             ->where('date', $today)
@@ -181,7 +181,7 @@ class PortalController extends Controller
             'longitude' => $attendance->check_out_longitude,
         ]);
 
-        return back()->with('success', 'Punched out successfully at ' . now()->format('h:i A') . '! Live location captured.');
+        return back()->with('success', 'Punched out successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Live location captured.');
     }
 
     /**

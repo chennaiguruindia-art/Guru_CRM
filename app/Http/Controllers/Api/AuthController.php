@@ -80,7 +80,7 @@ class AuthController extends BaseApiController
 
         $rawCode = trim($request->input('employee_code'));
 
-        $employee = \App\Models\Employee::where('employee_code', $rawCode)
+        $employee = \App\Models\Employee::whereRaw('LOWER(employee_code) = ?', [strtolower($rawCode)])
             ->orWhere('employee_code', 'EMP-' . str_pad($rawCode, 4, '0', STR_PAD_LEFT))
             ->first();
 
@@ -95,7 +95,8 @@ class AuthController extends BaseApiController
         }
 
         if (! $employee->user_id) {
-            $email = $employee->email ?: ($employee->employee_code . '@horti.local');
+            $sanitizedCode = strtolower(preg_replace('/[^a-zA-Z0-9_\.]/', '-', $employee->employee_code));
+            $email = $employee->email ?: ($sanitizedCode . '@horti.local');
             $user = \App\Models\User::firstOrCreate(
                 ['email' => $email],
                 [
@@ -118,11 +119,39 @@ class AuthController extends BaseApiController
         $deviceName = $request->input('device_name', $request->header('User-Agent', 'MobileApp Employee Punch'));
         $token = $user->createToken($deviceName)->plainTextToken;
 
+        $latitude = $request->input('latitude');
+        $longitude = $request->input('longitude');
+        $address = $request->input('address');
+
+        // Automatically record check-in with live location and IST time if not already punched today
+        $today = $request->input('date') ?? now('Asia/Kolkata')->toDateString();
+        $nowTime = $request->input('punch_time') ?? $request->input('time') ?? now('Asia/Kolkata')->format('H:i:s');
+
+        $attendance = \App\Models\Attendance::firstOrNew([
+            'employee_id' => $employee->id,
+            'date' => $today,
+        ]);
+
+        if (! $attendance->check_in) {
+            $attendance->status = 'Present';
+            $attendance->check_in = $nowTime;
+            if ($latitude) $attendance->check_in_latitude = $latitude;
+            if ($longitude) $attendance->check_in_longitude = $longitude;
+            if ($address) $attendance->check_in_address = $address;
+            $attendance->save();
+            $todayAttendance = $attendance->fresh();
+        } else {
+            $todayAttendance = $attendance;
+        }
+
         AuditLogger::log('api_employee_login', 'authentication', $user->id, null, [
             'ip' => $request->ip(),
             'employee_code' => $employee->employee_code,
             'name' => $employee->name,
             'device' => $deviceName,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'address' => $address,
         ]);
 
         return $this->successResponse([
@@ -130,6 +159,7 @@ class AuthController extends BaseApiController
             'token_type' => 'Bearer',
             'user' => $this->formatUserData($user),
             'employee' => $employee->load('branch'),
+            'today_attendance' => $todayAttendance,
         ], 'Employee authenticated successfully');
     }
 

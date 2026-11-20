@@ -71,8 +71,8 @@ class AuthenticatedSessionController extends Controller
 
         $rawCode = trim($request->input('employee_code'));
 
-        // Match direct code (e.g. EMP-0001) or short digits (e.g. 1 -> EMP-0001)
-        $employee = \App\Models\Employee::where('employee_code', $rawCode)
+        // Match direct code (case-insensitive e.g. CH/M/228 or ch/m/228) or short digits (e.g. 1 -> EMP-0001)
+        $employee = \App\Models\Employee::whereRaw('LOWER(employee_code) = ?', [strtolower($rawCode)])
             ->orWhere('employee_code', 'EMP-' . str_pad($rawCode, 4, '0', STR_PAD_LEFT))
             ->first();
 
@@ -86,7 +86,8 @@ class AuthenticatedSessionController extends Controller
 
         // Provision User account if not already linked
         if (! $employee->user_id) {
-            $email = $employee->email ?: ($employee->employee_code . '@horti.local');
+            $sanitizedCode = strtolower(preg_replace('/[^a-zA-Z0-9_\.]/', '-', $employee->employee_code));
+            $email = $employee->email ?: ($sanitizedCode . '@horti.local');
             $user = \App\Models\User::firstOrCreate(
                 ['email' => $email],
                 [
@@ -109,10 +110,42 @@ class AuthenticatedSessionController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
+        $latitude = $request->input('latitude');
+        $longitude = $request->input('longitude');
+        $address = $request->input('address');
+
+        if ($latitude && $longitude) {
+            $today = now('Asia/Kolkata')->toDateString();
+            $nowTime = now('Asia/Kolkata')->format('H:i:s');
+
+            $attendance = \App\Models\Attendance::firstOrNew([
+                'employee_id' => $employee->id,
+                'date' => $today,
+            ]);
+
+            if (! $attendance->check_in) {
+                $attendance->status = 'Present';
+                $attendance->check_in = $nowTime;
+                $attendance->check_in_latitude = $latitude;
+                $attendance->check_in_longitude = $longitude;
+                if ($address) $attendance->check_in_address = $address;
+                $attendance->save();
+            }
+
+            session([
+                'login_latitude' => $latitude,
+                'login_longitude' => $longitude,
+                'login_address' => $address,
+            ]);
+        }
+
         AuditLogger::log('login', 'employee_portal', $user->id, null, [
             'ip' => $request->ip(),
             'employee_code' => $employee->employee_code,
             'name' => $employee->name,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'address' => $address,
         ]);
 
         return redirect()->route('portal.punch');

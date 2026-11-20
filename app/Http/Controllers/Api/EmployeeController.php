@@ -41,7 +41,7 @@ class EmployeeController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'employee_code' => ['nullable', 'string', 'max:50', 'unique:employees,employee_code'],
+            'employee_code' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('employees', 'employee_code')->whereNull('deleted_at')],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -58,8 +58,13 @@ class EmployeeController extends BaseApiController
 
         if (! empty($validated['employee_code'])) {
             $validated['employee_code'] = trim($validated['employee_code']);
+            Employee::onlyTrashed()->where('employee_code', $validated['employee_code'])->forceDelete();
         } else {
             $validated['employee_code'] = Employee::generateCode();
+        }
+
+        if (! empty($validated['email'])) {
+            Employee::onlyTrashed()->where('email', $validated['email'])->forceDelete();
         }
 
         $employee = Employee::create($validated);
@@ -108,7 +113,15 @@ class EmployeeController extends BaseApiController
     public function destroy(Employee $employee): JsonResponse
     {
         $id = $employee->id;
-        $employee->delete();
+        if ($employee->user) {
+            $employee->user->forceDelete();
+        }
+        if ($employee->email) {
+            User::withTrashed()->where('email', $employee->email)->forceDelete();
+        }
+        User::withTrashed()->where('username', $employee->employee_code)->forceDelete();
+
+        $employee->forceDelete();
 
         AuditLogger::log('delete', 'employees', $id);
 

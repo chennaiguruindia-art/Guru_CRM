@@ -87,7 +87,7 @@ class EmployeeController extends Controller
         ]);
 
         $validated = $request->validate([
-            'employee_code' => ['nullable', 'string', 'max:50', 'unique:employees,employee_code'],
+            'employee_code' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('employees', 'employee_code')->whereNull('deleted_at')],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30', 'regex:/^\d{10,15}$/'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -123,9 +123,15 @@ class EmployeeController extends Controller
 
         if (! empty($validated['employee_code'])) {
             $validated['employee_code'] = trim($validated['employee_code']);
+            Employee::onlyTrashed()->where('employee_code', $validated['employee_code'])->forceDelete();
         } else {
             $validated['employee_code'] = Employee::generateCode();
         }
+
+        if (! empty($validated['email'])) {
+            Employee::onlyTrashed()->where('email', $validated['email'])->forceDelete();
+        }
+
         $validated['status'] = 'active';
 
         $emp = Employee::create($validated);
@@ -160,25 +166,42 @@ class EmployeeController extends Controller
         $sanitizedCode = strtolower(preg_replace('/[^a-zA-Z0-9_\.]/', '-', $emp->employee_code));
         $email = $emp->email ?: ($sanitizedCode . '@horti.local');
 
-        if (User::where('email', $email)->exists()) {
-            return null;
-        }
-
         $password = $request->input('password') ?: Str::random(10);
-
-        // The roster mobile is what this person signs in with, so it is
-        // carried across here rather than left to be filled in later.
         $phone = Phone::normalize($emp->phone);
 
-        $user = User::create([
-            'name' => $emp->name,
-            'email' => $email,
-            'username' => $emp->employee_code,
-            'phone' => $phone,
-            'password' => $password,
-            'status' => 'active',
-            'branch_id' => $emp->branch_id,
-        ]);
+        // Check for existing user by email (including any soft-deleted from previous delete)
+        $user = User::withTrashed()->where('email', $email)->first();
+
+        // Clean up any soft-deleted user with the same username if it's a different row
+        User::onlyTrashed()
+            ->where('username', $emp->employee_code)
+            ->when($user, fn ($q) => $q->where('id', '!=', $user->id))
+            ->forceDelete();
+
+        if ($user) {
+            if ($user->trashed()) {
+                $user->restore();
+            }
+            $user->update([
+                'name' => $emp->name,
+                'email' => $email,
+                'username' => $emp->employee_code,
+                'phone' => $phone,
+                'password' => $password,
+                'status' => 'active',
+                'branch_id' => $emp->branch_id,
+            ]);
+        } else {
+            $user = User::create([
+                'name' => $emp->name,
+                'email' => $email,
+                'username' => $emp->employee_code,
+                'phone' => $phone,
+                'password' => $password,
+                'status' => 'active',
+                'branch_id' => $emp->branch_id,
+            ]);
+        }
 
         $role = $request->input('role');
         if (empty($role)) {
@@ -286,13 +309,22 @@ class EmployeeController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Clean up linked user account if exists
+        AuditLogger::log('delete', 'employees', $employee->id);
+
+        // Permanently remove linked user account so email and username are freed immediately
         if ($employee->user) {
-            $employee->user->delete();
+            $employee->user->forceDelete();
         }
 
-        AuditLogger::log('delete', 'employees', $employee->id);
-        $employee->delete();
+        // Also clean up user by email/username if it was unlinked
+        if ($employee->email) {
+            User::withTrashed()->where('email', $employee->email)->forceDelete();
+        }
+        User::withTrashed()->where('username', $employee->employee_code)->forceDelete();
+
+        // Permanently remove employee record
+        $employee->forceDelete();
+
         return redirect()->route('employees.index')->with('success', 'Employee deleted successfully!');
     }
 }

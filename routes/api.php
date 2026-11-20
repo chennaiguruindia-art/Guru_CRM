@@ -97,6 +97,7 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
     // Public authentication routes
     Route::prefix('auth')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->name('api.auth.login');
+        Route::post('employee-login', [AuthController::class, 'employeeLogin'])->name('api.auth.employee_login');
     });
 
     // Authenticated API routes

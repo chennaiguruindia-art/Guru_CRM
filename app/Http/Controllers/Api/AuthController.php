@@ -68,6 +68,72 @@ class AuthController extends BaseApiController
     }
 
     /**
+     * Mobile Employee Punch Login: accepts employee_code (e.g. EMP-0001 or 1).
+     * No password required, directly issues Sanctum token for the linked user.
+     */
+    public function employeeLogin(Request $request): JsonResponse
+    {
+        $request->validate([
+            'employee_code' => ['required', 'string', 'max:50'],
+            'device_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $rawCode = trim($request->input('employee_code'));
+
+        $employee = \App\Models\Employee::where('employee_code', $rawCode)
+            ->orWhere('employee_code', 'EMP-' . str_pad($rawCode, 4, '0', STR_PAD_LEFT))
+            ->first();
+
+        if (! $employee) {
+            return $this->errorResponse('Invalid Employee ID: "' . $rawCode . '". Please check with your branch admin.', 422, [
+                'employee_code' => ['Invalid Employee ID. Please check with your branch admin.'],
+            ]);
+        }
+
+        if ($employee->status !== 'active') {
+            return $this->errorResponse('This employee account is currently inactive.', 403);
+        }
+
+        if (! $employee->user_id) {
+            $email = $employee->email ?: ($employee->employee_code . '@horti.local');
+            $user = \App\Models\User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name' => $employee->name,
+                    'username' => $employee->employee_code,
+                    'phone' => \App\Support\Phone::normalize($employee->phone) ?: '0000000000',
+                    'password' => \Illuminate\Support\Str::random(12),
+                    'status' => 'active',
+                ]
+            );
+            $user->assignRole('employee');
+            $employee->update(['user_id' => $user->id]);
+        } else {
+            $user = \App\Models\User::find($employee->user_id);
+            if (! $user) {
+                return $this->errorResponse('Linked user profile not found.', 422);
+            }
+        }
+
+        $deviceName = $request->input('device_name', $request->header('User-Agent', 'MobileApp Employee Punch'));
+        $token = $user->createToken($deviceName)->plainTextToken;
+
+        AuditLogger::log('api_employee_login', 'authentication', $user->id, null, [
+            'ip' => $request->ip(),
+            'employee_code' => $employee->employee_code,
+            'name' => $employee->name,
+            'device' => $deviceName,
+        ]);
+
+        return $this->successResponse([
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $this->formatUserData($user),
+            'employee' => $employee->load('branch'),
+        ], 'Employee authenticated successfully');
+    }
+
+    /**
      * Return authenticated user profile and permissions.
      */
     public function me(Request $request): JsonResponse

@@ -159,19 +159,23 @@ class Lead extends Model
      * scope. Trashed visits are counted too, so a code is never reused.
      */
     /**
-     * Generate sequential Visit ID per branch (e.g. LEAD-0001, LEAD-0002...).
-     * Each branch begins from 0001 independently.
+     * Generate sequential Visit ID per branch and per channel/source (e.g. LEAD-0001, LEAD-0002...).
+     * Each section (Cold Call, Promotion Email, Operation Visit) begins from LEAD-0001 independently.
      */
-    public static function generateCode(?int $branchId = null): string
+    public static function generateCode(?int $branchId = null, ?string $source = null): string
     {
         if (! $branchId && auth()->check()) {
             $branchId = auth()->user()->branchId();
         }
 
+        $source = $source ?: self::DEFAULT_SOURCE;
+
         $query = static::withoutGlobalScopes()->withTrashed();
         if ($branchId) {
             $query->where('branch_id', $branchId);
         }
+
+        $query->where('source', $source);
 
         $codes = $query->where('lead_code', 'like', 'LEAD-%')->pluck('lead_code');
 

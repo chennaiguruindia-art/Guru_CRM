@@ -179,8 +179,10 @@ class LeadController extends Controller
 
         $data = $request->validated();
         $branchId = auth()->user()->branchId();
+        $source = $request->input('source') ?: ($data['source'] ?? Lead::DEFAULT_SOURCE);
         $data['branch_id'] = $branchId;
-        $data['lead_code'] = Lead::generateCode($branchId);
+        $data['source'] = $source;
+        $data['lead_code'] = Lead::generateCode($branchId, $source);
         $data['created_by_id'] = auth()->id();
 
         // Ensure name is present (falls back to company_name or contact_person if site name empty)
@@ -444,7 +446,7 @@ class LeadController extends Controller
             }
 
             $lead = Lead::create([
-                'lead_code' => Lead::generateCode($branchId),
+                'lead_code' => Lead::generateCode($branchId, $source),
                 'name' => $siteName,
                 'company_name' => $companyName ?: null,
                 'contact_person' => $contactPerson ?: null,

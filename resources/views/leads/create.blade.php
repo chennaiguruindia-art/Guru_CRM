@@ -73,7 +73,7 @@
                                 <label class="form-label small fw-semibold text-secondary">Purpose of Visit <span class="text-danger">*</span></label>
                                 <select name="purpose_of_visit" class="form-select @error('purpose_of_visit') is-invalid @enderror" required>
                                     <option value="">-- Select Purpose --</option>
-                                    @foreach(['Routine Site Inspection','Client Service Review','Site Measurement & Audit','Work Progress Check','Plant & Material Replacement','Complaint & Issue Resolution','Contract Renewal Discussion','General Visit','Client Meeting'] as $p)
+                                    @foreach(['Routine Site Inspection','Client Service Review','Site Measurement & Audit','Work Progress Check','Plant & Material Replacement','Complaint & Issue Resolution','Contract Renewal Discussion','General Visit','Client Meeting','Man Power Search'] as $p)
                                         <option value="{{ $p }}" @selected(old('purpose_of_visit', 'Routine Site Inspection')===$p)>{{ $p }}</option>
                                     @endforeach
                                 </select>

@@ -23,11 +23,12 @@ class LeadController extends BaseApiController
     }
 
     /**
-     * Cold Calls channel.
+     * Cold Calls channel: only returns visits with source = Cold Call.
+     * Existing Client and Promotion Email visits are excluded.
      */
     public function coldCalls(Request $request): JsonResponse
     {
-        return $this->getListing($request, null);
+        return $this->getListing($request, Lead::CHANNELS['cold_call']);
     }
 
     /**
@@ -96,6 +97,7 @@ class LeadController extends BaseApiController
             'convertedCustomer',
             'activities.user',
             'branch',
+            'documents',
         ]);
 
         return $this->successResponse($this->formatLead($lead), 'Lead retrieved successfully');
@@ -158,6 +160,11 @@ class LeadController extends BaseApiController
      */
     public function convert(Request $request, Lead $lead, LeadConversionService $service): JsonResponse
     {
+        $user = $request->user();
+        if (! ($user?->can('leads.convert') || $user?->hasRole(['super-admin', 'admin']))) {
+            return $this->errorResponse('You do not have permission to convert visits to clients.', 403);
+        }
+
         if ($lead->status === 'Converted') {
             return $this->errorResponse('This visit has already been converted to a client.', 422);
         }
@@ -165,6 +172,34 @@ class LeadController extends BaseApiController
         $result = $service->convert($lead, $request->all());
 
         return $this->successResponse($result, 'Visit successfully converted to client');
+    }
+
+    /**
+     * Reject or mark visit/lead as Lost.
+     */
+    public function reject(Request $request, Lead $lead): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $lead->update([
+            'status' => 'Lost',
+        ]);
+
+        LeadActivity::create([
+            'lead_id' => $lead->id,
+            'user_id' => $request->user()->id,
+            'activity_type' => 'Status Change',
+            'notes' => 'Visit marked as Rejected / Lost.' . (! empty($validated['reason']) ? ' Reason: ' . $validated['reason'] : ''),
+        ]);
+
+        AuditLogger::log('status_change', 'leads', $lead->id, null, ['status' => 'Lost']);
+
+        return $this->successResponse(
+            $this->formatLead($lead->fresh(['assignedTo', 'createdBy', 'branch'])),
+            'Visit marked as Rejected / Lost successfully'
+        );
     }
 
     /**

@@ -126,6 +126,8 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
         $apiResourceWithPerms('leads', LeadController::class, 'leads');
         Route::post('leads/{lead}/convert', [LeadController::class, 'convert'])
             ->name('api.leads.convert')->middleware('permission:leads.convert');
+        Route::post('leads/{lead}/reject', [LeadController::class, 'reject'])
+            ->name('api.leads.reject')->middleware('permission:' . $pickPermission('leads', 'edit', 'delete'));
         Route::post('leads/{lead}/activity', [LeadController::class, 'addActivity'])
             ->name('api.leads.activity')->middleware('permission:' . $pickPermission('leads', 'edit', 'create'));
 
@@ -140,6 +142,8 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
             ->name('api.promotion_emails.index')->middleware('permission:leads.promotion');
         Route::get('client-visits', [LeadController::class, 'clientVisits'])
             ->name('api.client_visits.index')->middleware('permission:leads.existing_client');
+        Route::get('existing-client-visits', [LeadController::class, 'clientVisits'])
+            ->name('api.existing_client_visits.index')->middleware('permission:leads.existing_client');
 
         $apiResourceWithPerms('customers', CustomerController::class, 'customers');
 

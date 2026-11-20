@@ -110,6 +110,14 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
             Route::post('password', [AuthController::class, 'updatePassword'])->name('api.auth.password');
         });
 
+        // ─── Employee HRM Self-Service Portal ───────────────────────────
+        Route::prefix('portal')->group(function () {
+            Route::get('dashboard', [\App\Http\Controllers\Api\PortalController::class, 'dashboard'])->name('api.portal.dashboard');
+            Route::post('punch-in', [\App\Http\Controllers\Api\PortalController::class, 'punchIn'])->name('api.portal.punch_in');
+            Route::post('punch-out', [\App\Http\Controllers\Api\PortalController::class, 'punchOut'])->name('api.portal.punch_out');
+            Route::get('attendance', [\App\Http\Controllers\Api\PortalController::class, 'attendance'])->name('api.portal.attendance');
+        });
+
         // App Lookups (metadata, dropdown choices, status choices)
         Route::get('lookups', [LookupController::class, 'index'])->name('api.lookups');
 

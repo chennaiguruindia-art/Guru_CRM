@@ -158,11 +158,36 @@ class Lead extends Model
      * everybody else, the count coming back empty from their side of the
      * scope. Trashed visits are counted too, so a code is never reused.
      */
-    public static function generateCode(): string
+    /**
+     * Generate sequential Visit ID per branch (e.g. LEAD-0001, LEAD-0002...).
+     * Each branch begins from 0001 independently.
+     */
+    public static function generateCode(?int $branchId = null): string
     {
-        $last = static::withoutGlobalScopes()->withTrashed()->latest('id')->first();
-        $next = $last ? ($last->id + 1) : 1;
-        return 'LEAD-' . str_pad($next, 4, '0', STR_PAD_LEFT);
+        if (! $branchId && auth()->check()) {
+            $branchId = auth()->user()->branchId();
+        }
+
+        $query = static::withoutGlobalScopes()->withTrashed();
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $codes = $query->where('lead_code', 'like', 'LEAD-%')->pluck('lead_code');
+
+        $max = 0;
+        foreach ($codes as $code) {
+            if (preg_match('/LEAD-(\d+)/i', $code, $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $max) {
+                    $max = $num;
+                }
+            }
+        }
+
+        $next = $max + 1;
+
+        return 'LEAD-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
     public function getStatusBadgeClassAttribute(): string

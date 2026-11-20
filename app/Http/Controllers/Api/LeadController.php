@@ -55,10 +55,10 @@ class LeadController extends BaseApiController
         $user = $request->user();
         $data = $request->validated();
 
-        $data['lead_code'] = Lead::generateCode();
         $data['created_by_id'] = $user->id;
         $data['assigned_to_id'] = $user->id;
         $data['branch_id'] = $user->branchId();
+        $data['lead_code'] = Lead::generateCode($data['branch_id']);
         $data['source'] ??= Lead::DEFAULT_SOURCE;
 
         if ($request->hasFile('visiting_card_photo')) {

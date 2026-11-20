@@ -9,6 +9,13 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('employees.edit', $employee) }}" class="btn btn-success btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
+        <form action="{{ route('employees.destroy', $employee) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete employee {{ $employee->name }} ({{ $employee->employee_code }})?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>Delete
+            </button>
+        </form>
         <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
     </div>
 </div>

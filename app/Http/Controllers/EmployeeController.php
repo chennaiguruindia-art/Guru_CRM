@@ -269,8 +269,13 @@ class EmployeeController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        // Clean up linked user account if exists
+        if ($employee->user) {
+            $employee->user->delete();
+        }
+
         AuditLogger::log('delete', 'employees', $employee->id);
         $employee->delete();
-        return redirect()->route('employees.index')->with('success', 'Employee deleted!');
+        return redirect()->route('employees.index')->with('success', 'Employee deleted successfully!');
     }
 }

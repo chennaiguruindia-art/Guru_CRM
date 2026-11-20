@@ -63,7 +63,17 @@
                         <span class="badge {{ $emp->status === 'active' ? 'bg-success' : 'bg-secondary' }}">{{ ucfirst($emp->status) }}</span>
                     </td>
                     <td class="text-end">
-                        <a href="{{ route('employees.show', $emp) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-eye"></i></a>
+                        <div class="d-flex justify-content-end gap-1">
+                            <a href="{{ route('employees.show', $emp) }}" class="btn btn-sm btn-outline-success" title="View Profile"><i class="bi bi-eye"></i></a>
+                            <a href="{{ route('employees.edit', $emp) }}" class="btn btn-sm btn-outline-primary" title="Edit Employee"><i class="bi bi-pencil"></i></a>
+                            <form action="{{ route('employees.destroy', $emp) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete employee {{ $emp->name }} ({{ $emp->employee_code }})?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Employee">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

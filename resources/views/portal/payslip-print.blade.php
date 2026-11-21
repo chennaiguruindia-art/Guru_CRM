@@ -25,20 +25,45 @@
             border: 2px solid #000;
         }
         @media print {
-            body {
-                background: #fff;
-                margin: 0;
-                padding: 0;
+            @page {
+                size: A4 portrait;
+                margin: 0; /* Suppress browser URL, header, and footer */
+            }
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 6mm 10mm !important;
+                width: 100% !important;
+                height: auto !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .payslip-container {
-                max-width: 100%;
-                margin: 0;
-                padding: 0;
-                box-shadow: none;
-                border-radius: 0;
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                page-break-after: avoid !important;
+            }
+            .payslip-box {
+                border: 2px solid #000 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             .no-print {
                 display: none !important;
+            }
+            table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+            }
+            table td, table th {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
         }
     </style>
@@ -210,7 +235,7 @@
         </div>
 
         @if(!empty($payslip->remarks))
-        <div class="p-2 px-3 border border-dark rounded small mt-3 bg-light text-muted">
+        <div class="p-2 px-3 border border-dark rounded small mt-3 bg-light text-muted no-print">
             <i class="bi bi-info-circle me-1"></i>
             <strong>Note / Remarks:</strong> {{ $payslip->remarks }}
         </div>

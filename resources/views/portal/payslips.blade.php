@@ -1,8 +1,106 @@
 @extends('layouts.portal')
 @section('title', 'My Payslips')
 
+@push('styles')
+<style>
+@media print {
+    /* 1. Suppress browser default header (date, title) & footer (URL, page numbers) */
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+
+    html, body {
+        background: #fff !important;
+        color: #000 !important;
+        margin: 0 !important;
+        padding: 6mm 10mm !important;
+        width: 100% !important;
+        height: auto !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* 2. Hide ALL page layout chrome, navigation, sidebars, alerts, cards */
+    #sidebar,
+    .top-navbar,
+    .page-header-bar,
+    .month-selector-card,
+    .dynamic-alert-banner,
+    .compensation-card,
+    .history-card,
+    .below-payslip-note,
+    .no-print,
+    .btn,
+    nav,
+    footer,
+    header,
+    .d-print-none,
+    .col-xl-4 {
+        display: none !important;
+    }
+
+    /* 3. Force container & payslip to 100% width on single page */
+    #content-wrapper,
+    main,
+    .container-fluid,
+    .row,
+    .col-12,
+    .col-xl-8 {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+    }
+
+    #printablePayslip {
+        border: none !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #printablePayslip .card-body {
+        padding: 0 !important;
+    }
+
+    .payslip-wrapper {
+        border: 2px solid #000 !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+        box-shadow: none !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+        display: block !important;
+    }
+
+    table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+    }
+
+    table td, table th {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+</style>
+@endpush
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 page-header-bar no-print">
     <div>
         <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-receipt-cutoff text-success me-2"></i>My Salary Payslips</h4>
         <div class="text-muted small">View, verify, and print your monthly compensation and payslip statements.</div>
@@ -21,7 +119,7 @@
 </div>
 
 <!-- Month Selector Bar -->
-<div class="card border-0 shadow-sm mb-4">
+<div class="card border-0 shadow-sm mb-4 month-selector-card no-print">
     <div class="card-body p-3">
         <form method="GET" action="{{ route('portal.payslips') }}" class="row g-2 align-items-center">
             <div class="col-auto">
@@ -51,7 +149,7 @@
 </div>
 
 @if($currentPayslip && $currentPayslip->payment_status === 'In Progress')
-<div class="alert alert-primary border-primary-subtle bg-primary-subtle bg-opacity-10 shadow-sm d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 flex-wrap gap-2">
+<div class="alert alert-primary border-primary-subtle bg-primary-subtle bg-opacity-10 shadow-sm d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 flex-wrap gap-2 dynamic-alert-banner no-print">
     <div class="d-flex align-items-center gap-3">
         <div class="rounded-circle bg-primary bg-opacity-10 p-2 text-primary d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
             <i class="bi bi-lightning-charge-fill fs-5"></i>
@@ -238,7 +336,7 @@
                 </div>
 
                 <!-- Live Status / Help Note under Document -->
-                <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted">
+                <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted below-payslip-note no-print">
                     <div>
                         <i class="bi bi-info-circle text-primary me-1"></i>
                         <span>Payment Date: <strong>{{ $currentPayslip->payment_date?->format('d M Y') ?? 'End of Month' }}</strong></span>
@@ -257,7 +355,7 @@
             </div>
         </div>
         @else
-        <div class="card border shadow-sm bg-white p-5 text-center">
+        <div class="card border shadow-sm bg-white p-5 text-center no-print">
             <div class="mb-3">
                 <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
             </div>
@@ -276,9 +374,9 @@
     </div>
 
     <!-- Right Column: Salary Structure & Quick History -->
-    <div class="col-12 col-xl-4">
+    <div class="col-12 col-xl-4 no-print">
         <!-- Salary Info Card -->
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4 compensation-card">
             <div class="card-header bg-white border-bottom py-3">
                 <h6 class="mb-0 fw-semibold text-dark">
                     <i class="bi bi-wallet2 text-success me-2"></i>Compensation Overview

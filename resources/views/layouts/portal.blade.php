@@ -17,26 +17,30 @@
     <link rel="stylesheet" href="{{ asset('css/app-custom.css') }}">
 
     <style>
-        .portal-brand-badge {
-            font-size: 0.68rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            font-weight: 700;
-            background: rgba(25, 135, 84, 0.12);
-            color: #198754;
-            padding: 3px 8px;
-            border-radius: 4px;
+        #sidebar {
+            width: 260px !important;
+            min-width: 260px !important;
+            max-width: 260px !important;
+            flex-shrink: 0 !important;
         }
-        .portal-user-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 12px;
-            margin: 10px 12px 14px;
+        .sidebar-brand-logo {
+            max-width: 180px;
+            height: auto;
+            max-height: 40px;
+            object-fit: contain;
+        }
+        .sidebar-link {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0.65rem 0.95rem;
+            border-radius: 8px;
+            margin-bottom: 2px;
+            font-size: 0.88rem;
         }
         .portal-avatar {
-            width: 42px;
-            height: 42px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background: linear-gradient(135deg, #198754 0%, #157347 100%);
             color: #fff;
@@ -44,8 +48,8 @@
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 1.1rem;
-            box-shadow: 0 2px 6px rgba(25, 135, 84, 0.25);
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(25, 135, 84, 0.25);
         }
         .punch-btn-in {
             background: linear-gradient(135deg, #20c997 0%, #0f5132 100%);
@@ -93,112 +97,109 @@
     @endphp
 
     <div class="d-flex">
-        <!-- Sidebar Navigation for Employee Portal -->
-        <aside id="sidebar" class="d-flex flex-column" aria-label="Portal Navigation">
-            <!-- Brand header -->
-            <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-between">
+        <!-- Sidebar Navigation for Employee Portal (Fixed 260px, Non-Collapsing) -->
+        <nav id="sidebar" class="sidebar d-flex flex-column flex-shrink-0" aria-label="Portal Navigation">
+            <!-- Brand Header -->
+            <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-between px-3 py-3 border-bottom">
                 <a href="{{ route('portal.dashboard') }}" class="sidebar-brand text-decoration-none d-flex align-items-center gap-2">
-                    <img src="{{ asset('logo/guru.png') }}" alt="Guru Living Assets" class="sidebar-brand-logo" style="max-height: 40px; width: auto;">
+                    <img src="{{ asset('logo/guru.png') }}" alt="Guru Living Assets" class="sidebar-brand-logo" style="height: 38px; width: auto; object-fit: contain;">
                 </a>
                 <button id="sidebar-close-btn" class="btn btn-sm btn-link text-muted p-1 d-lg-none" type="button" aria-label="Close navigation">
                     <i class="bi bi-x-lg fs-5"></i>
                 </button>
             </div>
 
-            <!-- Portal Badge & Employee Quick Info -->
-            <div class="px-3 pt-3 pb-1 d-flex align-items-center justify-content-between">
-                <span class="portal-brand-badge"><i class="bi bi-person-workspace me-1"></i>Employee Portal</span>
-                <span class="badge bg-success-subtle text-success border border-success-subtle small">
-                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i>Active
-                </span>
-            </div>
-
-            <div class="portal-user-card">
+            <!-- Employee Mini Profile Card -->
+            <div class="p-3 border-bottom bg-light bg-opacity-75">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="portal-avatar">
+                    <div class="portal-avatar flex-shrink-0">
                         {{ strtoupper(substr($authEmployee ? $authEmployee->name : ($authUser->name ?? 'U'), 0, 1)) }}
                     </div>
-                    <div class="overflow-hidden">
+                    <div class="overflow-hidden flex-grow-1">
                         <div class="fw-bold text-dark text-truncate small" title="{{ $authEmployee ? $authEmployee->name : $authUser->name }}">
                             {{ $authEmployee ? $authEmployee->name : $authUser->name }}
                         </div>
-                        <div class="text-success font-monospace fw-semibold" style="font-size: 0.75rem;">
-                            {{ $authEmployee ? $authEmployee->employee_code : ($authUser->username ?? 'ID Pending') }}
-                        </div>
-                        <div class="text-muted text-truncate" style="font-size: 0.7rem;">
-                            {{ $authEmployee?->designation ?? 'Staff Member' }}
+                        <div class="d-flex align-items-center gap-1 flex-wrap mt-1">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace" style="font-size: 0.68rem; padding: 2px 5px;">
+                                {{ $authEmployee ? $authEmployee->employee_code : ($authUser->username ?? 'EMP') }}
+                            </span>
+                            <span class="text-muted text-truncate" style="font-size: 0.72rem;">
+                                {{ $authEmployee?->designation ?? 'Staff' }}
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sidebar Navigation Links -->
-            <div class="sidebar-menu px-2 py-1 flex-grow-1 overflow-y-auto">
+            <!-- Navigation Scroll Container -->
+            <div class="sidebar-menu flex-grow-1 overflow-y-auto px-2 py-3">
                 <div class="sidebar-section-divider">MAIN MENU</div>
 
                 <a href="{{ route('portal.dashboard') }}" class="sidebar-link {{ request()->routeIs('portal.dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span class="sidebar-icon"><i class="bi bi-grid-1x2-fill"></i></span>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
 
                 <a href="{{ route('portal.punch') }}" class="sidebar-link {{ request()->routeIs('portal.punch') ? 'active' : '' }}">
-                    <i class="bi bi-fingerprint"></i>
-                    <span class="sidebar-text">Punch Attendance</span>
+                    <span class="sidebar-icon"><i class="bi bi-fingerprint"></i></span>
+                    <span class="sidebar-text">Punch Desk</span>
                 </a>
 
                 <a href="{{ route('portal.attendance') }}" class="sidebar-link {{ request()->routeIs('portal.attendance') ? 'active' : '' }}">
-                    <i class="bi bi-calendar2-check-fill"></i>
-                    <span class="sidebar-text">Attendance History</span>
+                    <span class="sidebar-icon"><i class="bi bi-calendar2-check-fill"></i></span>
+                    <span class="sidebar-text">Attendance Log</span>
                 </a>
 
                 <div class="sidebar-section-divider mt-3">SELF-SERVICE</div>
 
                 <a href="{{ route('portal.profile') }}" class="sidebar-link {{ request()->routeIs('portal.profile') ? 'active' : '' }}">
-                    <i class="bi bi-person-vcard-fill"></i>
-                    <span class="sidebar-text">My Profile & Details</span>
+                    <span class="sidebar-icon"><i class="bi bi-person-vcard-fill"></i></span>
+                    <span class="sidebar-text">My Profile & Info</span>
                 </a>
 
                 <a href="{{ route('portal.family') }}" class="sidebar-link {{ request()->routeIs('portal.family') ? 'active' : '' }}">
-                    <i class="bi bi-people-fill"></i>
-                    <span class="sidebar-text">Parents & Family Details</span>
+                    <span class="sidebar-icon"><i class="bi bi-people-fill"></i></span>
+                    <span class="sidebar-text">Family & Parents</span>
                 </a>
 
                 <a href="{{ route('portal.payslips') }}" class="sidebar-link {{ request()->routeIs('portal.payslip*') ? 'active' : '' }}">
-                    <i class="bi bi-receipt-cutoff"></i>
+                    <span class="sidebar-icon"><i class="bi bi-receipt-cutoff"></i></span>
                     <span class="sidebar-text">My Payslips</span>
                 </a>
 
                 @if($authUser && $authUser->hasAnyRole(['super-admin', 'admin', 'fieldmarketer']))
                     <div class="sidebar-section-divider mt-3">MANAGEMENT</div>
                     <a href="{{ route('dashboard') }}" class="sidebar-link text-primary fw-semibold">
-                        <i class="bi bi-arrow-left-right text-primary"></i>
+                        <span class="sidebar-icon"><i class="bi bi-arrow-left-right text-primary"></i></span>
                         <span class="sidebar-text">Switch to CRM</span>
                     </a>
                 @endif
             </div>
 
-            <!-- Sidebar Footer: Logged in user & Sign Out -->
-            <div class="sidebar-footer d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2 overflow-hidden">
-                    <i class="bi bi-shield-check text-success fs-5"></i>
-                    <div class="overflow-hidden">
-                        <div class="fw-semibold text-dark text-truncate small" style="max-width: 130px;">
-                            {{ $authEmployee?->branch?->name ?? 'HQ Office' }}
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer p-3 border-top bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2 overflow-hidden">
+                        <i class="bi bi-geo-alt-fill text-danger fs-5 flex-shrink-0"></i>
+                        <div class="overflow-hidden">
+                            <div class="fw-semibold text-dark text-truncate small" style="max-width: 130px;">
+                                {{ $authEmployee?->branch?->name ?? 'Main Branch' }}
+                            </div>
+                            <div class="text-muted" style="font-size: 0.68rem;">Verified Staff</div>
                         </div>
-                        <div class="text-muted" style="font-size: 0.7rem;">Verified Employee</div>
                     </div>
+
+                    <form method="POST" action="{{ route('logout') }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2 rounded" title="Sign out of Employee Portal">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </form>
                 </div>
-
-                <form method="POST" action="{{ route('logout') }}" class="m-0">
-                    @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2 rounded" title="Sign out of Employee Portal">
-                        <i class="bi bi-box-arrow-right"></i>
-                    </button>
-                </form>
             </div>
-        </aside>
+        </nav>
 
-        <!-- Main Content Area -->
+        <!-- Main Content Wrapper -->
         <div id="content-wrapper" class="flex-grow-1 d-flex flex-column min-vh-100">
             <!-- Top Navbar -->
             <header class="top-navbar bg-white border-bottom shadow-sm px-3 py-2 d-flex align-items-center justify-content-between sticky-top">
@@ -207,11 +208,11 @@
                         <i class="bi bi-list fs-5"></i>
                     </button>
                     <div class="d-flex align-items-center gap-2">
-                        <h5 class="fw-bold mb-0 text-dark d-none d-sm-block">
+                        <h5 class="fw-bold mb-0 text-dark">
                             @yield('title', 'Employee HRM Portal')
                         </h5>
                         @if($authEmployee?->branch)
-                            <span class="badge bg-light text-dark border">
+                            <span class="badge bg-light text-dark border d-none d-sm-inline-flex align-items-center">
                                 <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ $authEmployee->branch->name }}
                             </span>
                         @endif
@@ -272,11 +273,11 @@
                 </div>
             </header>
 
-            <!-- Main App Content -->
+            <!-- Main Page Content Area -->
             <main class="flex-grow-1 p-3 p-md-4">
                 <!-- Flash Alerts -->
                 @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-4" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-3" role="alert">
                         <i class="bi bi-check-circle-fill fs-5"></i>
                         <div>{{ session('success') }}</div>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
@@ -284,7 +285,7 @@
                 @endif
 
                 @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-4" role="alert">
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-3" role="alert">
                         <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                         <div>{{ session('error') }}</div>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
@@ -292,7 +293,7 @@
                 @endif
 
                 @if(session('info'))
-                    <div class="alert alert-info alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-4" role="alert">
+                    <div class="alert alert-info alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-3" role="alert">
                         <i class="bi bi-info-circle-fill fs-5"></i>
                         <div>{{ session('info') }}</div>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
@@ -319,7 +320,7 @@
     <!-- Bootstrap 5.3 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Custom Common Scripts (for mobile sidebar toggle, toasts, alerts) -->
+    <!-- Custom Common Scripts (for mobile drawer, toasts, alerts) -->
     <script src="{{ asset('js/common.js') }}"></script>
 
     @stack('scripts')

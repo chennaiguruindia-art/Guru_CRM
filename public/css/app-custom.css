@@ -475,7 +475,10 @@ label, .form-label {
 
 /* ---------- Sidebar ---------- */
 #sidebar {
-    width: 270px;
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+    flex-shrink: 0;
 
     /* STICKY: the rail stays pinned in the viewport while the page scrolls.
        Without this it stretched to the full content height, pushing the user

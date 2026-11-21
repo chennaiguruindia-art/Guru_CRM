@@ -217,20 +217,9 @@
             </div>
 
             <!-- 8. Net Payable in Words -->
-            <div class="py-2 px-4 border-bottom border-2 border-dark small fw-semibold bg-white d-flex align-items-center flex-wrap gap-2">
+            <div class="py-2 px-4 small fw-semibold bg-white d-flex align-items-center flex-wrap gap-2">
                 <span class="text-dark">Net Payable in Words:</span>
                 <span class="text-dark fw-bold">{{ $payslip->net_salary_in_words }}</span>
-            </div>
-
-            <!-- 9. Signatures Footer -->
-            <div class="p-4 pt-5 d-flex justify-content-between align-items-end bg-white" style="min-height: 100px;">
-                <div class="text-center" style="min-width: 180px;">
-                    <div class="border-top border-dark pt-1 fw-bold small text-dark">Receiver's Signature</div>
-                </div>
-                <div class="text-center" style="min-width: 180px;">
-                    <div class="border-top border-dark pt-1 fw-bold small text-dark">Authorized Signatory</div>
-                    <div class="text-muted" style="font-size: 0.7rem;">Guru Integrated Services</div>
-                </div>
             </div>
         </div>
 

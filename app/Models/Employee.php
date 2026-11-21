@@ -20,7 +20,7 @@ class Employee extends Model
         'father_occupation', 'mother_occupation', 'parent_address',
         'emergency_contact_relation', 'marital_status', 'spouse_name',
         'bank_name', 'bank_account_number', 'bank_ifsc', 'pan_number', 'uan_number', 'pf_number',
-        'basic_salary', 'hra', 'conveyance_allowance', 'special_allowance', 'other_allowance',
+        'basic_salary', 'da', 'bonus', 'leave_encashment', 'hra', 'conveyance_allowance', 'special_allowance', 'other_allowance',
         'custom_pf_deduction', 'custom_esi_deduction', 'custom_pt_deduction'
     ];
 
@@ -29,6 +29,9 @@ class Employee extends Model
         'dob' => 'date',
         'salary' => 'decimal:2',
         'basic_salary' => 'decimal:2',
+        'da' => 'decimal:2',
+        'bonus' => 'decimal:2',
+        'leave_encashment' => 'decimal:2',
         'hra' => 'decimal:2',
         'conveyance_allowance' => 'decimal:2',
         'special_allowance' => 'decimal:2',

@@ -108,6 +108,9 @@ class EmployeeController extends Controller
             'bank_account_number' => ['nullable', 'string', 'max:50'],
             'bank_ifsc' => ['nullable', 'string', 'max:20'],
             'basic_salary' => ['nullable', 'numeric', 'min:0'],
+            'da' => ['nullable', 'numeric', 'min:0'],
+            'bonus' => ['nullable', 'numeric', 'min:0'],
+            'leave_encashment' => ['nullable', 'numeric', 'min:0'],
             'hra' => ['nullable', 'numeric', 'min:0'],
             'conveyance_allowance' => ['nullable', 'numeric', 'min:0'],
             'special_allowance' => ['nullable', 'numeric', 'min:0'],
@@ -124,6 +127,10 @@ class EmployeeController extends Controller
 
         if (empty($validated['department'])) {
             $validated['department'] = 'General';
+        }
+
+        if (empty($validated['basic_salary']) && ! empty($validated['salary'])) {
+            $validated['basic_salary'] = $validated['salary'];
         }
 
         // Enforce branch assignment for branch admins: cannot create employees for other branches
@@ -297,6 +304,9 @@ class EmployeeController extends Controller
             'bank_account_number' => ['nullable', 'string', 'max:50'],
             'bank_ifsc' => ['nullable', 'string', 'max:20'],
             'basic_salary' => ['nullable', 'numeric', 'min:0'],
+            'da' => ['nullable', 'numeric', 'min:0'],
+            'bonus' => ['nullable', 'numeric', 'min:0'],
+            'leave_encashment' => ['nullable', 'numeric', 'min:0'],
             'hra' => ['nullable', 'numeric', 'min:0'],
             'conveyance_allowance' => ['nullable', 'numeric', 'min:0'],
             'special_allowance' => ['nullable', 'numeric', 'min:0'],
@@ -318,6 +328,10 @@ class EmployeeController extends Controller
 
         if (empty($validated['department'])) {
             $validated['department'] = $employee->department ?? 'General';
+        }
+
+        if (empty($validated['basic_salary']) && ! empty($validated['salary'])) {
+            $validated['basic_salary'] = $validated['salary'];
         }
 
         if ($user && ! $user->canSeeAllBranches()) {

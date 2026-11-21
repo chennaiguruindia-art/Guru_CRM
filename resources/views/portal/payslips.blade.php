@@ -179,28 +179,28 @@
                                     <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->pf_deduction > 0 ? number_format($currentPayslip->pf_deduction, 2) : '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="border border-dark py-2 px-3 fw-medium">House Rent Allowance (HRA)</td>
-                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $currentPayslip->hra > 0 ? number_format($currentPayslip->hra, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">DA</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($currentPayslip->da ?? 0) > 0 ? number_format($currentPayslip->da, 2) : '-' }}</td>
                                     <td class="border border-dark py-2 px-3 fw-medium">ESI</td>
                                     <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->esi_deduction > 0 ? number_format($currentPayslip->esi_deduction, 2) : '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="border border-dark py-2 px-3 fw-medium">Conveyance Allowance</td>
-                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $currentPayslip->conveyance_allowance > 0 ? number_format($currentPayslip->conveyance_allowance, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Bonus</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($currentPayslip->bonus ?? 0) > 0 ? number_format($currentPayslip->bonus, 2) : '-' }}</td>
                                     <td class="border border-dark py-2 px-3 fw-medium">Prof. Tax</td>
                                     <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->professional_tax > 0 ? number_format($currentPayslip->professional_tax, 2) : '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="border border-dark py-2 px-3 fw-medium">Special Allowance</td>
-                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $currentPayslip->special_allowance > 0 ? number_format($currentPayslip->special_allowance, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Leave Encashment</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($currentPayslip->leave_encashment ?? 0) > 0 ? number_format($currentPayslip->leave_encashment, 2) : '-' }}</td>
                                     <td class="border border-dark py-2 px-3 fw-medium">LOP</td>
                                     <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->lop_deduction > 0 ? number_format($currentPayslip->lop_deduction, 2) : '-' }}</td>
                                 </tr>
                                 <tr>
                                     <td class="border border-dark py-2 px-3 fw-medium">Other Allowance</td>
                                     <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($currentPayslip->other_allowance ?? 0) > 0 ? number_format($currentPayslip->other_allowance, 2) : '-' }}</td>
-                                    <td class="border border-dark py-2 px-3 fw-medium">Other Deductions</td>
-                                    <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ ($currentPayslip->other_deductions ?? 0) > 0 ? number_format($currentPayslip->other_deductions, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium"></td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold text-muted">-</td>
                                 </tr>
                                 <!-- Total Row -->
                                 <tr class="fw-bold" style="background-color: #cfe2ff; font-size: 0.95rem;">

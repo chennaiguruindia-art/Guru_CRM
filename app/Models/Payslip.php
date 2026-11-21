@@ -15,6 +15,9 @@ class Payslip extends Model
         'salary_month',
         'month_name',
         'basic_salary',
+        'da',
+        'bonus',
+        'leave_encashment',
         'hra',
         'conveyance_allowance',
         'special_allowance',
@@ -37,6 +40,9 @@ class Payslip extends Model
 
     protected $casts = [
         'basic_salary' => 'decimal:2',
+        'da' => 'decimal:2',
+        'bonus' => 'decimal:2',
+        'leave_encashment' => 'decimal:2',
         'hra' => 'decimal:2',
         'conveyance_allowance' => 'decimal:2',
         'special_allowance' => 'decimal:2',

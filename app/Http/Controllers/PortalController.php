@@ -469,9 +469,12 @@ class PortalController extends Controller
             }
         }
 
-        $paidDays = max(0, $eligibleDays - $lopDays);
+        // Total Days Present = Active tenure days worked/punched + Paid Sundays
+        // LOP Days = Total calendar days in month minus Days Present
+        $totalDaysPresent = max(0, $workedDays + $paidSundays);
+        $totalLopDays = max(0, (float) ($totalDaysInMonth - $totalDaysPresent));
 
-        // Monthly Salary & Component Breakdown
+        // Monthly Salary & Component Breakdown (Form XXVIII: Basic, DA, Bonus, Leave Encashment, Other Allowance)
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
 
         // Check if Admin set custom component amounts on employee
@@ -479,25 +482,25 @@ class PortalController extends Controller
 
         if ($hasCustomSplit) {
             $basic = round(((float) $employee->basic_salary), 2);
-            $hra = round(((float) ($employee->hra ?? 0)), 2);
-            $conveyance = round(((float) ($employee->conveyance_allowance ?? 0)), 2);
-            $special = round(((float) ($employee->special_allowance ?? 0)), 2);
+            $da = round(((float) ($employee->da ?? 0)), 2);
+            $bonus = round(((float) ($employee->bonus ?? 0)), 2);
+            $leaveEncashment = round(((float) ($employee->leave_encashment ?? 0)), 2);
             $other = round(((float) ($employee->other_allowance ?? 0)), 2);
-            $gross = round($basic + $hra + $conveyance + $special + $other, 2);
+            $gross = round($basic + $da + $bonus + $leaveEncashment + $other, 2);
         } else {
-            // If no custom split is defined, Monthly Gross Salary / CTC itself is the Basic Salary
+            // "Job & Compensation la ula Monthly Gross Salary / CTC (₹) idnha salry dhan basic salery la show aganum"
             $basic = $monthlyGrossSalary;
-            $hra = 0.00;
-            $conveyance = 0.00;
-            $special = 0.00;
+            $da = 0.00;
+            $bonus = 0.00;
+            $leaveEncashment = 0.00;
             $other = 0.00;
             $gross = $monthlyGrossSalary;
         }
 
         $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
-        $lopDeduction = round($lopDays * $dailyRate, 2);
+        $lopDeduction = round($totalLopDays * $dailyRate, 2);
 
-        // Deductions
+        // Deductions (PF, ESI, Prof. Tax, LOP)
         // 1. Employee PF: Custom override or standard 12% Basic capped at statutory 1800
         if ($employee->custom_pf_deduction !== null && $employee->custom_pf_deduction > 0) {
             $pf = round(((float) $employee->custom_pf_deduction), 2);
@@ -512,11 +515,11 @@ class PortalController extends Controller
             $esi = ($gross <= 21000) ? round($gross * 0.0075, 2) : 0.00;
         }
 
-        // 3. Professional Tax (PT): Custom override or standard 200
+        // 3. Professional Tax (PT): Custom override or standard 208.00 / 200.00
         if ($employee->custom_pt_deduction !== null && $employee->custom_pt_deduction > 0) {
             $pt = round(((float) $employee->custom_pt_deduction), 2);
         } else {
-            $pt = 200.00;
+            $pt = 208.00;
         }
 
         $totalDeductions = round($pf + $esi + $pt + $lopDeduction, 2);
@@ -526,8 +529,8 @@ class PortalController extends Controller
         $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
 
         $remarks = $preJoiningDays > 0
-            ? 'Joining Month: Started from ' . $joiningDate->format('d M Y') . ' (' . $eligibleDays . ' eligible days, ' . $paidSundays . ' paid Sundays)'
-            : 'Full Month Statement (' . $totalDaysInMonth . ' calendar days, ' . $paidSundays . ' paid Sundays)';
+            ? 'Joining Month: Started from ' . $joiningDate->format('d M Y') . ' (' . $totalDaysPresent . ' days present, ' . $totalLopDays . ' days LOP)'
+            : 'Full Month Statement (' . $totalDaysInMonth . ' calendar days, ' . $totalDaysPresent . ' days present)';
 
         if ($isCurrentMonth && ! $monthEnded) {
             $remarks .= ' • Live In-Progress Estimate (Finalized on ' . $endOfMonth->format('d M Y') . ')';
@@ -539,21 +542,24 @@ class PortalController extends Controller
         ], [
             'month_name' => $date->format('F Y'),
             'basic_salary' => $basic,
-            'hra' => $hra,
-            'conveyance_allowance' => $conveyance,
-            'special_allowance' => $special,
+            'da' => $da,
+            'bonus' => $bonus,
+            'leave_encashment' => $leaveEncashment,
+            'hra' => 0.00,
+            'conveyance_allowance' => 0.00,
+            'special_allowance' => 0.00,
             'other_allowance' => $other,
             'gross_salary' => $gross,
             'pf_deduction' => $pf,
             'esi_deduction' => $esi,
             'professional_tax' => $pt,
-            'lop_days' => $lopDays,
+            'lop_days' => $totalLopDays,
             'lop_deduction' => $lopDeduction,
             'other_deductions' => 0,
             'total_deductions' => $totalDeductions,
             'net_salary' => $netSalary,
             'total_working_days' => $totalDaysInMonth,
-            'paid_days' => $paidDays,
+            'paid_days' => $totalDaysPresent,
             'payment_status' => $paymentStatus,
             'payment_date' => $endOfMonth->toDateString(),
             'remarks' => $remarks,

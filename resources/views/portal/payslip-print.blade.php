@@ -152,28 +152,28 @@
                         <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $payslip->pf_deduction > 0 ? number_format($payslip->pf_deduction, 2) : '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="border border-dark py-2 px-3 fw-medium">House Rent Allowance (HRA)</td>
-                        <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $payslip->hra > 0 ? number_format($payslip->hra, 2) : '-' }}</td>
+                        <td class="border border-dark py-2 px-3 fw-medium">DA</td>
+                        <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($payslip->da ?? 0) > 0 ? number_format($payslip->da, 2) : '-' }}</td>
                         <td class="border border-dark py-2 px-3 fw-medium">ESI</td>
                         <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $payslip->esi_deduction > 0 ? number_format($payslip->esi_deduction, 2) : '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="border border-dark py-2 px-3 fw-medium">Conveyance Allowance</td>
-                        <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $payslip->conveyance_allowance > 0 ? number_format($payslip->conveyance_allowance, 2) : '-' }}</td>
+                        <td class="border border-dark py-2 px-3 fw-medium">Bonus</td>
+                        <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($payslip->bonus ?? 0) > 0 ? number_format($payslip->bonus, 2) : '-' }}</td>
                         <td class="border border-dark py-2 px-3 fw-medium">Prof. Tax</td>
                         <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $payslip->professional_tax > 0 ? number_format($payslip->professional_tax, 2) : '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="border border-dark py-2 px-3 fw-medium">Special Allowance</td>
-                        <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $payslip->special_allowance > 0 ? number_format($payslip->special_allowance, 2) : '-' }}</td>
+                        <td class="border border-dark py-2 px-3 fw-medium">Leave Encashment</td>
+                        <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($payslip->leave_encashment ?? 0) > 0 ? number_format($payslip->leave_encashment, 2) : '-' }}</td>
                         <td class="border border-dark py-2 px-3 fw-medium">LOP</td>
                         <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $payslip->lop_deduction > 0 ? number_format($payslip->lop_deduction, 2) : '-' }}</td>
                     </tr>
                     <tr>
                         <td class="border border-dark py-2 px-3 fw-medium">Other Allowance</td>
                         <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($payslip->other_allowance ?? 0) > 0 ? number_format($payslip->other_allowance, 2) : '-' }}</td>
-                        <td class="border border-dark py-2 px-3 fw-medium">Other Deductions</td>
-                        <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ ($payslip->other_deductions ?? 0) > 0 ? number_format($payslip->other_deductions, 2) : '-' }}</td>
+                        <td class="border border-dark py-2 px-3 fw-medium"></td>
+                        <td class="border border-dark py-2 px-3 text-end fw-semibold text-muted">-</td>
                     </tr>
                     <!-- Total Row -->
                     <tr class="fw-bold" style="background-color: #cfe2ff; font-size: 0.95rem;">

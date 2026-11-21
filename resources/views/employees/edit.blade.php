@@ -213,47 +213,69 @@
                     @error('salary') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                 </div>
 
-                {{-- Custom Salary Split Section --}}
+                {{-- Custom Salary Split Section (Form XXVIII Format: Basic, DA, Bonus, Leave Encashment, Other Allowance) --}}
                 <div class="col-12">
                     <div class="p-3 bg-light rounded-3 border">
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                             <div>
-                                <h6 class="fw-bold mb-0 text-dark small"><i class="bi bi-pie-chart-fill text-success me-1"></i>Salary Component Split (Custom Amount Breakdown)</h6>
-                                <div class="text-muted" style="font-size: 0.75rem;">Customize component amounts for this employee or use standard auto-calculation.</div>
+                                <h6 class="fw-bold mb-0 text-dark small"><i class="bi bi-pie-chart-fill text-success me-1"></i>Salary Component Split (Corporate Form XXVIII Format)</h6>
+                                <div class="text-muted" style="font-size: 0.75rem;">Earnings breakdown: Basic, DA, Bonus, Leave Encashment, and Other Allowance.</div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="autoSplitSalary()">
-                                <i class="bi bi-magic me-1"></i>Auto Calculate (50% / 30% / 10% / 10%)
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="setBasicEqualToGross()">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Set Basic = Gross
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="autoSplitSalary()">
+                                    <i class="bi bi-magic me-1"></i>Auto Calculate (50% Basic / 30% DA / 10% Bonus / 10% Leave)
+                                </button>
+                            </div>
                         </div>
 
                         <div class="row g-2">
                             <div class="col-12 col-sm-6 col-md-3">
-                                <label class="form-label text-muted" style="font-size: 0.72rem;">Basic Salary (₹)</label>
-                                <input type="number" step="0.01" name="basic_salary" id="basicInput" class="form-control form-control-sm" value="{{ old('basic_salary', $employee->basic_salary) }}" placeholder="e.g. 10000">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">Basic (₹) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" name="basic_salary" id="basicInput" class="form-control form-control-sm" value="{{ old('basic_salary', $employee->basic_salary ?: $employee->salary) }}" placeholder="e.g. 10000" oninput="updateSalaryMatchingBadge()">
                             </div>
                             <div class="col-12 col-sm-6 col-md-3">
-                                <label class="form-label text-muted" style="font-size: 0.72rem;">House Rent Allowance (HRA) (₹)</label>
-                                <input type="number" step="0.01" name="hra" id="hraInput" class="form-control form-control-sm" value="{{ old('hra', $employee->hra) }}" placeholder="e.g. 6000">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">DA - Dearness Allowance (₹)</label>
+                                <input type="number" step="0.01" name="da" id="daInput" class="form-control form-control-sm" value="{{ old('da', $employee->da) }}" placeholder="e.g. 6000" oninput="updateSalaryMatchingBadge()">
                             </div>
                             <div class="col-12 col-sm-6 col-md-3">
-                                <label class="form-label text-muted" style="font-size: 0.72rem;">Conveyance Allowance (₹)</label>
-                                <input type="number" step="0.01" name="conveyance_allowance" id="conveyanceInput" class="form-control form-control-sm" value="{{ old('conveyance_allowance', $employee->conveyance_allowance) }}" placeholder="e.g. 2000">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">Bonus (₹)</label>
+                                <input type="number" step="0.01" name="bonus" id="bonusInput" class="form-control form-control-sm" value="{{ old('bonus', $employee->bonus) }}" placeholder="e.g. 2000" oninput="updateSalaryMatchingBadge()">
                             </div>
                             <div class="col-12 col-sm-6 col-md-3">
-                                <label class="form-label text-muted" style="font-size: 0.72rem;">Special Allowance (₹)</label>
-                                <input type="number" step="0.01" name="special_allowance" id="specialInput" class="form-control form-control-sm" value="{{ old('special_allowance', $employee->special_allowance) }}" placeholder="e.g. 2000">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">Leave Encashment (₹)</label>
+                                <input type="number" step="0.01" name="leave_encashment" id="leaveInput" class="form-control form-control-sm" value="{{ old('leave_encashment', $employee->leave_encashment) }}" placeholder="e.g. 1000" oninput="updateSalaryMatchingBadge()">
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 mt-2">
-                                <label class="form-label text-muted" style="font-size: 0.72rem;">Other Allowance (₹)</label>
-                                <input type="number" step="0.01" name="other_allowance" id="otherInput" class="form-control form-control-sm" value="{{ old('other_allowance', $employee->other_allowance) }}" placeholder="Optional">
+                            <div class="col-12 col-sm-6 col-md-3 mt-2">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">Other Allowance (₹)</label>
+                                <input type="number" step="0.01" name="other_allowance" id="otherInput" class="form-control form-control-sm" value="{{ old('other_allowance', $employee->other_allowance) }}" placeholder="e.g. 1000" oninput="updateSalaryMatchingBadge()">
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 mt-2">
-                                <label class="form-label text-muted" style="font-size: 0.72rem;">Custom PF Deduction Override (₹)</label>
+                            <div class="col-12 col-sm-6 col-md-3 mt-2">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">Custom PF Deduction (₹)</label>
                                 <input type="number" step="0.01" name="custom_pf_deduction" class="form-control form-control-sm" value="{{ old('custom_pf_deduction', $employee->custom_pf_deduction) }}" placeholder="Optional (default: 12% Basic)">
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 mt-2">
-                                <label class="form-label text-muted" style="font-size: 0.72rem;">Custom ESI Deduction Override (₹)</label>
+                            <div class="col-12 col-sm-6 col-md-3 mt-2">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">Custom ESI Deduction (₹)</label>
                                 <input type="number" step="0.01" name="custom_esi_deduction" class="form-control form-control-sm" value="{{ old('custom_esi_deduction', $employee->custom_esi_deduction) }}" placeholder="Optional (default: 0.75%)">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3 mt-2">
+                                <label class="form-label text-muted fw-semibold" style="font-size: 0.75rem;">Custom PT Deduction (₹)</label>
+                                <input type="number" step="0.01" name="custom_pt_deduction" class="form-control form-control-sm" value="{{ old('custom_pt_deduction', $employee->custom_pt_deduction) }}" placeholder="Optional (default: ₹208/₹200)">
+                            </div>
+                        </div>
+
+                        {{-- Live Matching Status Bar --}}
+                        <div class="mt-3 p-2 px-3 rounded-2 border d-flex justify-content-between align-items-center flex-wrap gap-2 small bg-white" id="salaryMatchBar">
+                            <div>
+                                <span class="text-muted">Components Sum:</span>
+                                <strong class="text-dark ms-1" id="componentsSumText">₹0.00</strong>
+                            </div>
+                            <div id="matchingStatusBadge">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Matches Gross Salary
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -491,6 +513,16 @@
 
 @push('scripts')
 <script>
+    function setBasicEqualToGross() {
+        const gross = parseFloat(document.getElementById('grossSalaryInput').value) || 0;
+        document.getElementById('basicInput').value = gross.toFixed(2);
+        document.getElementById('daInput').value = '0.00';
+        document.getElementById('bonusInput').value = '0.00';
+        document.getElementById('leaveInput').value = '0.00';
+        document.getElementById('otherInput').value = '0.00';
+        updateSalaryMatchingBadge();
+    }
+
     function autoSplitSalary() {
         const gross = parseFloat(document.getElementById('grossSalaryInput').value) || 0;
         if (gross <= 0) {
@@ -499,15 +531,56 @@
         }
 
         const basic = Math.round(gross * 0.50);
-        const hra = Math.round(gross * 0.30);
-        const conveyance = Math.round(gross * 0.10);
-        const special = Math.round(gross - (basic + hra + conveyance));
+        const da = Math.round(gross * 0.30);
+        const bonus = Math.round(gross * 0.10);
+        const leave = Math.round(gross - (basic + da + bonus));
 
         document.getElementById('basicInput').value = basic.toFixed(2);
-        document.getElementById('hraInput').value = hra.toFixed(2);
-        document.getElementById('conveyanceInput').value = conveyance.toFixed(2);
-        document.getElementById('specialInput').value = special.toFixed(2);
+        document.getElementById('daInput').value = da.toFixed(2);
+        document.getElementById('bonusInput').value = bonus.toFixed(2);
+        document.getElementById('leaveInput').value = leave.toFixed(2);
         document.getElementById('otherInput').value = '0.00';
+        updateSalaryMatchingBadge();
     }
+
+    function updateSalaryMatchingBadge() {
+        const gross = parseFloat(document.getElementById('grossSalaryInput').value) || 0;
+        const basic = parseFloat(document.getElementById('basicInput').value) || 0;
+        const da = parseFloat(document.getElementById('daInput').value) || 0;
+        const bonus = parseFloat(document.getElementById('bonusInput').value) || 0;
+        const leave = parseFloat(document.getElementById('leaveInput').value) || 0;
+        const other = parseFloat(document.getElementById('otherInput').value) || 0;
+
+        const sum = basic + da + bonus + leave + other;
+        document.getElementById('componentsSumText').textContent = '₹' + sum.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const badge = document.getElementById('matchingStatusBadge');
+        const diff = Math.abs(gross - sum);
+
+        if (diff < 0.01) {
+            badge.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle-fill me-1"></i>Matches Gross Salary (₹${gross.toFixed(2)})</span>`;
+        } else {
+            const remaining = gross - sum;
+            badge.innerHTML = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-exclamation-triangle-fill me-1"></i>Mismatch! Difference: ₹${remaining.toFixed(2)}</span>`;
+        }
+    }
+
+    // Auto sync on gross change if components were previously equal or empty
+    document.getElementById('grossSalaryInput').addEventListener('input', function() {
+        const gross = parseFloat(this.value) || 0;
+        const basic = parseFloat(document.getElementById('basicInput').value) || 0;
+        const da = parseFloat(document.getElementById('daInput').value) || 0;
+        const bonus = parseFloat(document.getElementById('bonusInput').value) || 0;
+        const leave = parseFloat(document.getElementById('leaveInput').value) || 0;
+        const other = parseFloat(document.getElementById('otherInput').value) || 0;
+
+        // If other components are zero and basic was equal or empty, auto-update basic to gross
+        if (da === 0 && bonus === 0 && leave === 0 && other === 0) {
+            document.getElementById('basicInput').value = gross > 0 ? gross.toFixed(2) : '';
+        }
+        updateSalaryMatchingBadge();
+    });
+
+    document.addEventListener('DOMContentLoaded', updateSalaryMatchingBadge);
 </script>
 @endpush

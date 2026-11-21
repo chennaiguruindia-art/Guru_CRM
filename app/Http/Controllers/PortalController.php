@@ -398,7 +398,7 @@ class PortalController extends Controller
             ->where('salary_month', $salaryMonth)
             ->first();
 
-        if ($existingPayslip && ! $isCurrentMonth) {
+        if ($existingPayslip && ! $isCurrentMonth && ! request()->boolean('refresh')) {
             return $existingPayslip;
         }
 
@@ -523,9 +523,16 @@ class PortalController extends Controller
         $totalDeductions = round($pf + $esi + $pt + $lopDeduction, 2);
         $netSalary = max(0, round($proratedGross - $totalDeductions, 2));
 
+        $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
+        $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
+
         $remarks = $preJoiningDays > 0
             ? 'Joining Month: Prorated from ' . $joiningDate->format('d M Y') . ' (' . $eligibleDays . ' eligible days, ' . $paidSundays . ' paid Sundays)'
             : 'Full Month Statement (' . $totalDaysInMonth . ' calendar days, ' . $paidSundays . ' paid Sundays)';
+
+        if ($isCurrentMonth && ! $monthEnded) {
+            $remarks .= ' • Live In-Progress Estimate (Finalized on ' . $endOfMonth->format('d M Y') . ')';
+        }
 
         return Payslip::updateOrCreate([
             'employee_id' => $employee->id,
@@ -548,7 +555,7 @@ class PortalController extends Controller
             'net_salary' => $netSalary,
             'total_working_days' => $totalDaysInMonth,
             'paid_days' => $paidDays,
-            'payment_status' => 'Paid',
+            'payment_status' => $paymentStatus,
             'payment_date' => $endOfMonth->toDateString(),
             'remarks' => $remarks,
         ]);

@@ -65,9 +65,20 @@
                 </div>
             </div>
             <div class="col-4 text-end">
-                <span class="badge bg-success px-3 py-2 fs-6 mb-2">SALARY PAYSLIP</span>
+                @if($payslip->payment_status === 'Paid')
+                    <span class="badge bg-success px-3 py-2 fs-6 mb-2">OFFICIAL PAYSLIP</span>
+                @else
+                    <span class="badge bg-primary px-3 py-2 fs-6 mb-2">LIVE DYNAMIC STATEMENT</span>
+                @endif
                 <div class="fw-bold fs-5 text-dark">{{ $payslip->month_name }}</div>
-                <div class="text-muted small">Status: <strong class="text-success">{{ $payslip->payment_status }}</strong></div>
+                <div class="text-muted small">
+                    Status: 
+                    @if($payslip->payment_status === 'Paid')
+                        <strong class="text-success">{{ $payslip->payment_status }} (Finalized)</strong>
+                    @else
+                        <strong class="text-primary">{{ $payslip->payment_status }} (Live Estimate)</strong>
+                    @endif
+                </div>
             </div>
         </div>
 

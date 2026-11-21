@@ -31,7 +31,7 @@
                 <select name="month" class="form-select form-select-sm" onchange="this.form.submit()">
                     @foreach($availableMonths as $mKey => $mLabel)
                         <option value="{{ $mKey }}" {{ $selectedMonth === $mKey ? 'selected' : '' }}>
-                            {{ $mLabel }}
+                            {{ $mLabel }} {{ $mKey === now('Asia/Kolkata')->format('Y-m') ? '(Current Month • Live)' : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -41,13 +41,38 @@
                     <i class="bi bi-search me-1"></i>Load Statement
                 </button>
             </div>
+            <div class="col-auto ms-sm-auto">
+                <a href="{{ route('portal.payslips', ['month' => $selectedMonth, 'refresh' => 1]) }}" class="btn btn-sm btn-outline-primary" title="Force refresh live calculation with latest attendance">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh Live Data
+                </a>
+            </div>
         </form>
     </div>
 </div>
 
+@if($currentPayslip && $currentPayslip->payment_status === 'In Progress')
+<div class="alert alert-primary border-primary-subtle bg-primary-subtle bg-opacity-10 shadow-sm d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-primary bg-opacity-10 p-2 text-primary d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-lightning-charge-fill fs-5"></i>
+        </div>
+        <div>
+            <div class="fw-bold text-dark">Live Dynamic Statement for {{ $currentPayslip->month_name }}</div>
+            <div class="text-muted small">
+                This payslip is <strong>100% dynamic</strong>. You can view it anytime without waiting for month-end! As you punch daily, your payable days, LOP, and net salary recalculate automatically. Final salary is locked on <strong>{{ $currentPayslip->payment_date->format('d M Y') }}</strong> (last day of the month).
+            </div>
+        </div>
+    </div>
+    <span class="badge bg-primary px-3 py-2 text-white">
+        <i class="bi bi-activity me-1"></i>Dynamic Real-Time
+    </span>
+</div>
+@endif
+
 <div class="row g-4">
     <!-- Main Payslip Document (Official corporate layout) -->
     <div class="col-12 col-xl-8">
+        @if($currentPayslip)
         <div class="card border shadow-sm bg-white" id="printablePayslip">
             <div class="card-body p-4 p-md-5">
                 <!-- Company Header & Title -->
@@ -63,14 +88,25 @@
                         </div>
                     </div>
                     <div class="col-sm-5 text-sm-end mt-3 mt-sm-0">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
-                            PAYSLIP
-                        </span>
+                        @if($currentPayslip->payment_status === 'Paid')
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+                                <i class="bi bi-check-circle-fill me-1"></i>OFFICIAL PAYSLIP
+                            </span>
+                        @else
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6">
+                                <i class="bi bi-arrow-repeat me-1"></i>LIVE DYNAMIC PAYSLIP
+                            </span>
+                        @endif
                         <div class="fw-bold text-dark mt-2">
-                            {{ $currentPayslip ? $currentPayslip->month_name : \Carbon\Carbon::parse($selectedMonth . '-01')->format('F Y') }}
+                            {{ $currentPayslip->month_name }}
                         </div>
-                        <div class="text-muted small">
-                            Status: <strong class="text-success">{{ $currentPayslip?->payment_status ?? 'Paid' }}</strong>
+                        <div class="small mt-1">
+                            Status: 
+                            @if($currentPayslip->payment_status === 'Paid')
+                                <strong class="text-success"><i class="bi bi-check-circle me-1"></i>Paid (Finalized)</strong>
+                            @else
+                                <strong class="text-primary"><i class="bi bi-hourglass-split me-1"></i>In Progress (Live Estimate)</strong>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -256,6 +292,23 @@
                 </div>
             </div>
         </div>
+        @else
+        <div class="card border shadow-sm bg-white p-5 text-center">
+            <div class="mb-3">
+                <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+            </div>
+            <h5 class="fw-bold text-dark">No Payslip Available for {{ \Carbon\Carbon::parse($selectedMonth . '-01')->format('F Y') }}</h5>
+            <p class="text-muted small mb-3">
+                Your official joining date is <strong>{{ $employee?->joining_date?->format('d M Y') ?? '—' }}</strong>.<br>
+                Salary calculations and payslips begin from your joining month onwards.
+            </p>
+            <div>
+                <a href="{{ route('portal.payslips') }}" class="btn btn-sm btn-success">
+                    <i class="bi bi-arrow-left me-1"></i>View Current Month ({{ now('Asia/Kolkata')->format('F Y') }})
+                </a>
+            </div>
+        </div>
+        @endif
     </div>
 
     <!-- Right Column: Salary Structure & Quick History -->

@@ -469,36 +469,36 @@ class PortalController extends Controller
             }
         }
 
-        // Total Days Present = Active tenure days worked/punched + Paid Sundays
-        // LOP Days = Total calendar days in month minus Days Present
-        $totalDaysPresent = max(0, $workedDays + $paidSundays);
-        $totalLopDays = max(0, (float) ($totalDaysInMonth - $totalDaysPresent));
+        $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
+        $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
+
+        // Total Days Present calculated from login attendance punches & eligible tenure
+        // If employee joined this month, their eligible tenure is $eligibleDays (e.g. 10 days for Nov 21 joinee)
+        // Active days present = worked days + paid Sundays in active period
+        $totalDaysPresent = max(0, (float) ($workedDays + $paidSundays));
 
         // Monthly Salary & Component Breakdown (Form XXVIII: Basic, DA, Bonus, Leave Encashment, Other Allowance)
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
 
-        // Check if Admin set custom component amounts on employee
-        $hasCustomSplit = ($employee->basic_salary !== null && $employee->basic_salary > 0);
+        // Read exact components set on employee:
+        $basic = round(((float) ($employee->basic_salary ?: $monthlyGrossSalary)), 2);
+        $da = round(((float) ($employee->da ?? 0)), 2);
+        $bonus = round(((float) ($employee->bonus ?? 0)), 2);
+        $leaveEncashment = round(((float) ($employee->leave_encashment ?? 0)), 2);
+        $other = round(((float) ($employee->other_allowance ?? 0)), 2);
+        $gross = round($basic + $da + $bonus + $leaveEncashment + $other, 2);
 
-        if ($hasCustomSplit) {
-            $basic = round(((float) $employee->basic_salary), 2);
-            $da = round(((float) ($employee->da ?? 0)), 2);
-            $bonus = round(((float) ($employee->bonus ?? 0)), 2);
-            $leaveEncashment = round(((float) ($employee->leave_encashment ?? 0)), 2);
-            $other = round(((float) ($employee->other_allowance ?? 0)), 2);
-            $gross = round($basic + $da + $bonus + $leaveEncashment + $other, 2);
+        // LOP Amount Calculation:
+        // On month end (andha month last la): final LOP amount is calculated and deducted based on complete attendance!
+        // During the active month: future days cannot be assumed as leave, so LOP deduction is not prematurely charged.
+        if ($monthEnded) {
+            $totalLopDays = max(0, (float) ($totalDaysInMonth - $totalDaysPresent));
+            $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
+            $lopDeduction = round($totalLopDays * $dailyRate, 2);
         } else {
-            // "Job & Compensation la ula Monthly Gross Salary / CTC (₹) idnha salry dhan basic salery la show aganum"
-            $basic = $monthlyGrossSalary;
-            $da = 0.00;
-            $bonus = 0.00;
-            $leaveEncashment = 0.00;
-            $other = 0.00;
-            $gross = $monthlyGrossSalary;
+            $totalLopDays = 0.0;
+            $lopDeduction = 0.00;
         }
-
-        $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
-        $lopDeduction = round($totalLopDays * $dailyRate, 2);
 
         // Deductions (PF, ESI, Prof. Tax, LOP)
         // 1. Employee PF: Custom override or standard 12% Basic capped at statutory 1800
@@ -515,25 +515,22 @@ class PortalController extends Controller
             $esi = ($gross <= 21000) ? round($gross * 0.0075, 2) : 0.00;
         }
 
-        // 3. Professional Tax (PT): Custom override or standard 208.00 / 200.00
+        // 3. Professional Tax (PT): Custom override or standard 200.00
         if ($employee->custom_pt_deduction !== null && $employee->custom_pt_deduction > 0) {
             $pt = round(((float) $employee->custom_pt_deduction), 2);
         } else {
-            $pt = 208.00;
+            $pt = 200.00;
         }
 
         $totalDeductions = round($pf + $esi + $pt + $lopDeduction, 2);
         $netSalary = max(0, round($gross - $totalDeductions, 2));
 
-        $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
-        $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
-
         $remarks = $preJoiningDays > 0
-            ? 'Joining Month: Started from ' . $joiningDate->format('d M Y') . ' (' . $totalDaysPresent . ' days present, ' . $totalLopDays . ' days LOP)'
+            ? 'Joining Month: Started from ' . $joiningDate->format('d M Y') . ' (' . $totalDaysPresent . ' days present in tenure)'
             : 'Full Month Statement (' . $totalDaysInMonth . ' calendar days, ' . $totalDaysPresent . ' days present)';
 
         if ($isCurrentMonth && ! $monthEnded) {
-            $remarks .= ' • Live In-Progress Estimate (Finalized on ' . $endOfMonth->format('d M Y') . ')';
+            $remarks .= ' • Month in Progress: Final attendance & LOP amount will be calculated on month end (' . $endOfMonth->format('d M Y') . ')';
         }
 
         return Payslip::updateOrCreate([

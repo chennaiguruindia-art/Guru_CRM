@@ -60,19 +60,64 @@
     </div>
 </div>
 
-{{-- Banking & Statutory Details --}}
+{{-- Banking, PF & Statutory Details --}}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-bank text-success me-2"></i>Bank & Statutory Details</h6>
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-bank text-success me-2"></i>Bank & Statutory Details (PF / UAN / PAN)</h6>
         <span class="badge bg-success-subtle text-success border border-success-subtle">Salary Credit</span>
     </div>
     <div class="card-body p-4">
         <div class="row g-3 small">
+            <div class="col-sm-6"><label class="text-muted d-block">PF Number</label><span class="fw-semibold text-dark font-monospace">{{ $employee->pf_number ?: '— Not Set' }}</span></div>
+            <div class="col-sm-6"><label class="text-muted d-block">UAN Number</label><span class="fw-semibold text-dark font-monospace">{{ $employee->uan_number ?: '— Not Set' }}</span></div>
+            <div class="col-sm-6"><label class="text-muted d-block">PAN Number</label><span class="font-monospace fw-semibold">{{ $employee->pan_number ?: '—' }}</span></div>
             <div class="col-sm-6"><label class="text-muted d-block">Bank Name</label><span class="fw-semibold text-dark">{{ $employee->bank_name ?: '—' }}</span></div>
             <div class="col-sm-6"><label class="text-muted d-block">Account Number</label><span class="fw-semibold font-monospace">{{ $employee->bank_account_number ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">IFSC Code</label><span class="font-monospace">{{ $employee->bank_ifsc ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">PAN Number</label><span class="font-monospace">{{ $employee->pan_number ?: '—' }}</span></div>
+            <div class="col-sm-6"><label class="text-muted d-block">IFSC Code</label><span class="font-monospace fw-semibold">{{ $employee->bank_ifsc ?: '—' }}</span></div>
         </div>
+    </div>
+</div>
+
+{{-- Salary Structure & Custom Split --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Configured Salary Component Breakdown</h6>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Gross: ₹{{ number_format($employee->salary, 2) }}</span>
+    </div>
+    <div class="card-body p-4">
+        @if($employee->basic_salary > 0)
+            <div class="row g-3 small">
+                <div class="col-sm-6 col-md-3">
+                    <span class="text-muted d-block">Basic Salary:</span>
+                    <strong class="text-dark">₹{{ number_format($employee->basic_salary, 2) }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <span class="text-muted d-block">HRA:</span>
+                    <strong class="text-dark">₹{{ number_format($employee->hra, 2) }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <span class="text-muted d-block">Conveyance Allowance:</span>
+                    <strong class="text-dark">₹{{ number_format($employee->conveyance_allowance, 2) }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <span class="text-muted d-block">Special Allowance:</span>
+                    <strong class="text-dark">₹{{ number_format($employee->special_allowance, 2) }}</strong>
+                </div>
+                @if($employee->other_allowance > 0)
+                    <div class="col-sm-6 col-md-3">
+                        <span class="text-muted d-block">Other Allowance:</span>
+                        <strong class="text-dark">₹{{ number_format($employee->other_allowance, 2) }}</strong>
+                    </div>
+                @endif
+            </div>
+            <div class="alert alert-light border small mt-3 mb-0 text-muted">
+                <i class="bi bi-check-circle-fill text-success me-1"></i>Custom salary split configured by Admin.
+            </div>
+        @else
+            <div class="alert alert-light border small mb-0 text-muted">
+                <i class="bi bi-info-circle text-primary me-1"></i>Default statutory split applies: 50% Basic (₹{{ number_format($employee->salary * 0.5, 2) }}), 30% HRA (₹{{ number_format($employee->salary * 0.3, 2) }}), 10% Conveyance (₹{{ number_format($employee->salary * 0.1, 2) }}), 10% Special Allowance (₹{{ number_format($employee->salary * 0.1, 2) }}).
+            </div>
+        @endif
     </div>
 </div>
 

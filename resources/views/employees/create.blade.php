@@ -198,18 +198,65 @@
                 {{-- Monthly Salary --}}
                 <div class="col-12 col-md-6">
                     <label class="form-label small fw-semibold text-secondary">
-                        Monthly Salary (₹)
+                        Monthly Gross Salary / CTC (₹)
                     </label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted fw-bold">₹</span>
                         <input type="number" 
                                step="0.01" 
                                name="monthly_salary" 
+                               id="createGrossSalaryInput"
                                class="form-control border-start-0 @error('salary') is-invalid @enderror" 
                                placeholder="e.g. 25000" 
                                value="{{ old('monthly_salary', old('salary', '')) }}">
                     </div>
                     @error('salary') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Custom Salary Split Section --}}
+                <div class="col-12">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark small"><i class="bi bi-pie-chart-fill text-success me-1"></i>Salary Component Split (Custom Amount Breakdown)</h6>
+                                <div class="text-muted" style="font-size: 0.75rem;">Customize component amounts or use standard auto-calculation.</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="createAutoSplitSalary()">
+                                <i class="bi bi-magic me-1"></i>Auto Calculate (50% / 30% / 10% / 10%)
+                            </button>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label text-muted" style="font-size: 0.72rem;">Basic Salary (₹)</label>
+                                <input type="number" step="0.01" name="basic_salary" id="createBasicInput" class="form-control form-control-sm" value="{{ old('basic_salary') }}" placeholder="e.g. 10000">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label text-muted" style="font-size: 0.72rem;">House Rent Allowance (HRA) (₹)</label>
+                                <input type="number" step="0.01" name="hra" id="createHraInput" class="form-control form-control-sm" value="{{ old('hra') }}" placeholder="e.g. 6000">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label text-muted" style="font-size: 0.72rem;">Conveyance Allowance (₹)</label>
+                                <input type="number" step="0.01" name="conveyance_allowance" id="createConveyanceInput" class="form-control form-control-sm" value="{{ old('conveyance_allowance') }}" placeholder="e.g. 2000">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label text-muted" style="font-size: 0.72rem;">Special Allowance (₹)</label>
+                                <input type="number" step="0.01" name="special_allowance" id="createSpecialInput" class="form-control form-control-sm" value="{{ old('special_allowance') }}" placeholder="e.g. 2000">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 mt-2">
+                                <label class="form-label text-muted" style="font-size: 0.72rem;">Other Allowance (₹)</label>
+                                <input type="number" step="0.01" name="other_allowance" class="form-control form-control-sm" value="{{ old('other_allowance') }}" placeholder="Optional">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 mt-2">
+                                <label class="form-label text-muted" style="font-size: 0.72rem;">Custom PF Deduction (₹)</label>
+                                <input type="number" step="0.01" name="custom_pf_deduction" class="form-control form-control-sm" value="{{ old('custom_pf_deduction') }}" placeholder="Optional (default: 12% Basic)">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 mt-2">
+                                <label class="form-label text-muted" style="font-size: 0.72rem;">Custom ESI Deduction (₹)</label>
+                                <input type="number" step="0.01" name="custom_esi_deduction" class="form-control form-control-sm" value="{{ old('custom_esi_deduction') }}" placeholder="Optional (default: 0.75%)">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Date of Joining --}}
@@ -305,6 +352,108 @@
             </div>
         </div>
 
+        {{-- Section 4: Banking, PF & Statutory Details --}}
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                <div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-bank small"></i>
+                </div>
+                <h6 class="fw-bold mb-0 text-dark">Banking, PF & Statutory Details</h6>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">
+                        PF Number (Provident Fund Account)
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-shield-check"></i></span>
+                        <input type="text" 
+                               name="pf_number" 
+                               class="form-control border-start-0 @error('pf_number') is-invalid @enderror" 
+                               placeholder="e.g. MH/BAN/12345/678" 
+                               value="{{ old('pf_number') }}">
+                    </div>
+                    @error('pf_number') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">
+                        UAN Number (Universal Account Number)
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-hash"></i></span>
+                        <input type="text" 
+                               name="uan_number" 
+                               class="form-control border-start-0 @error('uan_number') is-invalid @enderror" 
+                               placeholder="e.g. 101234567890" 
+                               value="{{ old('uan_number') }}">
+                    </div>
+                    @error('uan_number') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">
+                        PAN Card Number
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-credit-card-2-front"></i></span>
+                        <input type="text" 
+                               name="pan_number" 
+                               class="form-control border-start-0 text-uppercase @error('pan_number') is-invalid @enderror" 
+                               placeholder="e.g. ABCDE1234F" 
+                               value="{{ old('pan_number') }}">
+                    </div>
+                    @error('pan_number') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">
+                        Bank Name
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-building"></i></span>
+                        <input type="text" 
+                               name="bank_name" 
+                               class="form-control border-start-0 @error('bank_name') is-invalid @enderror" 
+                               placeholder="e.g. State Bank of India, HDFC" 
+                               value="{{ old('bank_name') }}">
+                    </div>
+                    @error('bank_name') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">
+                        Bank Account Number
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-wallet2"></i></span>
+                        <input type="text" 
+                               name="bank_account_number" 
+                               class="form-control border-start-0 @error('bank_account_number') is-invalid @enderror" 
+                               placeholder="e.g. 123456789012" 
+                               value="{{ old('bank_account_number') }}">
+                    </div>
+                    @error('bank_account_number') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">
+                        Bank IFSC Code
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-upc"></i></span>
+                        <input type="text" 
+                               name="bank_ifsc" 
+                               class="form-control border-start-0 text-uppercase @error('bank_ifsc') is-invalid @enderror" 
+                               placeholder="e.g. SBIN0001234" 
+                               value="{{ old('bank_ifsc') }}">
+                    </div>
+                    @error('bank_ifsc') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                </div>
+            </div>
+        </div>
+
         {{-- Form Action Buttons --}}
         <div class="d-flex align-items-center justify-content-between p-3 bg-white rounded-4 border shadow-sm flex-wrap gap-3">
             <div class="d-flex align-items-center gap-2">
@@ -326,3 +475,25 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function createAutoSplitSalary() {
+        const gross = parseFloat(document.getElementById('createGrossSalaryInput').value) || 0;
+        if (gross <= 0) {
+            alert('Please enter a valid Monthly Gross Salary first.');
+            return;
+        }
+
+        const basic = Math.round(gross * 0.50);
+        const hra = Math.round(gross * 0.30);
+        const conveyance = Math.round(gross * 0.10);
+        const special = Math.round(gross - (basic + hra + conveyance));
+
+        document.getElementById('createBasicInput').value = basic.toFixed(2);
+        document.getElementById('createHraInput').value = hra.toFixed(2);
+        document.getElementById('createConveyanceInput').value = conveyance.toFixed(2);
+        document.getElementById('createSpecialInput').value = special.toFixed(2);
+    }
+</script>
+@endpush

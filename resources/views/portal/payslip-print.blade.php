@@ -107,6 +107,23 @@
                     <span class="text-muted d-block">PAN Number:</span>
                     <span class="font-monospace">{{ $employee->pan_number ?? '—' }}</span>
                 </div>
+
+                <div class="col-3 mt-2">
+                    <span class="text-muted d-block">PF Number:</span>
+                    <span class="font-monospace">{{ $employee->pf_number ?? '—' }}</span>
+                </div>
+                <div class="col-3 mt-2">
+                    <span class="text-muted d-block">UAN Number:</span>
+                    <span class="font-monospace">{{ $employee->uan_number ?? '—' }}</span>
+                </div>
+                <div class="col-3 mt-2">
+                    <span class="text-muted d-block">Joining Date:</span>
+                    <span>{{ $employee->joining_date?->format('d M Y') ?? '—' }}</span>
+                </div>
+                <div class="col-3 mt-2">
+                    <span class="text-muted d-block">Paid Sundays:</span>
+                    <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Included in Payable Days</span>
+                </div>
             </div>
         </div>
 
@@ -147,6 +164,12 @@
                                     <td class="text-muted">Special Allowance</td>
                                     <td class="text-end fw-semibold">₹{{ number_format($payslip->special_allowance, 2) }}</td>
                                 </tr>
+                                @if(($payslip->other_allowance ?? 0) > 0)
+                                <tr>
+                                    <td class="text-muted">Other Allowance</td>
+                                    <td class="text-end fw-semibold">₹{{ number_format($payslip->other_allowance, 2) }}</td>
+                                </tr>
+                                @endif
                             </tbody>
                         </table>
                     </td>
@@ -198,6 +221,13 @@
                 <h3 class="fw-bold text-success mb-0">₹{{ number_format($payslip->net_salary, 2) }}</h3>
             </div>
         </div>
+
+        @if(!empty($payslip->remarks))
+        <div class="p-2 px-3 border border-warning-subtle bg-warning-subtle rounded small mb-4 text-dark">
+            <i class="bi bi-info-circle-fill text-warning me-1"></i>
+            <strong>Note / Remarks:</strong> {{ $payslip->remarks }}
+        </div>
+        @endif
 
         <!-- Signatures & Disclaimer -->
         <div class="row pt-4 mt-4 border-top small text-muted align-items-end">

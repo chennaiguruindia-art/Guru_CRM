@@ -100,16 +100,20 @@
                             <span>{{ $employee?->branch?->name ?? 'Headquarters' }}</span>
                         </div>
                         <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Bank Account:</span>
-                            <span class="font-monospace">{{ $employee?->bank_account_number ? Str::mask($employee->bank_account_number, '*', -4) : '—' }}</span>
+                            <span class="text-muted d-block">PAN Number:</span>
+                            <span class="font-monospace fw-semibold">{{ $employee?->pan_number ?: '—' }}</span>
                         </div>
                         <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Bank Name & IFSC:</span>
-                            <span>{{ $employee?->bank_name ?? '—' }} ({{ $employee?->bank_ifsc ?? '—' }})</span>
+                            <span class="text-muted d-block">PF Number:</span>
+                            <span class="font-monospace fw-semibold">{{ $employee?->pf_number ?: '—' }}</span>
                         </div>
                         <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">PAN / UAN:</span>
-                            <span class="font-monospace">{{ $employee?->pan_number ?: '—' }}</span>
+                            <span class="text-muted d-block">UAN Number:</span>
+                            <span class="font-monospace fw-semibold">{{ $employee?->uan_number ?: '—' }}</span>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <span class="text-muted d-block">Bank & Account:</span>
+                            <span>{{ $employee?->bank_name ? $employee->bank_name . ' (' . Str::mask($employee->bank_account_number, '*', -4) . ')' : '—' }}</span>
                         </div>
                     </div>
                 </div>
@@ -167,6 +171,12 @@
                                                 <td class="text-muted">Special Allowance</td>
                                                 <td class="text-end fw-semibold">₹{{ number_format($currentPayslip?->special_allowance ?? 0, 2) }}</td>
                                             </tr>
+                                            @if(($currentPayslip?->other_allowance ?? 0) > 0)
+                                            <tr>
+                                                <td class="text-muted">Other Allowance</td>
+                                                <td class="text-end fw-semibold">₹{{ number_format($currentPayslip->other_allowance, 2) }}</td>
+                                            </tr>
+                                            @endif
                                         </tbody>
                                     </table>
                                 </td>
@@ -214,7 +224,7 @@
                 </div>
 
                 <!-- Net Take-Home Pay Banner -->
-                <div class="p-3 rounded-3 border bg-success-subtle text-success d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div class="p-3 rounded-3 border bg-success-subtle text-success d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                     <div>
                         <div class="small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Net Salary Payable</div>
                         <div class="small text-muted">{{ $currentPayslip?->net_salary_in_words ?? 'Calculated on attendance & CTC' }}</div>
@@ -225,6 +235,13 @@
                         </h2>
                     </div>
                 </div>
+
+                @if($currentPayslip?->remarks)
+                    <div class="alert alert-light border small text-muted d-flex align-items-center gap-2 mb-4">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <span>{{ $currentPayslip->remarks }}</span>
+                    </div>
+                @endif
 
                 <!-- Footer Signatory Notes -->
                 <div class="row pt-4 mt-4 border-top text-muted small align-items-end">

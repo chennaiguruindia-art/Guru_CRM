@@ -19,13 +19,23 @@ class Employee extends Model
         'father_name', 'mother_name', 'father_phone', 'mother_phone',
         'father_occupation', 'mother_occupation', 'parent_address',
         'emergency_contact_relation', 'marital_status', 'spouse_name',
-        'bank_name', 'bank_account_number', 'bank_ifsc', 'pan_number', 'uan_number'
+        'bank_name', 'bank_account_number', 'bank_ifsc', 'pan_number', 'uan_number', 'pf_number',
+        'basic_salary', 'hra', 'conveyance_allowance', 'special_allowance', 'other_allowance',
+        'custom_pf_deduction', 'custom_esi_deduction', 'custom_pt_deduction'
     ];
 
     protected $casts = [
         'joining_date' => 'date',
         'dob' => 'date',
         'salary' => 'decimal:2',
+        'basic_salary' => 'decimal:2',
+        'hra' => 'decimal:2',
+        'conveyance_allowance' => 'decimal:2',
+        'special_allowance' => 'decimal:2',
+        'other_allowance' => 'decimal:2',
+        'custom_pf_deduction' => 'decimal:2',
+        'custom_esi_deduction' => 'decimal:2',
+        'custom_pt_deduction' => 'decimal:2',
     ];
 
     public function user(): BelongsTo

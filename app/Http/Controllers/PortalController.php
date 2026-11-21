@@ -367,25 +367,19 @@ class PortalController extends Controller
     }
 
     /**
-     * Helper to retrieve or automatically generate a complete payslip for a given month
+     * Helper to retrieve or automatically generate a complete payslip for a given month.
+     * Implements:
+     * 1. Prorated days for mid-month joinees (effective from joining date to end of month)
+     * 2. Full calendar cycle (Day 1 to Last Day) for subsequent months
+     * 3. All Sundays automatically treated as Paid Holidays (0 LOP, count as Present)
+     * 4. Automated Loss of Pay (LOP) calculated from Monday-Saturday attendance punches
+     * 5. Custom Admin salary split applied (Basic, HRA, Allowances) or statutory auto-split
      */
     private function getPayslipForMonth(?Employee $employee, string $salaryMonth): ?Payslip
     {
         if (! $employee) {
             return null;
         }
-
-        // Try to load existing persisted payslip first
-        $payslip = Payslip::where('employee_id', $employee->id)
-            ->where('salary_month', $salaryMonth)
-            ->first();
-
-        if ($payslip) {
-            return $payslip;
-        }
-
-        // Generate dynamically based on employee salary and attendance for this month
-        $salary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
 
         try {
             $date = Carbon::createFromFormat('Y-m', $salaryMonth, 'Asia/Kolkata');
@@ -394,48 +388,156 @@ class PortalController extends Controller
             $salaryMonth = $date->format('Y-m');
         }
 
-        $startOfMonth = $date->copy()->startOfMonth()->toDateString();
-        $endOfMonth = $date->copy()->endOfMonth()->toDateString();
-        $totalDays = $date->daysInMonth;
+        $startOfMonth = $date->copy()->startOfMonth();
+        $endOfMonth = $date->copy()->endOfMonth();
+        $totalDaysInMonth = $date->daysInMonth;
+        $isCurrentMonth = ($salaryMonth === now('Asia/Kolkata')->format('Y-m'));
 
-        // Query attendances for the month
-        $atts = Attendance::where('employee_id', $employee->id)
-            ->whereBetween('date', [$startOfMonth, $endOfMonth])
-            ->get();
+        // If not current month, and payslip already persisted, return it
+        $existingPayslip = Payslip::where('employee_id', $employee->id)
+            ->where('salary_month', $salaryMonth)
+            ->first();
 
-        $absentCount = $atts->where('status', 'Absent')->count();
-        $halfDayCount = $atts->where('status', 'Half-Day')->count();
+        if ($existingPayslip && ! $isCurrentMonth) {
+            return $existingPayslip;
+        }
 
-        $lopDays = (float) ($absentCount + ($halfDayCount * 0.5));
-        $paidDays = max(0, $totalDays - $lopDays);
+        // Determine Effective Start Day based on Joining Date
+        // If employee joined this month (e.g. joined Nov 21): eligible days start from Nov 21 to Nov 30 (10 days)
+        // If employee joined earlier: eligible days start from Day 1 to Last Day of month (full cycle)
+        $joiningDate = $employee->joining_date ? Carbon::parse($employee->joining_date, 'Asia/Kolkata') : null;
+        $effectiveStartDay = 1;
+        $preJoiningDays = 0;
 
-        // Earnings
-        $perDay = $totalDays > 0 ? ($salary / $totalDays) : 0;
-        $lopDeduction = round($lopDays * $perDay, 2);
+        if ($joiningDate && $joiningDate->format('Y-m') === $salaryMonth) {
+            $effectiveStartDay = min($joiningDate->day, $totalDaysInMonth);
+            $preJoiningDays = $effectiveStartDay - 1;
+        } elseif ($joiningDate && $joiningDate->gt($endOfMonth)) {
+            // Employee joins in a future month — not yet on payroll for this month
+            return null;
+        }
 
-        $basic = round($salary * 0.50, 2); // 50%
-        $hra = round($salary * 0.30, 2);   // 30%
-        $conveyance = round($salary * 0.10, 2); // 10%
-        $special = round($salary - ($basic + $hra + $conveyance), 2); // balance 10%
-        $gross = $salary;
+        $eligibleDays = max(0, $totalDaysInMonth - $preJoiningDays);
+
+        // Fetch attendance logs for this employee in this month
+        $attendances = Attendance::where('employee_id', $employee->id)
+            ->whereBetween('date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->get()
+            ->keyBy(fn ($a) => Carbon::parse($a->date)->toDateString());
+
+        // Evaluate day-by-day:
+        // - All Sundays = Automatic Paid Holiday (0 LOP, counts as Present)
+        // - Monday-Saturday = Evaluated from attendance
+        $lopDays = 0.0;
+        $paidSundays = 0;
+        $workedDays = 0;
+        $todayDate = now('Asia/Kolkata')->startOfDay();
+
+        for ($day = $effectiveStartDay; $day <= $totalDaysInMonth; $day++) {
+            $currentDayDate = $date->copy()->day($day)->startOfDay();
+            $dateKey = $currentDayDate->toDateString();
+            $isSunday = $currentDayDate->isSunday();
+
+            if ($isSunday) {
+                // All Sundays are automatic paid holidays!
+                $paidSundays++;
+                continue;
+            }
+
+            // Weekday (Monday - Saturday)
+            $att = $attendances->get($dateKey);
+            if ($att) {
+                if ($att->status === 'Present') {
+                    $workedDays += 1;
+                } elseif ($att->status === 'Half-Day') {
+                    $workedDays += 0.5;
+                    $lopDays += 0.5;
+                } elseif ($att->status === 'Leave') {
+                    // Approved paid leave
+                    $workedDays += 1;
+                } elseif ($att->status === 'Absent') {
+                    $lopDays += 1.0;
+                }
+            } else {
+                // If past weekday without punch record during eligible tenure, mark as Absent (LOP)
+                if ($currentDayDate->lt($todayDate)) {
+                    $lopDays += 1.0;
+                } else {
+                    // Today or upcoming day in active month — assume working
+                    $workedDays += 1;
+                }
+            }
+        }
+
+        $paidDays = max(0, $eligibleDays - $lopDays);
+
+        // Monthly Salary & Component Breakdown
+        $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
+        $dailyRate = $totalDaysInMonth > 0 ? ($monthlyGrossSalary / $totalDaysInMonth) : 0;
+        $lopDeduction = round($lopDays * $dailyRate, 2);
+
+        // Proration scaling ratio for mid-month joinees
+        $prorationRatio = $totalDaysInMonth > 0 ? ($eligibleDays / $totalDaysInMonth) : 1.0;
+        $proratedGross = round($monthlyGrossSalary * $prorationRatio, 2);
+
+        // Check if Admin set custom component amounts on employee
+        $hasCustomSplit = ($employee->basic_salary !== null && $employee->basic_salary > 0);
+
+        if ($hasCustomSplit) {
+            $basic = round(((float) $employee->basic_salary) * $prorationRatio, 2);
+            $hra = round(((float) ($employee->hra ?? 0)) * $prorationRatio, 2);
+            $conveyance = round(((float) ($employee->conveyance_allowance ?? 0)) * $prorationRatio, 2);
+            $special = round(((float) ($employee->special_allowance ?? 0)) * $prorationRatio, 2);
+            $other = round(((float) ($employee->other_allowance ?? 0)) * $prorationRatio, 2);
+        } else {
+            // Standard statutory auto-split: 50% Basic, 30% HRA, 10% Conveyance, 10% Special
+            $basic = round($proratedGross * 0.50, 2);
+            $hra = round($proratedGross * 0.30, 2);
+            $conveyance = round($proratedGross * 0.10, 2);
+            $special = round($proratedGross - ($basic + $hra + $conveyance), 2);
+            $other = 0.00;
+        }
 
         // Deductions
-        $pf = round(min($basic * 0.12, 1800.00), 2); // 12% PF capped at statutory 1800
-        $esi = ($salary <= 21000) ? round($salary * 0.0075, 2) : 0.00; // 0.75% if eligible
-        $pt = 200.00; // standard Professional Tax
+        // 1. Employee PF: Custom override or standard 12% Basic capped at statutory 1800
+        if ($employee->custom_pf_deduction !== null && $employee->custom_pf_deduction > 0) {
+            $pf = round(((float) $employee->custom_pf_deduction) * $prorationRatio, 2);
+        } else {
+            $pf = round(min($basic * 0.12, 1800.00), 2);
+        }
+
+        // 2. Employee ESI: Custom override or standard 0.75% if eligible
+        if ($employee->custom_esi_deduction !== null && $employee->custom_esi_deduction > 0) {
+            $esi = round(((float) $employee->custom_esi_deduction) * $prorationRatio, 2);
+        } else {
+            $esi = ($monthlyGrossSalary <= 21000) ? round($proratedGross * 0.0075, 2) : 0.00;
+        }
+
+        // 3. Professional Tax (PT): Custom override or standard 200
+        if ($employee->custom_pt_deduction !== null && $employee->custom_pt_deduction > 0) {
+            $pt = round(((float) $employee->custom_pt_deduction), 2);
+        } else {
+            $pt = 200.00;
+        }
 
         $totalDeductions = round($pf + $esi + $pt + $lopDeduction, 2);
-        $netSalary = max(0, round($gross - $totalDeductions, 2));
+        $netSalary = max(0, round($proratedGross - $totalDeductions, 2));
 
-        return Payslip::create([
+        $remarks = $preJoiningDays > 0
+            ? 'Joining Month: Prorated from ' . $joiningDate->format('d M Y') . ' (' . $eligibleDays . ' eligible days, ' . $paidSundays . ' paid Sundays)'
+            : 'Full Month Statement (' . $totalDaysInMonth . ' calendar days, ' . $paidSundays . ' paid Sundays)';
+
+        return Payslip::updateOrCreate([
             'employee_id' => $employee->id,
             'salary_month' => $salaryMonth,
+        ], [
             'month_name' => $date->format('F Y'),
             'basic_salary' => $basic,
             'hra' => $hra,
             'conveyance_allowance' => $conveyance,
             'special_allowance' => $special,
-            'gross_salary' => $gross,
+            'other_allowance' => $other,
+            'gross_salary' => $proratedGross,
             'pf_deduction' => $pf,
             'esi_deduction' => $esi,
             'professional_tax' => $pt,
@@ -444,11 +546,11 @@ class PortalController extends Controller
             'other_deductions' => 0,
             'total_deductions' => $totalDeductions,
             'net_salary' => $netSalary,
-            'total_working_days' => $totalDays,
+            'total_working_days' => $totalDaysInMonth,
             'paid_days' => $paidDays,
             'payment_status' => 'Paid',
-            'payment_date' => $date->copy()->endOfMonth()->toDateString(),
-            'remarks' => 'Monthly Salary for ' . $date->format('F Y'),
+            'payment_date' => $endOfMonth->toDateString(),
+            'remarks' => $remarks,
         ]);
     }
 }

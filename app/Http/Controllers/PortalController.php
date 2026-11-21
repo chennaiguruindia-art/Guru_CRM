@@ -473,44 +473,43 @@ class PortalController extends Controller
 
         // Monthly Salary & Component Breakdown
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
-        $dailyRate = $totalDaysInMonth > 0 ? ($monthlyGrossSalary / $totalDaysInMonth) : 0;
-        $lopDeduction = round($lopDays * $dailyRate, 2);
-
-        // Proration scaling ratio for mid-month joinees
-        $prorationRatio = $totalDaysInMonth > 0 ? ($eligibleDays / $totalDaysInMonth) : 1.0;
-        $proratedGross = round($monthlyGrossSalary * $prorationRatio, 2);
 
         // Check if Admin set custom component amounts on employee
         $hasCustomSplit = ($employee->basic_salary !== null && $employee->basic_salary > 0);
 
         if ($hasCustomSplit) {
-            $basic = round(((float) $employee->basic_salary) * $prorationRatio, 2);
-            $hra = round(((float) ($employee->hra ?? 0)) * $prorationRatio, 2);
-            $conveyance = round(((float) ($employee->conveyance_allowance ?? 0)) * $prorationRatio, 2);
-            $special = round(((float) ($employee->special_allowance ?? 0)) * $prorationRatio, 2);
-            $other = round(((float) ($employee->other_allowance ?? 0)) * $prorationRatio, 2);
+            $basic = round(((float) $employee->basic_salary), 2);
+            $hra = round(((float) ($employee->hra ?? 0)), 2);
+            $conveyance = round(((float) ($employee->conveyance_allowance ?? 0)), 2);
+            $special = round(((float) ($employee->special_allowance ?? 0)), 2);
+            $other = round(((float) ($employee->other_allowance ?? 0)), 2);
+            $gross = round($basic + $hra + $conveyance + $special + $other, 2);
         } else {
-            // Standard statutory auto-split: 50% Basic, 30% HRA, 10% Conveyance, 10% Special
-            $basic = round($proratedGross * 0.50, 2);
-            $hra = round($proratedGross * 0.30, 2);
-            $conveyance = round($proratedGross * 0.10, 2);
-            $special = round($proratedGross - ($basic + $hra + $conveyance), 2);
+            // If no custom split is defined, Monthly Gross Salary / CTC itself is the Basic Salary
+            $basic = $monthlyGrossSalary;
+            $hra = 0.00;
+            $conveyance = 0.00;
+            $special = 0.00;
             $other = 0.00;
+            $gross = $monthlyGrossSalary;
         }
+
+        $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
+        $lopDeduction = round($lopDays * $dailyRate, 2);
 
         // Deductions
         // 1. Employee PF: Custom override or standard 12% Basic capped at statutory 1800
         if ($employee->custom_pf_deduction !== null && $employee->custom_pf_deduction > 0) {
-            $pf = round(((float) $employee->custom_pf_deduction) * $prorationRatio, 2);
+            $pf = round(((float) $employee->custom_pf_deduction), 2);
         } else {
             $pf = round(min($basic * 0.12, 1800.00), 2);
         }
 
         // 2. Employee ESI: Custom override or standard 0.75% if eligible
         if ($employee->custom_esi_deduction !== null && $employee->custom_esi_deduction > 0) {
-            $esi = round(((float) $employee->custom_esi_deduction) * $prorationRatio, 2);
+            $esi = round(((float) $employee->custom_esi_deduction), 2);
         } else {
-            $esi = ($monthlyGrossSalary <= 21000) ? round($proratedGross * 0.0075, 2) : 0.00;
+            $esi = ($gross <= 21000) ? round($gross * 0.0075, 2) : 0.00;
         }
 
         // 3. Professional Tax (PT): Custom override or standard 200
@@ -521,13 +520,13 @@ class PortalController extends Controller
         }
 
         $totalDeductions = round($pf + $esi + $pt + $lopDeduction, 2);
-        $netSalary = max(0, round($proratedGross - $totalDeductions, 2));
+        $netSalary = max(0, round($gross - $totalDeductions, 2));
 
         $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
         $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
 
         $remarks = $preJoiningDays > 0
-            ? 'Joining Month: Prorated from ' . $joiningDate->format('d M Y') . ' (' . $eligibleDays . ' eligible days, ' . $paidSundays . ' paid Sundays)'
+            ? 'Joining Month: Started from ' . $joiningDate->format('d M Y') . ' (' . $eligibleDays . ' eligible days, ' . $paidSundays . ' paid Sundays)'
             : 'Full Month Statement (' . $totalDaysInMonth . ' calendar days, ' . $paidSundays . ' paid Sundays)';
 
         if ($isCurrentMonth && ! $monthEnded) {
@@ -544,7 +543,7 @@ class PortalController extends Controller
             'conveyance_allowance' => $conveyance,
             'special_allowance' => $special,
             'other_allowance' => $other,
-            'gross_salary' => $proratedGross,
+            'gross_salary' => $gross,
             'pf_deduction' => $pf,
             'esi_deduction' => $esi,
             'professional_tax' => $pt,

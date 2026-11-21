@@ -70,224 +70,188 @@
 @endif
 
 <div class="row g-4">
-    <!-- Main Payslip Document (Official corporate layout) -->
+    <!-- Main Payslip Document (Corporate Statutory Format - Form XXVIII) -->
     <div class="col-12 col-xl-8">
         @if($currentPayslip)
-        <div class="card border shadow-sm bg-white" id="printablePayslip">
-            <div class="card-body p-4 p-md-5">
-                <!-- Company Header & Title -->
-                <div class="row pb-3 border-bottom mb-4 align-items-center">
-                    <div class="col-sm-7">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <img src="{{ asset('logo/guru.png') }}" alt="Guru Living Assets" style="max-height: 44px; width: auto;">
+        <div class="card border-0 shadow-sm bg-white overflow-hidden" id="printablePayslip">
+            <div class="card-body p-2 p-md-4">
+                <div class="payslip-wrapper border border-2 border-dark bg-white" style="color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                    
+                    <!-- 1. Company Header Box -->
+                    <div class="p-3 border-bottom border-2 border-dark d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark" style="font-size: 1.35rem; letter-spacing: -0.3px;">
+                                Guru Integrated Services India Pvt Ltd
+                            </h4>
+                            <div style="font-size: 0.85rem; line-height: 1.35; color: #222;">
+                                1st Floor, F 200, First St, Block F, Annanagar East, Chennai,<br>
+                                Tamil Nadu – 600102
+                            </div>
                         </div>
-                        <div class="fw-bold text-dark fs-5">GURU LIVING ASSETS</div>
-                        <div class="text-muted small">India's Green Transformation Partner</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">
-                            {{ $employee?->branch?->location ?? 'Bangalore / Chennai' }} &middot; GST / Corporate Registered
+                        <div class="text-end">
+                            <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
+                                <img src="{{ asset('logo/guru.png') }}" alt="GURU" style="max-height: 48px; width: auto;">
+                            </div>
+                            <div class="fw-bold" style="font-size: 0.78rem; color: #15803d; letter-spacing: 0.2px;">
+                                India's Green Transformation Partner
+                            </div>
                         </div>
                     </div>
-                    <div class="col-sm-5 text-sm-end mt-3 mt-sm-0">
-                        @if($currentPayslip->payment_status === 'Paid')
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
-                                <i class="bi bi-check-circle-fill me-1"></i>OFFICIAL PAYSLIP
-                            </span>
+
+                    <!-- 2. Statutory Subtitle Bar -->
+                    <div class="text-center py-2 px-1 fw-bold text-dark border-bottom border-2 border-dark" style="background-color: #cfe2ff; font-size: 0.9rem; letter-spacing: 0.3px;">
+                        FORM No XXVIII Under Rule 78(1)(b) of the TamilNadu Contract Labour Rules, 1975
+                    </div>
+
+                    <!-- 3. Bank Details Grid (4 columns) -->
+                    <div class="table-responsive mb-0">
+                        <table class="table table-bordered border-dark mb-0 text-center small" style="border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color: #f8fafc;">
+                                    <th class="py-2 border border-dark fw-bold" style="width: 25%;">Bank Name</th>
+                                    <th class="py-2 border border-dark fw-bold" style="width: 25%;">Account Holder Name</th>
+                                    <th class="py-2 border border-dark fw-bold" style="width: 25%;">Account Number</th>
+                                    <th class="py-2 border border-dark fw-bold" style="width: 25%;">IFSC Code</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="py-2 border border-dark fw-semibold">{{ $employee?->bank_name ?? '—' }}</td>
+                                    <td class="py-2 border border-dark fw-semibold">{{ $employee?->name ?? '—' }}</td>
+                                    <td class="py-2 border border-dark font-monospace fw-semibold">{{ $employee?->bank_account_number ?? '—' }}</td>
+                                    <td class="py-2 border border-dark font-monospace fw-semibold">{{ $employee?->bank_ifsc ?? '—' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 4. Dark Blue Month Header Bar -->
+                    <div class="text-center py-2 fw-bold text-white border-top border-bottom border-2 border-dark" style="background-color: #0b3d7d; font-size: 1.15rem; letter-spacing: 0.5px;">
+                        Pay Slip ({{ $currentPayslip->month_name }})
+                    </div>
+
+                    <!-- 5. Employee Details Grid -->
+                    <div class="table-responsive mb-0">
+                        <table class="table table-bordered border-dark mb-0 small" style="border-collapse: collapse;">
+                            <tbody>
+                                <tr>
+                                    <td class="border border-dark fw-bold px-2 py-1" style="width: 14%; background-color: #f8fafc;">Emp Name:</td>
+                                    <td class="border border-dark fw-semibold px-2 py-1" style="width: 28%;">{{ $employee?->name ?? '—' }}</td>
+                                    <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 20%; background-color: #f8fafc;">Total Calendar Days:</td>
+                                    <td class="border border-dark fw-semibold text-center px-2 py-1" style="width: 8%;">{{ $currentPayslip->total_working_days }}</td>
+                                    <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 18%; background-color: #f8fafc;">Total Days Present:</td>
+                                    <td class="border border-dark fw-semibold text-center px-2 py-1" style="width: 12%;">{{ (int) $currentPayslip->paid_days }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">Emp No:</td>
+                                    <td class="border border-dark font-monospace fw-bold text-success px-2 py-1">{{ $employee?->employee_code ?? '—' }}</td>
+                                    <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">ESI No:</td>
+                                    <td class="border border-dark font-monospace fw-semibold text-center px-2 py-1">{{ $employee?->pan_number ?: '—' }}</td>
+                                    <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">UAN No:</td>
+                                    <td class="border border-dark font-monospace fw-semibold text-center px-2 py-1">{{ $employee?->uan_number ?: '—' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">Designation:</td>
+                                    <td class="border border-dark fw-semibold px-2 py-1">{{ $employee?->designation ?? '—' }}</td>
+                                    <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">PF No:</td>
+                                    <td colspan="3" class="border border-dark font-monospace fw-semibold px-2 py-1">{{ $employee?->pf_number ?: '—' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 6. Earnings vs Deductions Table -->
+                    <div class="table-responsive mb-0">
+                        <table class="table table-bordered border-dark mb-0" style="border-collapse: collapse;">
+                            <thead>
+                                <tr style="background-color: #cfe2ff;">
+                                    <th class="border border-dark text-center py-2 fw-bold text-dark fs-6" style="width: 33%;">Earnings</th>
+                                    <th class="border border-dark text-center py-2 fw-bold text-dark fs-6" style="width: 17%;">Amount (₹)</th>
+                                    <th class="border border-dark text-center py-2 fw-bold text-dark fs-6" style="width: 33%;">Deductions</th>
+                                    <th class="border border-dark text-center py-2 fw-bold text-dark fs-6" style="width: 17%;">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small">
+                                <tr>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Basic</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ number_format($currentPayslip->basic_salary, 2) }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">PF</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->pf_deduction > 0 ? number_format($currentPayslip->pf_deduction, 2) : '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-dark py-2 px-3 fw-medium">House Rent Allowance (HRA)</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $currentPayslip->hra > 0 ? number_format($currentPayslip->hra, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">ESI</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->esi_deduction > 0 ? number_format($currentPayslip->esi_deduction, 2) : '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Conveyance Allowance</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $currentPayslip->conveyance_allowance > 0 ? number_format($currentPayslip->conveyance_allowance, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Prof. Tax</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->professional_tax > 0 ? number_format($currentPayslip->professional_tax, 2) : '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Special Allowance</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ $currentPayslip->special_allowance > 0 ? number_format($currentPayslip->special_allowance, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">LOP</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ $currentPayslip->lop_deduction > 0 ? number_format($currentPayslip->lop_deduction, 2) : '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Other Allowance</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold">{{ ($currentPayslip->other_allowance ?? 0) > 0 ? number_format($currentPayslip->other_allowance, 2) : '-' }}</td>
+                                    <td class="border border-dark py-2 px-3 fw-medium">Other Deductions</td>
+                                    <td class="border border-dark py-2 px-3 text-end fw-semibold text-danger">{{ ($currentPayslip->other_deductions ?? 0) > 0 ? number_format($currentPayslip->other_deductions, 2) : '-' }}</td>
+                                </tr>
+                                <!-- Total Row -->
+                                <tr class="fw-bold" style="background-color: #cfe2ff; font-size: 0.95rem;">
+                                    <td class="border border-dark py-2 px-3">Total</td>
+                                    <td class="border border-dark py-2 px-3 text-end text-success">{{ number_format($currentPayslip->gross_salary, 2) }}</td>
+                                    <td class="border border-dark py-2 px-3">Total</td>
+                                    <td class="border border-dark py-2 px-3 text-end text-danger">{{ number_format($currentPayslip->total_deductions, 2) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 7. Net Pay Highlighting Bar -->
+                    <div class="d-flex justify-content-between align-items-center py-2 px-3 px-md-4 border-bottom border-2 border-dark" style="background-color: #cfe2ff;">
+                        <span class="fw-bold fs-5 text-dark">Net Pay:</span>
+                        <span class="fw-bold fs-4 text-dark font-monospace">₹{{ number_format($currentPayslip->net_salary, 2) }}</span>
+                    </div>
+
+                    <!-- 8. Net Payable in Words -->
+                    <div class="py-2 px-3 px-md-4 border-bottom border-2 border-dark small fw-semibold bg-white d-flex align-items-center flex-wrap gap-2">
+                        <span class="text-dark">Net Payable in Words:</span>
+                        <span class="text-dark fw-bold">{{ $currentPayslip->net_salary_in_words }}</span>
+                    </div>
+
+                    <!-- 9. Signatures Footer -->
+                    <div class="p-3 p-md-4 pt-4 d-flex justify-content-between align-items-end bg-white" style="min-height: 90px;">
+                        <div class="text-center" style="min-width: 170px;">
+                            <div class="border-top border-dark pt-1 fw-bold small text-dark">Receiver's Signature</div>
+                        </div>
+                        <div class="text-center" style="min-width: 170px;">
+                            <div class="border-top border-dark pt-1 fw-bold small text-dark">Authorized Signatory</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Guru Integrated Services</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Status / Help Note under Document -->
+                <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted">
+                    <div>
+                        <i class="bi bi-info-circle text-primary me-1"></i>
+                        <span>Payment Date: <strong>{{ $currentPayslip->payment_date?->format('d M Y') ?? 'End of Month' }}</strong></span>
+                        @if($currentPayslip->payment_status === 'In Progress')
+                            &middot; <span class="badge bg-primary-subtle text-primary border">In Progress &middot; Live Attendance Sync</span>
                         @else
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6">
-                                <i class="bi bi-arrow-repeat me-1"></i>LIVE DYNAMIC PAYSLIP
-                            </span>
+                            &middot; <span class="badge bg-success-subtle text-success border">Paid &middot; Official Locked</span>
                         @endif
-                        <div class="fw-bold text-dark mt-2">
-                            {{ $currentPayslip->month_name }}
-                        </div>
-                        <div class="small mt-1">
-                            Status: 
-                            @if($currentPayslip->payment_status === 'Paid')
-                                <strong class="text-success"><i class="bi bi-check-circle me-1"></i>Paid (Finalized)</strong>
-                            @else
-                                <strong class="text-primary"><i class="bi bi-hourglass-split me-1"></i>In Progress (Live Estimate)</strong>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Employee & Salary Details Grid -->
-                <div class="p-3 bg-light rounded-3 mb-4 border">
-                    <div class="row g-3 small">
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Employee Name:</span>
-                            <span class="fw-bold text-dark">{{ $employee?->name ?? '—' }}</span>
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Employee ID:</span>
-                            <span class="fw-bold text-success font-monospace">{{ $employee?->employee_code ?? '—' }}</span>
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Designation:</span>
-                            <span class="fw-semibold text-dark">{{ $employee?->designation ?? '—' }}</span>
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Department:</span>
-                            <span class="fw-semibold text-dark">{{ $employee?->department ?? 'General' }}</span>
-                        </div>
-
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Branch:</span>
-                            <span>{{ $employee?->branch?->name ?? 'Headquarters' }}</span>
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">PAN Number:</span>
-                            <span class="font-monospace fw-semibold">{{ $employee?->pan_number ?: '—' }}</span>
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">PF Number:</span>
-                            <span class="font-monospace fw-semibold">{{ $employee?->pf_number ?: '—' }}</span>
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">UAN Number:</span>
-                            <span class="font-monospace fw-semibold">{{ $employee?->uan_number ?: '—' }}</span>
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <span class="text-muted d-block">Bank & Account:</span>
-                            <span>{{ $employee?->bank_name ? $employee->bank_name . ' (' . Str::mask($employee->bank_account_number, '*', -4) . ')' : '—' }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Attendance Days Breakdown -->
-                <div class="d-flex justify-content-between align-items-center p-2 px-3 bg-white border rounded mb-4 flex-wrap gap-2 small">
-                    <div>
-                        <span class="text-muted">Total Calendar Days:</span>
-                        <strong class="text-dark ms-1">{{ $currentPayslip?->total_working_days ?? 30 }}</strong>
                     </div>
                     <div>
-                        <span class="text-muted">Payable Days:</span>
-                        <strong class="text-success ms-1">{{ $currentPayslip?->paid_days ?? 30 }}</strong>
-                    </div>
-                    <div>
-                        <span class="text-muted">Loss of Pay (LOP) Days:</span>
-                        <strong class="{{ ($currentPayslip?->lop_days ?? 0) > 0 ? 'text-danger' : 'text-dark' }} ms-1">
-                            {{ $currentPayslip?->lop_days ?? 0 }}
-                        </strong>
-                    </div>
-                    <div>
-                        <span class="text-muted">Payment Date:</span>
-                        <strong class="text-dark ms-1">{{ $currentPayslip?->payment_date?->format('d M Y') ?? 'End of Month' }}</strong>
-                    </div>
-                </div>
-
-                <!-- Earnings vs Deductions Table -->
-                <div class="table-responsive mb-4">
-                    <table class="table table-bordered mb-0">
-                        <thead class="table-light text-center small fw-bold">
-                            <tr>
-                                <th class="text-start" style="width: 50%;">EARNINGS</th>
-                                <th class="text-start" style="width: 50%;">DEDUCTIONS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <!-- Left: Earnings Breakdown -->
-                                <td class="p-0 align-top">
-                                    <table class="table table-sm table-borderless mb-0 small">
-                                        <tbody>
-                                            <tr>
-                                                <td class="text-muted">Basic Salary</td>
-                                                <td class="text-end fw-semibold">₹{{ number_format($currentPayslip?->basic_salary ?? 0, 2) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted">House Rent Allowance (HRA)</td>
-                                                <td class="text-end fw-semibold">₹{{ number_format($currentPayslip?->hra ?? 0, 2) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted">Conveyance Allowance</td>
-                                                <td class="text-end fw-semibold">₹{{ number_format($currentPayslip?->conveyance_allowance ?? 0, 2) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted">Special Allowance</td>
-                                                <td class="text-end fw-semibold">₹{{ number_format($currentPayslip?->special_allowance ?? 0, 2) }}</td>
-                                            </tr>
-                                            @if(($currentPayslip?->other_allowance ?? 0) > 0)
-                                            <tr>
-                                                <td class="text-muted">Other Allowance</td>
-                                                <td class="text-end fw-semibold">₹{{ number_format($currentPayslip->other_allowance, 2) }}</td>
-                                            </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                </td>
-
-                                <!-- Right: Deductions Breakdown -->
-                                <td class="p-0 align-top">
-                                    <table class="table table-sm table-borderless mb-0 small">
-                                        <tbody>
-                                            <tr>
-                                                <td class="text-muted">Provident Fund (PF)</td>
-                                                <td class="text-end fw-semibold text-danger">₹{{ number_format($currentPayslip?->pf_deduction ?? 0, 2) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted">Employee State Insurance (ESI)</td>
-                                                <td class="text-end fw-semibold text-danger">₹{{ number_format($currentPayslip?->esi_deduction ?? 0, 2) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted">Professional Tax (PT)</td>
-                                                <td class="text-end fw-semibold text-danger">₹{{ number_format($currentPayslip?->professional_tax ?? 0, 2) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-muted">Loss of Pay (LOP Deductions)</td>
-                                                <td class="text-end fw-semibold text-danger">₹{{ number_format($currentPayslip?->lop_deduction ?? 0, 2) }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </td>
-                            </tr>
-
-                            <!-- Subtotals -->
-                            <tr class="table-light fw-bold small">
-                                <td class="d-flex justify-content-between">
-                                    <span>Total Gross Earnings:</span>
-                                    <span class="text-success">₹{{ number_format($currentPayslip?->gross_salary ?? 0, 2) }}</span>
-                                </td>
-                                <td>
-                                    <div class="d-flex justify-content-between text-danger">
-                                        <span>Total Deductions:</span>
-                                        <span>₹{{ number_format($currentPayslip?->total_deductions ?? 0, 2) }}</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Net Take-Home Pay Banner -->
-                <div class="p-3 rounded-3 border bg-success-subtle text-success d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <div>
-                        <div class="small fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Net Salary Payable</div>
-                        <div class="small text-muted">{{ $currentPayslip?->net_salary_in_words ?? 'Calculated on attendance & CTC' }}</div>
-                    </div>
-                    <div class="text-end">
-                        <h2 class="fw-bold mb-0 text-success">
-                            ₹{{ number_format($currentPayslip?->net_salary ?? 0, 2) }}
-                        </h2>
-                    </div>
-                </div>
-
-                @if($currentPayslip?->remarks)
-                    <div class="alert alert-light border small text-muted d-flex align-items-center gap-2 mb-4">
-                        <i class="bi bi-info-circle text-primary"></i>
-                        <span>{{ $currentPayslip->remarks }}</span>
-                    </div>
-                @endif
-
-                <!-- Footer Signatory Notes -->
-                <div class="row pt-4 mt-4 border-top text-muted small align-items-end">
-                    <div class="col-8">
-                        <div class="fw-semibold text-dark mb-1">Important Note:</div>
-                        <div>This is a system-generated compensation payslip issued by GURU Living Assets HRM Self-Service Portal. No manual signature required.</div>
-                    </div>
-                    <div class="col-4 text-end">
-                        <div class="border-top pt-2 text-dark fw-bold">Authorized Signatory</div>
-                        <div style="font-size: 0.7rem;">HR & Finance Dept.</div>
+                        <button onclick="window.print()" class="btn btn-sm btn-outline-dark">
+                            <i class="bi bi-printer me-1"></i>Print Form XXVIII
+                        </button>
                     </div>
                 </div>
             </div>

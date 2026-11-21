@@ -51,6 +51,9 @@
                         ['Daily Attendance', 'bi-calendar-check', 'attendance.index', ['attendance.index'], 'attendance.view'],
                         ['Monthly Reports', 'bi-file-earmark-bar-graph', 'hrm.report', ['hrm.report*'], 'attendance.view'],
                     ]],
+                    ['label' => 'Payroll & Payslips', 'key' => 'hrm_payroll', 'icon' => 'bi-cash-stack', 'active' => ['hrm.payslips*'], 'items' => [
+                        ['Monthly Payslips', 'bi-file-earmark-ruled', 'hrm.payslips', ['hrm.payslips*'], 'employees.view'],
+                    ]],
                 ],
             ],
             [
@@ -105,6 +108,7 @@
                 ['label' => 'HRM & Operations', 'key' => 'operations_staff', 'icon' => 'bi-gear-wide-connected', 'active' => ['employees*', 'tasks*', 'attendance*', 'vendors*', 'purchases*', 'hrm*'], 'items' => [
                     ['HRM Portal Suite', 'bi-people-fill', 'hrm.dashboard', ['hrm*'], 'employees.view'],
                     ['Employees Directory', 'bi-person-badge', 'employees.index', ['employees*'], 'employees.view'],
+                    ['Monthly Payslips', 'bi-file-earmark-ruled', 'hrm.payslips', ['hrm.payslips*'], 'employees.view'],
                     ['Daily Attendance', 'bi-calendar-check', 'attendance.index', ['attendance*'], 'attendance.view'],
                     ['Tasks', 'bi-check2-square', 'tasks.index', ['tasks*'], 'tasks.view'],
                     ['Vendors', 'bi-shop', 'vendors.index', ['vendors*'], 'vendors.view'],

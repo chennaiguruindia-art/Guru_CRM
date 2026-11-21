@@ -36,6 +36,7 @@ class Payslip extends Model
         'payment_status',
         'payment_date',
         'remarks',
+        'is_manual',
     ];
 
     protected $casts = [
@@ -58,6 +59,7 @@ class Payslip extends Model
         'net_salary' => 'decimal:2',
         'paid_days' => 'decimal:1',
         'payment_date' => 'date',
+        'is_manual' => 'boolean',
     ];
 
     public function employee(): BelongsTo

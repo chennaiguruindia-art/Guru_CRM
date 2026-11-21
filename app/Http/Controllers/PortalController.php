@@ -393,12 +393,12 @@ class PortalController extends Controller
         $totalDaysInMonth = $date->daysInMonth;
         $isCurrentMonth = ($salaryMonth === now('Asia/Kolkata')->format('Y-m'));
 
-        // If not current month, and payslip already persisted, return it
+        // If payslip is already manually customized/saved by Admin, or past month, return it directly
         $existingPayslip = Payslip::where('employee_id', $employee->id)
             ->where('salary_month', $salaryMonth)
             ->first();
 
-        if ($existingPayslip && ! $isCurrentMonth && ! request()->boolean('refresh')) {
+        if ($existingPayslip && ($existingPayslip->is_manual || ! $isCurrentMonth) && ! request()->boolean('refresh')) {
             return $existingPayslip;
         }
 

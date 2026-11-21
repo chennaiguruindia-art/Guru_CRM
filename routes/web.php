@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EstimationController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HrmDashboardController;
+use App\Http\Controllers\HrmPayslipController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LeadController;
@@ -187,6 +188,14 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
         ->name('hrm.dashboard')->middleware('permission:' . $pickPermission('employees', 'view'));
     Route::get('/hrm/reports', [HrmDashboardController::class, 'report'])
         ->name('hrm.report')->middleware('permission:' . $pickPermission('attendance', 'view'));
+    Route::get('/hrm/payslips', [HrmPayslipController::class, 'index'])
+        ->name('hrm.payslips')->middleware('permission:' . $pickPermission('employees', 'view'));
+    Route::post('/hrm/payslips', [HrmPayslipController::class, 'store'])
+        ->name('hrm.payslips.store')->middleware('permission:' . $pickPermission('employees', 'edit'));
+    Route::get('/hrm/payslips/{employee}/{month}/print', [HrmPayslipController::class, 'print'])
+        ->name('hrm.payslips.print')->middleware('permission:' . $pickPermission('employees', 'view'));
+    Route::delete('/hrm/payslips/{payslip}', [HrmPayslipController::class, 'destroy'])
+        ->name('hrm.payslips.destroy')->middleware('permission:' . $pickPermission('employees', 'delete'));
 
     $resourceWithPerms('employees', EmployeeController::class, 'employees');
     $resourceWithPerms('tasks', TaskController::class, 'tasks');

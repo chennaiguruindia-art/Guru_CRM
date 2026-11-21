@@ -71,7 +71,7 @@
 <body>
     <div class="container no-print py-3 text-center">
         <button onclick="window.print()" class="btn btn-success px-4 py-2 fw-semibold shadow-sm me-2">
-            <i class="bi bi-printer-fill me-1"></i>Print Form XXVIII / Save as PDF
+            <i class="bi bi-printer-fill me-1"></i>Print Payslip / Save as PDF
         </button>
         <button onclick="window.close()" class="btn btn-outline-secondary px-3 py-2">
             <i class="bi bi-x-circle me-1"></i>Close
@@ -100,11 +100,6 @@
                     </td>
                 </tr>
             </table>
-
-            <!-- 2. Statutory Subtitle Bar -->
-            <div class="text-center py-2 px-1 fw-bold text-dark border-bottom border-2 border-dark" style="background-color: #cfe2ff; font-size: 0.9rem; letter-spacing: 0.3px;">
-                FORM No XXVIII Under Rule 78(1)(b) of the TamilNadu Contract Labour Rules, 1975
-            </div>
 
             <!-- 3. Bank Details Grid (4 columns) -->
             <table class="table table-bordered border-dark mb-0 text-center small" style="border-collapse: collapse;">
@@ -207,20 +202,26 @@
                         <td class="border border-dark py-2 px-3">Total</td>
                         <td class="border border-dark py-2 px-3 text-end text-danger">{{ number_format($payslip->total_deductions, 2) }}</td>
                     </tr>
+
+                    <!-- 7. Net Pay Highlighting Row -->
+                    <tr style="background-color: #cfe2ff;">
+                        <td colspan="2" class="border border-dark py-2 px-3 fw-bold fs-5 text-dark align-middle">
+                            Net Pay:
+                        </td>
+                        <td colspan="2" class="border border-dark py-2 px-3 text-end fw-bold fs-4 text-dark font-monospace align-middle">
+                            ₹{{ number_format($payslip->net_salary, 2) }}
+                        </td>
+                    </tr>
+
+                    <!-- 8. Net Payable in Words Row (Cleanly Closes Document Bottom) -->
+                    <tr style="background-color: #ffffff;">
+                        <td colspan="4" class="border border-dark py-2.5 px-3 small fw-semibold text-dark">
+                            <span>Net Payable in Words:</span>
+                            <span class="text-dark fw-bold ms-2">{{ $payslip->net_salary_in_words }}</span>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
-
-            <!-- 7. Net Pay Highlighting Bar -->
-            <div class="d-flex justify-content-between align-items-center py-2 px-4 border-bottom border-2 border-dark" style="background-color: #cfe2ff;">
-                <span class="fw-bold fs-5 text-dark">Net Pay:</span>
-                <span class="fw-bold fs-4 text-dark font-monospace">₹{{ number_format($payslip->net_salary, 2) }}</span>
-            </div>
-
-            <!-- 8. Net Payable in Words -->
-            <div class="py-2 px-4 small fw-semibold bg-white d-flex align-items-center flex-wrap gap-2">
-                <span class="text-dark">Net Payable in Words:</span>
-                <span class="text-dark fw-bold">{{ $payslip->net_salary_in_words }}</span>
-            </div>
         </div>
 
         @if(!empty($payslip->remarks))

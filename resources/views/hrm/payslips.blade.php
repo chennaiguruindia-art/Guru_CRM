@@ -12,13 +12,13 @@
                     <i class="bi bi-file-earmark-ruled-fill text-success me-2"></i>Monthly Payslip Management
                 </h4>
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small fw-semibold">
-                    Form XXVIII Statutory
+                    Monthly Statement
                 </span>
             </div>
             <p class="text-muted small mb-0 d-flex align-items-center gap-2 flex-wrap">
                 <span><i class="bi bi-building me-1"></i>Guru Integrated Services India Pvt Ltd</span>
                 <span>•</span>
-                <span>Rule 78(1)(b) of the TamilNadu Contract Labour Rules, 1975</span>
+                <span>Employee Monthly Compensation & Payslips</span>
             </p>
         </div>
 
@@ -26,7 +26,7 @@
             @if($selectedEmployee)
                 <a href="{{ route('hrm.payslips.print', ['employee' => $selectedEmployee->id, 'month' => $selectedMonth]) }}" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-xs d-inline-flex align-items-center gap-1.5 fw-semibold">
                     <i class="bi bi-printer-fill"></i>
-                    <span>Print Form XXVIII</span>
+                    <span>Print Payslip</span>
                 </a>
                 <a href="{{ route('employees.edit', $selectedEmployee->id) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-xs d-inline-flex align-items-center gap-1.5 fw-medium bg-white">
                     <i class="bi bi-pencil-square"></i>
@@ -370,7 +370,7 @@
 
                                 <div class="d-flex align-items-center gap-2">
                                     <a href="{{ route('hrm.payslips.print', ['employee' => $selectedEmployee->id, 'month' => $selectedMonth]) }}" target="_blank" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold small shadow-xs">
-                                        <i class="bi bi-printer me-1"></i>Print Form XXVIII
+                                        <i class="bi bi-printer me-1"></i>Print Payslip
                                     </a>
 
                                     @if($isExisting && $payslip->id)
@@ -478,7 +478,7 @@
                                         <a href="{{ route('hrm.payslips', ['branch_id' => $rp->employee->branch_id ?? '', 'employee_id' => $rp->employee_id, 'month' => $selectedMonth]) }}" class="btn btn-outline-secondary" title="Edit Payslip">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="{{ route('hrm.payslips.print', ['employee' => $rp->employee_id, 'month' => $selectedMonth]) }}" target="_blank" class="btn btn-outline-primary" title="Print Form XXVIII">
+                                        <a href="{{ route('hrm.payslips.print', ['employee' => $rp->employee_id, 'month' => $selectedMonth]) }}" target="_blank" class="btn btn-outline-primary" title="Print Payslip">
                                             <i class="bi bi-printer"></i>
                                         </a>
                                     </div>

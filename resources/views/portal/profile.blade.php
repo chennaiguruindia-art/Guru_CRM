@@ -5,12 +5,9 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-person-vcard text-success me-2"></i>My Profile</h4>
-        <div class="text-muted small">View your employment records and manage your editable personal & bank details.</div>
+        <div class="text-muted small">View your employment records and manage your personal, emergency contact & banking details.</div>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('portal.family') }}" class="btn btn-outline-info btn-sm">
-            <i class="bi bi-people me-1"></i>Parents & Family Details
-        </a>
         <a href="{{ route('portal.payslips') }}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-receipt me-1"></i>My Payslips
         </a>
@@ -155,20 +152,25 @@
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-success border-bottom pb-2 mb-3">
-                        <i class="bi bi-telephone-plus me-1"></i>Emergency Contact
+                    <h6 class="fw-bold text-danger border-bottom pb-2 mb-3">
+                        <i class="bi bi-shield-exclamation me-1"></i>Emergency Contact Details
                     </h6>
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Emergency Contact Phone Number</label>
-                            <input type="text" name="emergency_contact" class="form-control @error('emergency_contact') is-invalid @enderror" value="{{ old('emergency_contact', $employee?->emergency_contact) }}" placeholder="e.g. 9876543210">
+                            <label class="form-label small fw-semibold">Emergency Contact Phone Number <span class="text-danger">*</span></label>
+                            <input type="text" name="emergency_contact" class="form-control @error('emergency_contact') is-invalid @enderror" value="{{ old('emergency_contact', $employee?->emergency_contact) }}" placeholder="e.g. 9876543210" required>
                             @error('emergency_contact') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Relationship</label>
-                            <input type="text" name="emergency_contact_relation" class="form-control @error('emergency_contact_relation') is-invalid @enderror" value="{{ old('emergency_contact_relation', $employee?->emergency_contact_relation) }}" placeholder="e.g. Father, Mother, Spouse, Brother">
+                            <label class="form-label small fw-semibold">Relationship / Contact Person</label>
+                            <select name="emergency_contact_relation" class="form-select @error('emergency_contact_relation') is-invalid @enderror">
+                                <option value="">Select Relationship</option>
+                                @foreach(['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Friend', 'Relative', 'Guardian', 'Other'] as $rel)
+                                    <option value="{{ $rel }}" {{ old('emergency_contact_relation', $employee?->emergency_contact_relation) === $rel ? 'selected' : '' }}>{{ $rel }}</option>
+                                @endforeach
+                            </select>
                             @error('emergency_contact_relation') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>

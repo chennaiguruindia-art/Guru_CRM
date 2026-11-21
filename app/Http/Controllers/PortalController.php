@@ -99,8 +99,7 @@ class PortalController extends Controller
                 $employee->dob,
                 $employee->blood_group,
                 $employee->emergency_contact,
-                $employee->father_name,
-                $employee->mother_name,
+                $employee->emergency_contact_relation,
                 $employee->bank_name,
                 $employee->bank_account_number,
             ];
@@ -307,53 +306,6 @@ class PortalController extends Controller
         ]);
 
         return back()->with('success', 'Your personal details have been updated successfully!');
-    }
-
-    /**
-     * View and Manage Parents & Family Details
-     */
-    public function family(Request $request): View
-    {
-        $user = $request->user();
-        $employee = $user->employee ?? Employee::with('branch')->where('user_id', $user->id)->first();
-
-        return view('portal.family', compact('user', 'employee'));
-    }
-
-    /**
-     * Update Parents and Family Details
-     */
-    public function updateFamily(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-        $employee = $user->employee ?? Employee::where('user_id', $user->id)->first();
-
-        if (! $employee) {
-            return back()->with('error', 'No active employee profile linked to your account.');
-        }
-
-        $validated = $request->validate([
-            'father_name' => ['nullable', 'string', 'max:150'],
-            'father_phone' => ['nullable', 'string', 'max:20'],
-            'father_occupation' => ['nullable', 'string', 'max:100'],
-            'mother_name' => ['nullable', 'string', 'max:150'],
-            'mother_phone' => ['nullable', 'string', 'max:20'],
-            'mother_occupation' => ['nullable', 'string', 'max:100'],
-            'parent_address' => ['nullable', 'string', 'max:500'],
-            'emergency_contact' => ['nullable', 'string', 'max:50'],
-            'emergency_contact_relation' => ['nullable', 'string', 'max:50'],
-            'marital_status' => ['nullable', 'string', 'in:Single,Married,Other'],
-            'spouse_name' => ['nullable', 'string', 'max:150'],
-        ]);
-
-        $employee->update($validated);
-
-        AuditLogger::log('update_family', 'employees', $employee->id, null, [
-            'employee' => $employee->name,
-            'updated_by' => $user->name,
-        ]);
-
-        return back()->with('success', 'Parent & Family details saved successfully!');
     }
 
     /**

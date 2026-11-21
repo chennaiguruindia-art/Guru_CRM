@@ -132,13 +132,13 @@
         </div>
     </div>
 
-    <!-- 4. Profile & Family Completeness -->
+    <!-- 4. Profile & Emergency Completeness -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">PROFILE & FAMILY</span>
+                        <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">PROFILE & EMERGENCY</span>
                         <span class="badge {{ $profileCompletion >= 80 ? 'bg-success' : 'bg-warning text-dark' }}">
                             {{ $profileCompletion }}% Done
                         </span>
@@ -149,10 +149,10 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2 small">
                     <span class="text-muted text-truncate" style="max-width: 140px;">
-                        {{ $employee?->father_name ? 'Parents details added' : 'Add parents details' }}
+                        {{ $employee?->emergency_contact ? 'Emergency contact set' : 'Add emergency contact' }}
                     </span>
-                    <a href="{{ route('portal.family') }}" class="text-info fw-semibold text-decoration-none">
-                        Manage &rarr;
+                    <a href="{{ route('portal.profile') }}" class="text-info fw-semibold text-decoration-none">
+                        Edit Profile &rarr;
                     </a>
                 </div>
             </div>
@@ -309,45 +309,36 @@
     </div>
 </div>
 
-<!-- Bottom Section: Parents & Family Snapshot + Latest Payslip -->
+<!-- Bottom Section: Emergency & Personal Info + Latest Payslip -->
 <div class="row g-3">
-    <!-- Parents & Family Snapshot Card -->
+    <!-- Emergency & Personal Info Card -->
     <div class="col-12 col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-people-fill text-info me-2"></i>Parents & Family Summary
+                    <i class="bi bi-shield-exclamation text-danger me-2"></i>Emergency Contact & Personal Info
                 </h6>
-                <a href="{{ route('portal.family') }}" class="btn btn-sm btn-outline-info">
-                    <i class="bi bi-pencil me-1"></i>Edit Family
+                <a href="{{ route('portal.profile') }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-pencil me-1"></i>Edit Profile
                 </a>
             </div>
             <div class="card-body p-3 p-md-4">
                 <div class="row g-3 small">
                     <div class="col-sm-6">
-                        <label class="text-muted d-block" style="font-size: 0.72rem;">FATHER'S NAME</label>
-                        <span class="fw-semibold text-dark">{{ $employee?->father_name ?: '— Not Provided' }}</span>
+                        <label class="text-muted d-block" style="font-size: 0.72rem;">EMERGENCY PHONE</label>
+                        <span class="fw-bold text-danger fs-6">{{ $employee?->emergency_contact ?: '— Not Provided' }}</span>
                     </div>
                     <div class="col-sm-6">
-                        <label class="text-muted d-block" style="font-size: 0.72rem;">MOTHER'S NAME</label>
-                        <span class="fw-semibold text-dark">{{ $employee?->mother_name ?: '— Not Provided' }}</span>
+                        <label class="text-muted d-block" style="font-size: 0.72rem;">RELATIONSHIP / CONTACT</label>
+                        <span class="fw-semibold text-dark">{{ $employee?->emergency_contact_relation ?: '— Not Set' }}</span>
                     </div>
                     <div class="col-sm-6">
-                        <label class="text-muted d-block" style="font-size: 0.72rem;">FATHER'S CONTACT</label>
-                        <span class="text-dark">{{ $employee?->father_phone ?: '—' }}</span>
+                        <label class="text-muted d-block" style="font-size: 0.72rem;">PRIMARY MOBILE</label>
+                        <span class="text-dark fw-semibold">{{ $employee?->phone ?: '—' }}</span>
                     </div>
                     <div class="col-sm-6">
-                        <label class="text-muted d-block" style="font-size: 0.72rem;">MOTHER'S CONTACT</label>
-                        <span class="text-dark">{{ $employee?->mother_phone ?: '—' }}</span>
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="text-muted d-block" style="font-size: 0.72rem;">EMERGENCY CONTACT</label>
-                        <span class="text-dark fw-semibold">
-                            {{ $employee?->emergency_contact ?: '—' }}
-                            @if($employee?->emergency_contact_relation)
-                                <small class="text-muted">({{ $employee->emergency_contact_relation }})</small>
-                            @endif
-                        </span>
+                        <label class="text-muted d-block" style="font-size: 0.72rem;">EMAIL ADDRESS</label>
+                        <span class="text-dark">{{ $employee?->email ?: '—' }}</span>
                     </div>
                     <div class="col-sm-6">
                         <label class="text-muted d-block" style="font-size: 0.72rem;">BLOOD GROUP</label>
@@ -359,19 +350,23 @@
                             <span class="text-muted">—</span>
                         @endif
                     </div>
-                    @if($employee?->parent_address)
+                    <div class="col-sm-6">
+                        <label class="text-muted d-block" style="font-size: 0.72rem;">DATE OF BIRTH</label>
+                        <span class="text-dark">{{ $employee?->dob?->format('d M Y') ?? '—' }}</span>
+                    </div>
+                    @if($employee?->address)
                         <div class="col-12">
-                            <label class="text-muted d-block" style="font-size: 0.72rem;">PERMANENT / PARENTS ADDRESS</label>
-                            <p class="small bg-light p-2 rounded mb-0 text-dark">{{ $employee->parent_address }}</p>
+                            <label class="text-muted d-block" style="font-size: 0.72rem;">RESIDENTIAL ADDRESS</label>
+                            <p class="small bg-light p-2 rounded mb-0 text-dark">{{ $employee->address }}</p>
                         </div>
                     @endif
                 </div>
 
-                @if(!$employee?->father_name && !$employee?->mother_name)
-                    <div class="alert alert-info mt-3 mb-0 small d-flex align-items-center gap-2">
-                        <i class="bi bi-info-circle-fill fs-5"></i>
+                @if(!$employee?->emergency_contact)
+                    <div class="alert alert-warning mt-3 mb-0 small d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                         <div>
-                            Parents details are not added yet. <a href="{{ route('portal.family') }}" class="alert-link">Click here to add parents details</a>.
+                            Emergency contact is not set. <a href="{{ route('portal.profile') }}" class="alert-link">Click here to add emergency contact</a>.
                         </div>
                     </div>
                 @endif

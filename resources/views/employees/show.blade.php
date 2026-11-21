@@ -60,29 +60,6 @@
     </div>
 </div>
 
-{{-- Parents & Family Records --}}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-people text-info me-2"></i>Parents & Family Records</h6>
-        <span class="badge bg-info-subtle text-info border border-info-subtle">Family Info</span>
-    </div>
-    <div class="card-body p-4">
-        <div class="row g-3 small">
-            <div class="col-sm-6"><label class="text-muted d-block">Father's Name</label><span class="fw-semibold text-dark">{{ $employee->father_name ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">Mother's Name</label><span class="fw-semibold text-dark">{{ $employee->mother_name ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">Father's Phone</label><span>{{ $employee->father_phone ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">Mother's Phone</label><span>{{ $employee->mother_phone ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">Father's Occupation</label><span>{{ $employee->father_occupation ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">Mother's Occupation</label><span>{{ $employee->mother_occupation ?: '—' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">Marital Status</label><span>{{ $employee->marital_status ?? 'Single' }} {{ $employee->spouse_name ? '('.$employee->spouse_name.')' : '' }}</span></div>
-            <div class="col-sm-6"><label class="text-muted d-block">Emergency Contact</label><span class="fw-semibold text-dark">{{ $employee->emergency_contact ?: '—' }} {{ $employee->emergency_contact_relation ? '('.$employee->emergency_contact_relation.')' : '' }}</span></div>
-            @if($employee->parent_address)
-            <div class="col-12"><label class="text-muted d-block">Permanent / Parents Address</label><p class="bg-light p-2 rounded mb-0">{{ $employee->parent_address }}</p></div>
-            @endif
-        </div>
-    </div>
-</div>
-
 {{-- Banking & Statutory Details --}}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">

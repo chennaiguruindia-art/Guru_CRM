@@ -157,11 +157,6 @@
                     <span class="sidebar-text">My Profile & Info</span>
                 </a>
 
-                <a href="{{ route('portal.family') }}" class="sidebar-link {{ request()->routeIs('portal.family') ? 'active' : '' }}">
-                    <span class="sidebar-icon"><i class="bi bi-people-fill"></i></span>
-                    <span class="sidebar-text">Family & Parents</span>
-                </a>
-
                 <a href="{{ route('portal.payslips') }}" class="sidebar-link {{ request()->routeIs('portal.payslip*') ? 'active' : '' }}">
                     <span class="sidebar-icon"><i class="bi bi-receipt-cutoff"></i></span>
                     <span class="sidebar-text">My Payslips</span>
@@ -247,11 +242,6 @@
                             <li>
                                 <a class="dropdown-item py-2" href="{{ route('portal.profile') }}">
                                     <i class="bi bi-person me-2 text-primary"></i>My Profile
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item py-2" href="{{ route('portal.family') }}">
-                                    <i class="bi bi-people me-2 text-info"></i>Parents & Family
                                 </a>
                             </li>
                             <li>

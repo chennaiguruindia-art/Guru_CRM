@@ -124,8 +124,7 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
     Route::get('/portal/attendance', [PortalController::class, 'attendance'])->name('portal.attendance');
     Route::get('/portal/profile', [PortalController::class, 'profile'])->name('portal.profile');
     Route::post('/portal/profile', [PortalController::class, 'updateProfile'])->name('portal.profile.update');
-    Route::get('/portal/family', [PortalController::class, 'family'])->name('portal.family');
-    Route::post('/portal/family', [PortalController::class, 'updateFamily'])->name('portal.family.update');
+    Route::redirect('/portal/family', '/portal/profile');
     Route::get('/portal/payslips', [PortalController::class, 'payslips'])->name('portal.payslips');
     Route::get('/portal/payslips/{month}', [PortalController::class, 'showPayslip'])->name('portal.payslip.show');
 

@@ -15,7 +15,11 @@ class Employee extends Model
     protected $fillable = [
         'employee_code', 'user_id', 'branch_id', 'name', 'phone', 'email', 'designation',
         'department', 'joining_date', 'employee_type', 'salary', 'status', 'address',
-        'dob', 'blood_group', 'emergency_contact'
+        'dob', 'blood_group', 'emergency_contact',
+        'father_name', 'mother_name', 'father_phone', 'mother_phone',
+        'father_occupation', 'mother_occupation', 'parent_address',
+        'emergency_contact_relation', 'marital_status', 'spouse_name',
+        'bank_name', 'bank_account_number', 'bank_ifsc', 'pan_number', 'uan_number'
     ];
 
     protected $casts = [
@@ -37,6 +41,11 @@ class Employee extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function payslips(): HasMany
+    {
+        return $this->hasMany(Payslip::class);
     }
 
     public static function generateCode(): string

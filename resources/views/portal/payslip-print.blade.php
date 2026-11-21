@@ -80,26 +80,26 @@
 
     <div class="payslip-container">
         <div class="payslip-box bg-white">
-            <!-- 1. Header -->
-            <div class="p-3 border-bottom border-2 border-dark d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="fw-bold mb-1 text-dark" style="font-size: 1.35rem; letter-spacing: -0.3px;">
-                        Guru Integrated Services India Pvt Ltd
-                    </h4>
-                    <div style="font-size: 0.85rem; line-height: 1.35; color: #222;">
-                        1st Floor, F 200, First St, Block F, Annanagar East, Chennai,<br>
-                        Tamil Nadu – 600102
-                    </div>
-                </div>
-                <div class="text-end">
-                    <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
-                        <img src="{{ asset('logo/guru.png') }}" alt="GURU" style="max-height: 48px; width: auto;">
-                    </div>
-                    <div class="fw-bold" style="font-size: 0.78rem; color: #15803d; letter-spacing: 0.2px;">
-                        India's Green Transformation Partner
-                    </div>
-                </div>
-            </div>
+            <!-- 1. Header Table (Guarantees Left Company Name & Right Logo with NO Wrap) -->
+            <table class="w-100 mb-0 border-bottom border-2 border-dark" style="border-collapse: collapse;">
+                <tr>
+                    <td class="p-3 text-start align-middle" style="border: none !important;">
+                        <h4 class="fw-bold mb-1 text-dark" style="font-size: 1.35rem; letter-spacing: -0.3px; margin: 0;">
+                            Guru Integrated Services India Pvt Ltd
+                        </h4>
+                        <div style="font-size: 0.85rem; line-height: 1.35; color: #222; margin-top: 3px;">
+                            1st Floor, F 200, First St, Block F, Annanagar East, Chennai,<br>
+                            Tamil Nadu – 600102
+                        </div>
+                    </td>
+                    <td class="p-3 text-end align-middle" style="border: none !important; width: 220px; white-space: nowrap;">
+                        <img src="{{ asset('logo/guru.png') }}" alt="GURU" style="max-height: 48px; width: auto; object-fit: contain;">
+                        <div class="fw-bold" style="font-size: 0.78rem; color: #15803d; letter-spacing: 0.2px; margin-top: 3px;">
+                            India's Green Transformation Partner
+                        </div>
+                    </td>
+                </tr>
+            </table>
 
             <!-- 2. Statutory Subtitle Bar -->
             <div class="text-center py-2 px-1 fw-bold text-dark border-bottom border-2 border-dark" style="background-color: #cfe2ff; font-size: 0.9rem; letter-spacing: 0.3px;">

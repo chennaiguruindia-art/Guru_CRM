@@ -1,0 +1,39 @@
+# ==============================================================================
+# MySQL 8.0 / MariaDB Optimization for 100+ Concurrent Employees
+# Eliminates connection timeout and lock waiting
+# ==============================================================================
+[mysqld]
+
+# Connection Pooling & Limits
+max_connections = 350
+max_user_connections = 300
+back_log = 512
+wait_timeout = 60
+interactive_timeout = 60
+
+# Thread cache to quickly serve reconnecting workers
+thread_cache_size = 64
+thread_stack = 256K
+
+# InnoDB Memory Buffers (Allocate ~50-70% of Server RAM)
+# Example for 4GB RAM Server: 2GB buffer pool
+innodb_buffer_pool_size = 2G
+innodb_buffer_pool_instances = 2
+innodb_log_buffer_size = 32M
+innodb_log_file_size = 256M
+
+# High-Performance Transaction Flushing:
+# 2 = Writes log buffer to OS cache every second (Ultra-fast, safe against crashes)
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method = O_DIRECT
+
+# Table & Temp Caches
+table_open_cache = 4000
+table_definition_cache = 2000
+tmp_table_size = 64M
+max_heap_table_size = 64M
+
+# Query optimizations
+join_buffer_size = 2M
+sort_buffer_size = 2M
+read_rnd_buffer_size = 2M

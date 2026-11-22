@@ -3,9 +3,12 @@
 namespace App\Providers;
 
 use App\Filesystem\WindowsFilesystem;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -47,32 +50,48 @@ class AppServiceProvider extends ServiceProvider
         // Enforce Indian Standard Time (IST UTC+5:30) across entire application
         date_default_timezone_set('Asia/Kolkata');
 
-        // Automatically ensure missing columns exist on the users table (e.g., soft deletes on production)
-        try {
-            if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'deleted_at')) {
-                Schema::table('users', function (Blueprint $table) {
-                    if (! Schema::hasColumn('users', 'phone')) {
-                        $table->string('phone')->nullable();
-                    }
-                    if (! Schema::hasColumn('users', 'avatar')) {
-                        $table->string('avatar')->nullable();
-                    }
-                    if (! Schema::hasColumn('users', 'status')) {
-                        $table->string('status')->default('active');
-                    }
-                    if (! Schema::hasColumn('users', 'username')) {
-                        $table->string('username')->nullable()->unique();
-                    }
-                    if (! Schema::hasIndex('users', 'users_phone_unique')) {
-                        // Mobile is the login identifier, so it has to be
-                        // one-number-one-person.
-                        $table->unique('phone');
-                    }
-                    $table->softDeletes();
-                });
+        // Configure Rate Limiters for High-Concurrency Protection
+        RateLimiter::for('login', function (Request $request) {
+            $phone = (string) ($request->input('phone') ?: $request->input('login'));
+            return Limit::perMinute(15)->by($phone . '|' . $request->ip());
+        });
+
+        RateLimiter::for('employee-login', function (Request $request) {
+            $code = (string) $request->input('employee_code');
+            return Limit::perMinute(20)->by($code . '|' . $request->ip());
+        });
+
+        RateLimiter::for('global-web', function (Request $request) {
+            return Limit::perMinute(200)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Automatically ensure missing columns exist on users table only during console/migrations
+        // (Avoids running slow information_schema queries on every user web request)
+        if ($this->app->runningInConsole()) {
+            try {
+                if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'deleted_at')) {
+                    Schema::table('users', function (Blueprint $table) {
+                        if (! Schema::hasColumn('users', 'phone')) {
+                            $table->string('phone')->nullable();
+                        }
+                        if (! Schema::hasColumn('users', 'avatar')) {
+                            $table->string('avatar')->nullable();
+                        }
+                        if (! Schema::hasColumn('users', 'status')) {
+                            $table->string('status')->default('active');
+                        }
+                        if (! Schema::hasColumn('users', 'username')) {
+                            $table->string('username')->nullable()->unique();
+                        }
+                        if (! Schema::hasIndex('users', 'users_phone_unique')) {
+                            $table->unique('phone');
+                        }
+                        $table->softDeletes();
+                    });
+                }
+            } catch (\Throwable) {
+                // Silently ignore if database connection is unavailable
             }
-        } catch (\Throwable) {
-            // Silently ignore if database connection is unavailable
         }
         /**
          * Permission slugs are dotted ("leads.create"), which is the same shape

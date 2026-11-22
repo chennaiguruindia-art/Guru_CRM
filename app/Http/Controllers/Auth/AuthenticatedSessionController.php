@@ -70,15 +70,28 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         $rawCode = trim($request->input('employee_code'));
+        $throttleKey = 'employee-login|' . strtolower($rawCode) . '|' . $request->ip();
 
-        // Match direct code (case-insensitive e.g. CH/M/228 or ch/m/228) or short digits (e.g. 1 -> EMP-0001)
-        $employee = \App\Models\Employee::whereRaw('LOWER(employee_code) = ?', [strtolower($rawCode)])
-            ->orWhere('employee_code', 'EMP-' . str_pad($rawCode, 4, '0', STR_PAD_LEFT))
+        // 1. Rate Limiting Protection (Max 15 attempts per minute)
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 15)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'employee_code' => "Too many login attempts. Please wait {$seconds} seconds before trying again."
+            ])->withInput();
+        }
+
+        // 2. High-Speed Indexed Match (Uses B-Tree index on employee_code)
+        $paddedCode = 'EMP-' . str_pad($rawCode, 4, '0', STR_PAD_LEFT);
+        $employee = \App\Models\Employee::where('employee_code', $rawCode)
+            ->orWhere('employee_code', $paddedCode)
             ->first();
 
         if (! $employee) {
+            \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 60);
             return back()->withErrors(['employee_code' => 'Invalid Employee ID: "' . $rawCode . '". Please check with your branch admin.'])->withInput();
         }
+
+        \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
 
         if ($employee->status !== 'active') {
             return back()->withErrors(['employee_code' => 'This employee account is currently inactive.'])->withInput();

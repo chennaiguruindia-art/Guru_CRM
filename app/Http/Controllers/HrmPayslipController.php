@@ -264,14 +264,12 @@ class HrmPayslipController extends Controller
             } else {
                 if ($currentDayDate->lt($todayDate)) {
                     $lopDays += 1.0;
-                } else {
-                    $workedDays += 1;
                 }
             }
         }
 
         $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
-        $totalDaysPresent = max(0, (float) ($workedDays + $paidSundays));
+        $totalDaysPresent = max(0, (float) $workedDays);
 
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
         $basic = round(((float) ($employee->basic_salary ?: $monthlyGrossSalary)), 2);
@@ -282,7 +280,7 @@ class HrmPayslipController extends Controller
         $gross = round($basic + $da + $bonus + $leaveEncashment + $other, 2);
 
         if ($monthEnded) {
-            $totalLopDays = max(0, (float) ($totalDaysInMonth - $totalDaysPresent));
+            $totalLopDays = (float) $lopDays;
             $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
             $lopDeduction = round($totalLopDays * $dailyRate, 2);
         } else {

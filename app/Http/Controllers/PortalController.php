@@ -462,20 +462,16 @@ class PortalController extends Controller
                 // If past weekday without punch record during eligible tenure, mark as Absent (LOP)
                 if ($currentDayDate->lt($todayDate)) {
                     $lopDays += 1.0;
-                } else {
-                    // Today or upcoming day in active month — assume working
-                    $workedDays += 1;
                 }
+                // Future days in active month have not occurred yet — do not predict or assume as present!
             }
         }
 
         $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
         $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
 
-        // Total Days Present calculated from login attendance punches & eligible tenure
-        // If employee joined this month, their eligible tenure is $eligibleDays (e.g. 10 days for Nov 21 joinee)
-        // Active days present = worked days + paid Sundays in active period
-        $totalDaysPresent = max(0, (float) ($workedDays + $paidSundays));
+        // Total Days Present reflects actual attendance punches (Present, Half-Day, approved Leave) in this month
+        $totalDaysPresent = max(0, (float) $workedDays);
 
         // Monthly Salary & Component Breakdown (Form XXVIII: Basic, DA, Bonus, Leave Encashment, Other Allowance)
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
@@ -492,7 +488,7 @@ class PortalController extends Controller
         // On month end (andha month last la): final LOP amount is calculated and deducted based on complete attendance!
         // During the active month: future days cannot be assumed as leave, so LOP deduction is not prematurely charged.
         if ($monthEnded) {
-            $totalLopDays = max(0, (float) ($totalDaysInMonth - $totalDaysPresent));
+            $totalLopDays = (float) $lopDays;
             $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
             $lopDeduction = round($totalLopDays * $dailyRate, 2);
         } else {

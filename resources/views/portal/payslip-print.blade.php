@@ -135,7 +135,7 @@
                         <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 20%; background-color: #f8fafc;">Total Calendar Days:</td>
                         <td class="border border-dark fw-semibold text-center px-2 py-1" style="width: 8%;">{{ $payslip->total_working_days }}</td>
                         <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 18%; background-color: #f8fafc;">Total Days Present:</td>
-                        <td class="border border-dark fw-semibold text-center px-2 py-1" style="width: 12%;">{{ (int) $payslip->paid_days }}</td>
+                        <td class="border border-dark fw-semibold text-center px-2 py-1" style="width: 12%;">{{ fmod($payslip->paid_days, 1) == 0 ? (int)$payslip->paid_days : $payslip->paid_days }}</td>
                     </tr>
                     <tr>
                         <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">Emp No:</td>

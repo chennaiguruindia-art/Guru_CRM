@@ -13,9 +13,32 @@
             @endif
         </p>
     </div>
-    <a href="{{ route('employees.create') }}" class="btn btn-success shadow-sm">
-        <i class="bi bi-plus-lg me-1"></i> Add Employee
-    </a>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        @if(auth()->user()->canSeeAllBranches() && !empty($branches) && $branches->isNotEmpty())
+            <form method="GET" action="{{ route('employees.index') }}" class="d-inline-block m-0">
+                @if(request('department'))
+                    <input type="hidden" name="department" value="{{ request('department') }}">
+                @endif
+                @if(request('search'))
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                @endif
+                <div class="d-flex align-items-center bg-white border rounded-pill px-2.5 py-1 shadow-xs">
+                    <i class="bi bi-building text-muted me-1.5 small"></i>
+                    <select name="branch_id" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark shadow-none p-0 pe-4" style="cursor: pointer;" onchange="this.form.submit()">
+                        <option value="">🏢 All Branches</option>
+                        @foreach($branches as $b)
+                            <option value="{{ $b->id }}" {{ (string)request('branch_id') === (string)$b->id ? 'selected' : '' }}>
+                                {{ $b->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </form>
+        @endif
+        <a href="{{ route('employees.create') }}" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add Employee
+        </a>
+    </div>
 </div>
 
 @if(session('login_credentials'))

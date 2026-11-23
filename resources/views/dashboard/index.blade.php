@@ -35,6 +35,101 @@
         </div>
     </div>
 
+    <!-- Filter Toolbar -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white" style="border: 1px solid #eef2f6 !important;">
+        <div class="card-body p-2.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <form method="GET" action="{{ route('dashboard') }}" id="dashboard-filter-form" class="d-flex align-items-center gap-2 flex-wrap">
+                @if(isset($branches) && $branches->isNotEmpty())
+                    <div class="d-flex align-items-center bg-light border rounded-pill px-2.5 py-1">
+                        <i class="bi bi-building text-muted me-1.5 small"></i>
+                        <select name="branch_id" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark shadow-none p-0 pe-4" style="cursor: pointer;" onchange="this.form.submit()">
+                            <option value="">🏢 All Branches</option>
+                            @foreach($branches as $b)
+                                <option value="{{ $b->id }}" {{ (string)($selectedBranchId ?? '') === (string)$b->id ? 'selected' : '' }}>
+                                    {{ $b->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
+                <div class="d-flex align-items-center bg-light border rounded-pill px-2.5 py-1">
+                    <i class="bi bi-clock-history text-muted me-1.5 small"></i>
+                    <select name="period" id="filter-period-select" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark shadow-none p-0 pe-4" style="cursor: pointer;" onchange="handlePeriodChange(this.value)">
+                        <option value="all" {{ ($period ?? 'all') === 'all' ? 'selected' : '' }}>📅 All Time</option>
+                        <option value="today" {{ ($period ?? '') === 'today' ? 'selected' : '' }}>⚡ Today</option>
+                        <option value="week" {{ ($period ?? '') === 'week' ? 'selected' : '' }}>📊 This Week</option>
+                        <option value="month" {{ ($period ?? '') === 'month' ? 'selected' : '' }}>📆 This Month</option>
+                        <option value="date" {{ ($period ?? '') === 'date' ? 'selected' : '' }}>🎯 Specific Date</option>
+                        <option value="custom_month" {{ ($period ?? '') === 'custom_month' ? 'selected' : '' }}>🗓️ Specific Month</option>
+                    </select>
+                </div>
+
+                <div id="date-input-col" style="{{ ($period ?? '') === 'date' ? '' : 'display: none;' }}">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" name="date" class="form-control form-control-sm rounded-end-pill" value="{{ $selectedDate ?? now()->toDateString() }}" onchange="this.form.submit()">
+                    </div>
+                </div>
+
+                <div id="month-input-col" style="{{ ($period ?? '') === 'custom_month' ? '' : 'display: none;' }}">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="bi bi-calendar-month"></i></span>
+                        <input type="month" name="month" class="form-control form-control-sm rounded-end-pill" value="{{ $selectedMonth ?? now()->format('Y-m') }}" onchange="this.form.submit()">
+                    </div>
+                </div>
+
+                @if(($selectedBranchId ?? null) || ($period ?? 'all') !== 'all')
+                    <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2.5 py-1 text-nowrap d-inline-flex align-items-center gap-1" title="Reset all filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span>Reset</span>
+                    </a>
+                @endif
+            </form>
+
+            @if(($selectedBranchId ?? null) || ($period ?? 'all') !== 'all')
+                <div class="d-none d-lg-flex align-items-center gap-1.5 text-nowrap ms-auto">
+                    @if($selectedBranchId ?? null)
+                        @php $activeBranch = $branches->firstWhere('id', $selectedBranchId); @endphp
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1">
+                            <i class="bi bi-geo-alt me-1"></i>{{ $activeBranch?->name ?? 'Branch #' . $selectedBranchId }}
+                        </span>
+                    @else
+                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">All Branches</span>
+                    @endif
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        @if(($period ?? '') === 'today') Today
+                        @elseif(($period ?? '') === 'week') This Week
+                        @elseif(($period ?? '') === 'month') This Month
+                        @elseif(($period ?? '') === 'date') Date: {{ \Carbon\Carbon::parse($selectedDate ?? now())->format('d M Y') }}
+                        @elseif(($period ?? '') === 'custom_month') Month: {{ \Carbon\Carbon::parse(($selectedMonth ?? now()->format('Y-m')) . '-01')->format('F Y') }}
+                        @else All Time
+                        @endif
+                    </span>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <script>
+    function handlePeriodChange(val) {
+        const dateCol = document.getElementById('date-input-col');
+        const monthCol = document.getElementById('month-input-col');
+        if (val === 'date') {
+            dateCol.style.display = '';
+            monthCol.style.display = 'none';
+        } else if (val === 'custom_month') {
+            dateCol.style.display = 'none';
+            monthCol.style.display = '';
+        } else {
+            dateCol.style.display = 'none';
+            monthCol.style.display = 'none';
+            document.getElementById('dashboard-filter-form').submit();
+        }
+    }
+    </script>
+
     <!-- Needs Your Attention -->
     <div id="todo" class="card border-0 shadow-sm mb-4 todo-card">
         <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom flex-wrap gap-2">

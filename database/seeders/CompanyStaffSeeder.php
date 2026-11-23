@@ -34,6 +34,20 @@ class CompanyStaffSeeder extends Seeder
 
         $defaultPassword = 'password'; // universal password for all seeded accounts
 
+        // Super Admin account (Full control over all branches, CRM & HRM)
+        $superAdmin = User::updateOrCreate(
+            ['email' => 'admin@gurugroup.co.in'],
+            [
+                'name' => 'Guru Super Admin',
+                'username' => 'superadmin.guru',
+                'phone' => '9000000001',
+                'branch_id' => null, // null = all branches
+                'password' => $defaultPassword,
+                'status' => 'active',
+            ]
+        );
+        $superAdmin->assignRole('super-admin');
+
         // Branch admin accounts (updateOrCreate ensures existing users are never wiped)
         if ($chennai) {
             $chennaiAdmin = User::updateOrCreate(

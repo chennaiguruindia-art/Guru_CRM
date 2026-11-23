@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initDashboard() {
     try {
-        const response = await ajaxRequest('/dashboard/stats');
+        const statsUrl = '/dashboard/stats' + (window.location.search || '');
+        const response = await ajaxRequest(statsUrl);
         if (response.success && response.data) {
             renderDashboardCharts(response.data.charts);
         }
@@ -35,7 +36,8 @@ async function refreshDashboardStats() {
     }
 
     try {
-        const response = await ajaxRequest('/dashboard/stats');
+        const statsUrl = '/dashboard/stats' + (window.location.search || '');
+        const response = await ajaxRequest(statsUrl);
         if (response.success && response.data) {
             updateKpiCards(response.data.metrics);
             updateCharts(response.data.charts);

@@ -26,17 +26,6 @@
 
         {{-- Action Buttons --}}
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            @if(auth()->user()->canSeeAllBranches() && $branches->isNotEmpty())
-                <form method="GET" action="{{ route('hrm.dashboard') }}" class="d-inline-block">
-                    <select name="branch_id" class="form-select form-select-sm rounded-pill border shadow-xs" onchange="this.form.submit()" style="font-size: 0.85rem;">
-                        <option value="">🏢 All Branches</option>
-                        @foreach($branches as $b)
-                            <option value="{{ $b->id }}" {{ request('branch_id') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
-                        @endforeach
-                    </select>
-                </form>
-            @endif
-
             <a href="{{ route('employees.create') }}" class="btn btn-success btn-sm rounded-pill px-3 shadow-xs d-inline-flex align-items-center gap-1.5 fw-semibold">
                 <i class="bi bi-person-plus-fill"></i>
                 <span>Add Employee</span>
@@ -53,6 +42,97 @@
             </a>
         </div>
     </div>
+
+    {{-- Filter Toolbar: Branch & Date/Week/Month Scoping --}}
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white" style="border: 1px solid #eef2f6 !important;">
+        <div class="card-body p-2.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <form method="GET" action="{{ route('hrm.dashboard') }}" id="hrm-filter-form" class="d-flex align-items-center gap-2 flex-wrap">
+                @if(isset($branches) && $branches->isNotEmpty())
+                    <div class="d-flex align-items-center bg-light border rounded-pill px-2.5 py-1">
+                        <i class="bi bi-building text-muted me-1.5 small"></i>
+                        <select name="branch_id" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark shadow-none p-0 pe-4" style="cursor: pointer;" onchange="this.form.submit()">
+                            <option value="">🏢 All Branches</option>
+                            @foreach($branches as $b)
+                                <option value="{{ $b->id }}" {{ (string)($selectedBranchId ?? '') === (string)$b->id ? 'selected' : '' }}>
+                                    {{ $b->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
+                <div class="d-flex align-items-center bg-light border rounded-pill px-2.5 py-1">
+                    <i class="bi bi-clock-history text-muted me-1.5 small"></i>
+                    <select name="period" id="hrm-filter-period" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark shadow-none p-0 pe-4" style="cursor: pointer;" onchange="handleHrmPeriodChange(this.value)">
+                        <option value="today" {{ ($period ?? 'today') === 'today' ? 'selected' : '' }}>⚡ Today</option>
+                        <option value="date" {{ ($period ?? '') === 'date' ? 'selected' : '' }}>🎯 Specific Date</option>
+                        <option value="week" {{ ($period ?? '') === 'week' ? 'selected' : '' }}>📊 This Week</option>
+                        <option value="month" {{ ($period ?? '') === 'month' ? 'selected' : '' }}>📆 This Month</option>
+                    </select>
+                </div>
+
+                <div id="hrm-date-col" style="{{ ($period ?? '') === 'date' ? '' : 'display: none;' }}">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" name="date" class="form-control form-control-sm rounded-end-pill" value="{{ $selectedDate ?? now()->toDateString() }}" onchange="this.form.submit()">
+                    </div>
+                </div>
+
+                <div id="hrm-month-col" style="{{ ($period ?? '') === 'month' ? '' : 'display: none;' }}">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="bi bi-calendar-month"></i></span>
+                        <input type="month" name="month" class="form-control form-control-sm rounded-end-pill" value="{{ $selectedMonth ?? now()->format('Y-m') }}" onchange="this.form.submit()">
+                    </div>
+                </div>
+
+                @if(($selectedBranchId ?? null) || ($period ?? 'today') !== 'today')
+                    <a href="{{ route('hrm.dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2.5 py-1 text-nowrap d-inline-flex align-items-center gap-1" title="Reset all filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span>Reset</span>
+                    </a>
+                @endif
+            </form>
+
+            @if(($selectedBranchId ?? null) || ($period ?? 'today') !== 'today')
+                <div class="d-none d-lg-flex align-items-center gap-1.5 text-nowrap ms-auto">
+                    @if($selectedBranchId ?? null)
+                        @php $activeBranch = $branches->firstWhere('id', $selectedBranchId); @endphp
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1">
+                            <i class="bi bi-geo-alt me-1"></i>{{ $activeBranch?->name ?? 'Branch #' . $selectedBranchId }}
+                        </span>
+                    @else
+                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">All Branches</span>
+                    @endif
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        @if(($period ?? '') === 'today') Today ({{ \Carbon\Carbon::parse($targetDate ?? now())->format('d M') }})
+                        @elseif(($period ?? '') === 'week') Week ({{ \Carbon\Carbon::parse($startDate ?? now())->format('d M') }} - {{ \Carbon\Carbon::parse($endDate ?? now())->format('d M Y') }})
+                        @elseif(($period ?? '') === 'month') Month: {{ \Carbon\Carbon::parse(($selectedMonth ?? now()->format('Y-m')) . '-01')->format('M Y') }}
+                        @elseif(($period ?? '') === 'date') Date: {{ \Carbon\Carbon::parse($selectedDate ?? now())->format('d M Y') }}
+                        @endif
+                    </span>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <script>
+    function handleHrmPeriodChange(val) {
+        const dateCol = document.getElementById('hrm-date-col');
+        const monthCol = document.getElementById('hrm-month-col');
+        if (val === 'date') {
+            dateCol.style.display = '';
+            monthCol.style.display = 'none';
+        } else if (val === 'month') {
+            dateCol.style.display = 'none';
+            monthCol.style.display = '';
+        } else {
+            dateCol.style.display = 'none';
+            monthCol.style.display = 'none';
+            document.getElementById('hrm-filter-form').submit();
+        }
+    }
+    </script>
 
     {{-- 2. Modern Metric KPI Cards (Sleek SaaS Style) --}}
     <div class="row g-3 mb-4">
@@ -79,11 +159,11 @@
             </div>
         </div>
 
-        {{-- Present Today --}}
+        {{-- Present Today / Period --}}
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border: 1px solid #eef2f6 !important;">
                 <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Present Today</span>
+                    <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">{{ ($isRangePeriod ?? false) ? 'Present (Shifts)' : 'Present Today' }}</span>
                     <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #ecfdf5; color: #059669;">
                         <i class="bi bi-check2-circle fs-6"></i>
                     </div>
@@ -100,22 +180,22 @@
             </div>
         </div>
 
-        {{-- Pending Punch --}}
+        {{-- Pending Punch / Half-Day Shifts --}}
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border: 1px solid #eef2f6 !important;">
                 <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Pending Punch</span>
+                    <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">{{ ($isRangePeriod ?? false) ? 'Half-Day Shifts' : 'Pending Punch' }}</span>
                     <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #fffbeb; color: #d97706;">
                         <i class="bi bi-hourglass-split fs-6"></i>
                     </div>
                 </div>
                 <div class="d-flex align-items-baseline gap-2 mb-2">
-                    <h3 class="fw-bold mb-0 text-warning" style="font-size: 1.85rem; letter-spacing: -0.5px;">{{ $pendingPunch }}</h3>
-                    <span class="text-muted small">awaiting in-punch</span>
+                    <h3 class="fw-bold mb-0 text-warning" style="font-size: 1.85rem; letter-spacing: -0.5px;">{{ ($isRangePeriod ?? false) ? $halfDayToday : $pendingPunch }}</h3>
+                    <span class="text-muted small">{{ ($isRangePeriod ?? false) ? 'half-day records' : 'awaiting in-punch' }}</span>
                 </div>
                 <div class="pt-2 border-top d-flex align-items-center justify-content-between text-muted small">
-                    <span>Expected today</span>
-                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">Pending</span>
+                    <span>{{ ($isRangePeriod ?? false) ? 'In Selected Period' : 'Expected today' }}</span>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">{{ ($isRangePeriod ?? false) ? 'Half-Day' : 'Pending' }}</span>
                 </div>
             </div>
         </div>

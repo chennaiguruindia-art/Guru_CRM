@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Lead;
@@ -10,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Project;
 use App\Models\Quotation;
 use App\Services\TodayService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,51 +23,171 @@ class DashboardController extends Controller
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         if ($user && $user->hasRole('employee') && ! $user->hasAnyRole(['super-admin', 'admin', 'fieldmarketer'])) {
             return redirect()->route('portal.dashboard');
         }
 
-        $metrics = $this->buildMetrics();
+        $branches = $user && $user->canSeeAllBranches()
+            ? Branch::where('status', 'active')->orderBy('name')->get()
+            : collect();
 
+        $selectedBranchId = null;
+        if ($user && $user->canSeeAllBranches()) {
+            if ($request->filled('branch_id')) {
+                $selectedBranchId = (int) $request->input('branch_id');
+            }
+        } elseif ($user) {
+            $selectedBranchId = $user->branchId();
+        }
+
+        $period = $request->input('period', 'all');
+        $selectedDate = $request->input('date', now()->toDateString());
+        $selectedMonth = $request->input('month', now()->format('Y-m'));
+
+        [$startDate, $endDate] = $this->resolveDateRange($period, $selectedDate, $selectedMonth);
+
+        $metrics = $this->buildMetrics($selectedBranchId, $startDate, $endDate);
         $todo = $this->today->items(12);
 
-        return view('dashboard.index', compact('metrics', 'todo'));
+        return view('dashboard.index', compact(
+            'metrics',
+            'todo',
+            'branches',
+            'selectedBranchId',
+            'period',
+            'selectedDate',
+            'selectedMonth'
+        ));
     }
 
-    public function stats(): JsonResponse
+    public function stats(Request $request): JsonResponse
     {
+        $user = auth()->user();
+        $selectedBranchId = null;
+        if ($user && $user->canSeeAllBranches()) {
+            if ($request->filled('branch_id')) {
+                $selectedBranchId = (int) $request->input('branch_id');
+            }
+        } elseif ($user) {
+            $selectedBranchId = $user->branchId();
+        }
+
+        $period = $request->input('period', 'all');
+        $selectedDate = $request->input('date', now()->toDateString());
+        $selectedMonth = $request->input('month', now()->format('Y-m'));
+
+        [$startDate, $endDate] = $this->resolveDateRange($period, $selectedDate, $selectedMonth);
+
         return response()->json([
             'success' => true,
             'message' => 'Dashboard statistics loaded successfully',
             'data' => [
-                'metrics' => $this->buildMetrics(),
-                'charts' => $this->buildCharts(),
+                'metrics' => $this->buildMetrics($selectedBranchId, $startDate, $endDate),
+                'charts' => $this->buildCharts($selectedBranchId, $startDate, $endDate),
                 'todo' => $this->today->items(12),
             ],
         ]);
     }
 
-    // ─── Real data helpers ────────────────────────────────────────────
+    // ─── Query Scopes & Helpers ──────────────────────────────────────────
 
-    private function buildMetrics(): array
+    private function resolveDateRange(string $period, ?string $date, ?string $month): array
     {
+        $startDate = null;
+        $endDate = null;
+
+        switch ($period) {
+            case 'today':
+                $startDate = now()->startOfDay();
+                $endDate = now()->endOfDay();
+                break;
+            case 'date':
+                if ($date) {
+                    $startDate = Carbon::parse($date)->startOfDay();
+                    $endDate = Carbon::parse($date)->endOfDay();
+                }
+                break;
+            case 'week':
+                $startDate = now()->startOfWeek();
+                $endDate = now()->endOfWeek();
+                break;
+            case 'month':
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
+                break;
+            case 'custom_month':
+                if ($month) {
+                    $startDate = Carbon::parse($month . '-01')->startOfMonth();
+                    $endDate = Carbon::parse($month . '-01')->endOfMonth();
+                }
+                break;
+            case 'all':
+            default:
+                break;
+        }
+
+        return [$startDate, $endDate];
+    }
+
+    private function buildMetrics(?int $branchId = null, ?Carbon $startDate = null, ?Carbon $endDate = null): array
+    {
+        $leadQ = Lead::query();
+        $custQ = Customer::query();
+        $projQ = Project::query();
+        $quotQ = Quotation::query();
+        $amcQ = MaintenanceContract::query();
+        $invQ = Invoice::query();
+        $payQ = Payment::query();
+
+        if ($branchId) {
+            $leadQ->where('branch_id', $branchId);
+            $custQ->where('branch_id', $branchId);
+            $projQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $quotQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $amcQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $invQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $payQ->whereHas('invoice.customer', fn($q) => $q->where('branch_id', $branchId));
+        }
+
+        if ($startDate && $endDate) {
+            $leadQ->whereBetween('created_at', [$startDate, $endDate]);
+            $custQ->whereBetween('created_at', [$startDate, $endDate]);
+            $projQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('start_date', [$startDate, $endDate]);
+            });
+            $quotQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('date', [$startDate, $endDate]);
+            });
+            $amcQ->whereBetween('created_at', [$startDate, $endDate]);
+            $invQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('issue_date', [$startDate, $endDate]);
+            });
+            $payQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('payment_date', [$startDate, $endDate]);
+            });
+        }
+
         return [
-            'total_leads'         => $this->safe(fn() => Lead::count()),
-            'new_leads'           => $this->safe(fn() => Lead::where('status', 'New')->count()),
-            'converted_leads'     => $this->safe(fn() => Lead::where('status', 'Converted')->count()),
-            'total_customers'     => $this->safe(fn() => Customer::count()),
-            'active_projects'     => $this->safe(fn() => Project::where('status', 'In Progress')->count()),
-            'completed_projects'  => $this->safe(fn() => Project::where('status', 'Completed')->count()),
-            'pending_quotations'  => $this->safe(fn() => Quotation::whereIn('status', ['Sent','Under Review'])->count()),
-            'approved_quotations' => $this->safe(fn() => Quotation::where('status', 'Approved')->count()),
-            'active_amc'          => $this->safe(fn() => MaintenanceContract::where('status', 'Active')->count()),
-            'pending_invoices'    => $this->safe(fn() => Invoice::where('payment_status', 'unpaid')->count()),
-            'paid_amount'         => $this->safe(fn() => Payment::sum('amount'), 0.0),
-            'pending_amount'      => $this->safe(fn() => Invoice::whereIn('payment_status', ['unpaid','partial'])->sum('balance_amount'), 0.0),
-            'overdue_amount'      => $this->safe(fn() => Invoice::where('payment_status', 'overdue')->sum('balance_amount'), 0.0),
+            'total_leads'         => $this->safe(fn() => (clone $leadQ)->count()),
+            'new_leads'           => $this->safe(fn() => (clone $leadQ)->where('status', 'New')->count()),
+            'converted_leads'     => $this->safe(fn() => (clone $leadQ)->where('status', 'Converted')->count()),
+            'total_customers'     => $this->safe(fn() => (clone $custQ)->count()),
+            'active_projects'     => $this->safe(fn() => (clone $projQ)->where('status', 'In Progress')->count()),
+            'completed_projects'  => $this->safe(fn() => (clone $projQ)->where('status', 'Completed')->count()),
+            'pending_quotations'  => $this->safe(fn() => (clone $quotQ)->whereIn('status', ['Sent','Under Review'])->count()),
+            'approved_quotations' => $this->safe(fn() => (clone $quotQ)->where('status', 'Approved')->count()),
+            'active_amc'          => $this->safe(fn() => (clone $amcQ)->where('status', 'Active')->count()),
+            'pending_invoices'    => $this->safe(fn() => (clone $invQ)->where('payment_status', 'unpaid')->count()),
+            'paid_amount'         => $this->safe(fn() => (clone $payQ)->sum('amount'), 0.0),
+            'pending_amount'      => $this->safe(fn() => (clone $invQ)->whereIn('payment_status', ['unpaid','partial'])->sum('balance_amount'), 0.0),
+            'overdue_amount'      => $this->safe(fn() => (clone $invQ)->where('payment_status', 'overdue')->sum('balance_amount'), 0.0),
         ];
     }
 
@@ -78,24 +200,61 @@ class DashboardController extends Controller
         }
     }
 
-    private function buildCharts(): array
+    private function buildCharts(?int $branchId = null, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
-        // --- 1. Leads by source (real) ---
-        $leadsBySource = Lead::select('source', DB::raw('count(*) as total'))
+        $leadQ = Lead::query();
+        $quotQ = Quotation::query();
+        $projQ = Project::query();
+        $amcQ = MaintenanceContract::query();
+        $invQ = Invoice::query();
+        $payQ = Payment::query();
+
+        if ($branchId) {
+            $leadQ->where('branch_id', $branchId);
+            $quotQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $projQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $amcQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $invQ->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+            $payQ->whereHas('invoice.customer', fn($q) => $q->where('branch_id', $branchId));
+        }
+
+        if ($startDate && $endDate) {
+            $leadQ->whereBetween('created_at', [$startDate, $endDate]);
+            $quotQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('date', [$startDate, $endDate]);
+            });
+            $projQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('start_date', [$startDate, $endDate]);
+            });
+            $amcQ->whereBetween('created_at', [$startDate, $endDate]);
+            $invQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('issue_date', [$startDate, $endDate]);
+            });
+            $payQ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('payment_date', [$startDate, $endDate]);
+            });
+        }
+
+        // --- 1. Leads by source ---
+        $leadsBySource = (clone $leadQ)->select('source', DB::raw('count(*) as total'))
             ->groupBy('source')
             ->pluck('total', 'source');
 
-        // --- 2. Leads by status (real) ---
-        $leadsByStatus = Lead::select('status', DB::raw('count(*) as total'))
+        // --- 2. Leads by status ---
+        $leadsByStatus = (clone $leadQ)->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        // --- 3. Sales pipeline (real counts per stage) ---
-        $allLeads      = Lead::count();
-        $quotationsAll = Quotation::count();
-        $quotationsSent= Quotation::whereIn('status',['Sent','Under Review','Approved'])->count();
-        $approved      = Quotation::where('status','Approved')->count();
-        $wonProjects   = Project::whereIn('status',['In Progress','Completed'])->count();
+        // --- 3. Sales pipeline (counts per stage) ---
+        $allLeads       = (clone $leadQ)->count();
+        $quotationsAll  = (clone $quotQ)->count();
+        $quotationsSent = (clone $quotQ)->whereIn('status', ['Sent','Under Review','Approved'])->count();
+        $approved       = (clone $quotQ)->where('status', 'Approved')->count();
+        $wonProjects    = (clone $projQ)->whereIn('status', ['In Progress','Completed'])->count();
 
         // --- 4 & 5. Monthly quotation / revenue (last 6 months) ---
         $months = collect();
@@ -110,30 +269,36 @@ class DashboardController extends Controller
             $start = now()->subMonths($i)->startOfMonth();
             $end   = now()->subMonths($i)->endOfMonth();
 
-            $monthlyQuoteValues[] = (float) Quotation::whereBetween('date', [$start,$end])
-                ->sum('grand_total');
+            $qVal = Quotation::query();
+            $pVal = Payment::query();
+            if ($branchId) {
+                $qVal->whereHas('customer', fn($q) => $q->where('branch_id', $branchId));
+                $pVal->whereHas('invoice.customer', fn($q) => $q->where('branch_id', $branchId));
+            }
 
-            $monthlyRevenue[]  = (float) Payment::whereBetween('payment_date', [$start,$end])->sum('amount');
-            $monthlyExpenses[] = 0; // Expenses table - will populate as data comes in
+            $monthlyQuoteValues[] = (float) $qVal->whereBetween('date', [$start, $end])->sum('grand_total');
+            $monthlyRevenue[]     = (float) $pVal->whereBetween('payment_date', [$start, $end])->sum('amount');
+            $monthlyExpenses[]    = 0;
         }
 
-        // --- 6. Project status (real) ---
-        $projectStatus = Project::select('status', DB::raw('count(*) as total'))
+        // --- 6. Project status ---
+        $projectStatus = (clone $projQ)->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
-            ->pluck('total','status');
+            ->pluck('total', 'status');
 
-        // --- 7. AMC status (real) ---
-        $amcStatus = MaintenanceContract::select('status', DB::raw('count(*) as total'))
+        // --- 7. AMC status ---
+        $amcStatus = (clone $amcQ)->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
-            ->pluck('total','status');
+            ->pluck('total', 'status');
 
-        // --- 8. Payments aging (real) ---
+        // --- 8. Payments aging ---
         $now = now();
+        $agingBase = clone $invQ;
         $aging = [
-            '0-15 Days'       => Invoice::whereIn('payment_status',['unpaid','partial'])->where('due_date','>=', $now->copy()->subDays(15))->sum('balance_amount'),
-            '16-30 Days'      => Invoice::whereIn('payment_status',['unpaid','partial'])->whereBetween('due_date', [$now->copy()->subDays(30), $now->copy()->subDays(16)])->sum('balance_amount'),
-            '31-60 Days'      => Invoice::whereIn('payment_status',['unpaid','partial'])->whereBetween('due_date', [$now->copy()->subDays(60), $now->copy()->subDays(31)])->sum('balance_amount'),
-            '60+ Days (Overdue)' => Invoice::where('payment_status','overdue')->sum('balance_amount'),
+            '0-15 Days'          => (clone $agingBase)->whereIn('payment_status', ['unpaid','partial'])->where('due_date', '>=', $now->copy()->subDays(15))->sum('balance_amount'),
+            '16-30 Days'         => (clone $agingBase)->whereIn('payment_status', ['unpaid','partial'])->whereBetween('due_date', [$now->copy()->subDays(30), $now->copy()->subDays(16)])->sum('balance_amount'),
+            '31-60 Days'         => (clone $agingBase)->whereIn('payment_status', ['unpaid','partial'])->whereBetween('due_date', [$now->copy()->subDays(60), $now->copy()->subDays(31)])->sum('balance_amount'),
+            '60+ Days (Overdue)' => (clone $agingBase)->where('payment_status', 'overdue')->sum('balance_amount'),
         ];
 
         return [
@@ -147,7 +312,7 @@ class DashboardController extends Controller
             ],
             'sales_pipeline' => [
                 'labels' => ['Visits','Quotations','Sent/Review','Approved','Won Projects'],
-                'data'   => [$allLeads,$quotationsAll,$quotationsSent,$approved,$wonProjects],
+                'data'   => [$allLeads, $quotationsAll, $quotationsSent, $approved, $wonProjects],
             ],
             'monthly_quotations' => [
                 'labels' => $months->toArray(),

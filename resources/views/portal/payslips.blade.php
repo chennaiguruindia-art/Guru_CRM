@@ -220,22 +220,22 @@
                             <tr>
                                 <td class="border border-dark fw-bold px-2 py-1" style="width: 14%; background-color: #f8fafc;">Emp Name:</td>
                                 <td class="border border-dark fw-semibold px-2 py-1" style="width: 28%;">{{ $employee?->name ?? '—' }}</td>
-                                <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 20%; background-color: #f8fafc;">Total Calendar Days:</td>
+                                <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 20%; background-color: #f8fafc;">Total No of Days:</td>
                                 <td class="border border-dark fw-semibold text-center px-2 py-1" style="width: 8%;">{{ $currentPayslip->total_working_days }}</td>
-                                <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 18%; background-color: #f8fafc;">Total Days Present:</td>
+                                <td class="border border-dark fw-bold px-2 py-1 text-nowrap" style="width: 18%; background-color: #f8fafc;">No of Days Present:</td>
                                 <td class="border border-dark fw-semibold text-center px-2 py-1" style="width: 12%;">{{ fmod($currentPayslip->paid_days, 1) == 0 ? (int)$currentPayslip->paid_days : $currentPayslip->paid_days }}</td>
                             </tr>
                             <tr>
                                 <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">Emp No:</td>
                                 <td class="border border-dark font-monospace fw-bold text-success px-2 py-1">{{ $employee?->employee_code ?? '—' }}</td>
                                 <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">ESI No:</td>
-                                <td class="border border-dark font-monospace fw-semibold text-center px-2 py-1">{{ $employee?->pan_number ?: '—' }}</td>
-                                <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">UAN No:</td>
-                                <td class="border border-dark font-monospace fw-semibold text-center px-2 py-1">{{ $employee?->uan_number ?: '—' }}</td>
+                                <td colspan="3" class="border border-dark font-monospace fw-semibold text-center px-2 py-1">{{ $employee?->pan_number ?: '—' }}</td>
                             </tr>
                             <tr>
                                 <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">Designation:</td>
-                                <td colspan="5" class="border border-dark fw-semibold px-2 py-1">{{ $employee?->designation ?? '—' }}</td>
+                                <td class="border border-dark fw-semibold px-2 py-1">{{ $employee?->designation ?? '—' }}</td>
+                                <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">UAN No:</td>
+                                <td colspan="3" class="border border-dark font-monospace fw-semibold text-center px-2 py-1">{{ $employee?->uan_number ?: '—' }}</td>
                             </tr>
                         </tbody>
                     </table>

@@ -468,8 +468,8 @@ class PortalController extends Controller
         // Total Days Present = Actual punches (worked days + approved leave) + Sundays (paid holidays)
         $totalDaysPresent = max(0, (float) ($workedDays + $paidSundays));
 
-        // LOP is strictly considered by number of absent days:
-        $totalLopDays = (float) ($preJoiningDays + $absentDays);
+        // LOP Days = Calendar Days in Month - Total Days Present
+        $totalLopDays = max(0, (float) ($totalDaysInMonth - $totalDaysPresent));
 
         // Monthly Salary & Component Breakdown (Form XXVIII: Basic, DA, Bonus, Leave Encashment, Other Allowance)
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);

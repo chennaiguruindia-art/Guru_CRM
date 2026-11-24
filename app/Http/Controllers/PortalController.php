@@ -426,11 +426,12 @@ class PortalController extends Controller
             ->keyBy(fn ($a) => Carbon::parse($a->date)->toDateString());
 
         // Evaluate day-by-day:
-        // - All Sundays = Automatic Paid Holiday (0 LOP, counts as Present)
-        // - Monday-Saturday = Evaluated from attendance
+        // - All Sundays = Automatic Paid Holiday (0 LOP, treated as Present)
+        // - Monday-Saturday = Evaluated from attendance punches / HR records
         $lopDays = 0.0;
         $paidSundays = 0;
         $workedDays = 0;
+        $absentDays = 0.0;
         $todayDate = now('Asia/Kolkata')->startOfDay();
 
         for ($day = $effectiveStartDay; $day <= $totalDaysInMonth; $day++) {
@@ -439,7 +440,7 @@ class PortalController extends Controller
             $isSunday = $currentDayDate->isSunday();
 
             if ($isSunday) {
-                // All Sundays are automatic paid holidays!
+                // All Sundays are automatic paid holidays (treated as Present)!
                 $paidSundays++;
                 continue;
             }
@@ -451,27 +452,24 @@ class PortalController extends Controller
                     $workedDays += 1;
                 } elseif ($att->status === 'Half-Day') {
                     $workedDays += 0.5;
-                    $lopDays += 0.5;
+                    $absentDays += 0.5;
                 } elseif ($att->status === 'Leave') {
                     // Approved paid leave
                     $workedDays += 1;
                 } elseif ($att->status === 'Absent') {
-                    $lopDays += 1.0;
+                    $absentDays += 1.0;
                 }
-            } else {
-                // If past weekday without punch record during eligible tenure, mark as Absent (LOP)
-                if ($currentDayDate->lt($todayDate)) {
-                    $lopDays += 1.0;
-                }
-                // Future days in active month have not occurred yet — do not predict or assume as present!
             }
         }
 
         $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
         $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
 
-        // Total Days Present reflects actual attendance punches (Present, Half-Day, approved Leave) in this month
-        $totalDaysPresent = max(0, (float) $workedDays);
+        // All Sundays are treated as present (paid holiday).
+        // LOP is strictly considered by number of absent days:
+        // Total Days Present = Eligible tenure in month - absent days.
+        $totalDaysPresent = max(0, (float) ($eligibleDays - $absentDays));
+        $totalLopDays = (float) ($preJoiningDays + $absentDays);
 
         // Monthly Salary & Component Breakdown (Form XXVIII: Basic, DA, Bonus, Leave Encashment, Other Allowance)
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
@@ -485,16 +483,8 @@ class PortalController extends Controller
         $gross = round($basic + $da + $bonus + $leaveEncashment + $other, 2);
 
         // LOP Amount Calculation:
-        // On month end (andha month last la): final LOP amount is calculated and deducted based on complete attendance!
-        // During the active month: future days cannot be assumed as leave, so LOP deduction is not prematurely charged.
-        if ($monthEnded) {
-            $totalLopDays = (float) $lopDays;
-            $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
-            $lopDeduction = round($totalLopDays * $dailyRate, 2);
-        } else {
-            $totalLopDays = 0.0;
-            $lopDeduction = 0.00;
-        }
+        $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
+        $lopDeduction = round($totalLopDays * $dailyRate, 2);
 
         // Deductions (PF, ESI, Prof. Tax, LOP)
         // 1. Employee PF: Custom override or standard 12% Basic capped at statutory 1800

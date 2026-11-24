@@ -235,16 +235,16 @@ class HrmPayslipController extends Controller
             ->get()
             ->keyBy(fn ($a) => Carbon::parse($a->date)->toDateString());
 
-        $lopDays = 0.0;
+        $absentDays = 0.0;
         $paidSundays = 0;
         $workedDays = 0;
-        $todayDate = now('Asia/Kolkata')->startOfDay();
 
         for ($day = $effectiveStartDay; $day <= $totalDaysInMonth; $day++) {
             $currentDayDate = $date->copy()->day($day)->startOfDay();
             $dateKey = $currentDayDate->toDateString();
 
             if ($currentDayDate->isSunday()) {
+                // All Sundays are automatic paid holidays (treated as Present)!
                 $paidSundays++;
                 continue;
             }
@@ -255,21 +255,23 @@ class HrmPayslipController extends Controller
                     $workedDays += 1;
                 } elseif ($att->status === 'Half-Day') {
                     $workedDays += 0.5;
-                    $lopDays += 0.5;
+                    $absentDays += 0.5;
                 } elseif ($att->status === 'Leave') {
                     $workedDays += 1;
                 } elseif ($att->status === 'Absent') {
-                    $lopDays += 1.0;
-                }
-            } else {
-                if ($currentDayDate->lt($todayDate)) {
-                    $lopDays += 1.0;
+                    $absentDays += 1.0;
                 }
             }
         }
 
         $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
-        $totalDaysPresent = max(0, (float) $workedDays);
+        $eligibleDays = max(0, $totalDaysInMonth - $preJoiningDays);
+
+        // All Sundays are treated as present (paid holiday).
+        // LOP is strictly considered by number of absent days:
+        // Total Days Present = Eligible tenure in month - absent days.
+        $totalDaysPresent = max(0, (float) ($eligibleDays - $absentDays));
+        $totalLopDays = (float) ($preJoiningDays + $absentDays);
 
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);
         $basic = round(((float) ($employee->basic_salary ?: $monthlyGrossSalary)), 2);
@@ -279,14 +281,8 @@ class HrmPayslipController extends Controller
         $other = round(((float) ($employee->other_allowance ?? 0)), 2);
         $gross = round($basic + $da + $bonus + $leaveEncashment + $other, 2);
 
-        if ($monthEnded) {
-            $totalLopDays = (float) $lopDays;
-            $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
-            $lopDeduction = round($totalLopDays * $dailyRate, 2);
-        } else {
-            $totalLopDays = 0.0;
-            $lopDeduction = 0.00;
-        }
+        $dailyRate = $totalDaysInMonth > 0 ? ($gross / $totalDaysInMonth) : 0;
+        $lopDeduction = round($totalLopDays * $dailyRate, 2);
 
         // Statutory Deductions
         if ($employee->custom_pf_deduction !== null && $employee->custom_pf_deduction > 0) {

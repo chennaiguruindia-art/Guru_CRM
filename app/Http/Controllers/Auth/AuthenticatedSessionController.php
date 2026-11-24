@@ -128,23 +128,6 @@ class AuthenticatedSessionController extends Controller
         $address = $request->input('address');
 
         if ($latitude && $longitude) {
-            $today = now('Asia/Kolkata')->toDateString();
-            $nowTime = now('Asia/Kolkata')->format('H:i:s');
-
-            $attendance = \App\Models\Attendance::firstOrNew([
-                'employee_id' => $employee->id,
-                'date' => $today,
-            ]);
-
-            if (! $attendance->check_in) {
-                $attendance->status = 'Present';
-                $attendance->check_in = $nowTime;
-                $attendance->check_in_latitude = $latitude;
-                $attendance->check_in_longitude = $longitude;
-                if ($address) $attendance->check_in_address = $address;
-                $attendance->save();
-            }
-
             session([
                 'login_latitude' => $latitude,
                 'login_longitude' => $longitude,

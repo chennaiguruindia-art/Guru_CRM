@@ -123,26 +123,11 @@ class AuthController extends BaseApiController
         $longitude = $request->input('longitude');
         $address = $request->input('address');
 
-        // Automatically record check-in with live location and IST time if not already punched today
-        $today = $request->input('date') ?? now('Asia/Kolkata')->toDateString();
-        $nowTime = $request->input('punch_time') ?? $request->input('time') ?? now('Asia/Kolkata')->format('H:i:s');
-
-        $attendance = \App\Models\Attendance::firstOrNew([
-            'employee_id' => $employee->id,
-            'date' => $today,
-        ]);
-
-        if (! $attendance->check_in) {
-            $attendance->status = 'Present';
-            $attendance->check_in = $nowTime;
-            if ($latitude) $attendance->check_in_latitude = $latitude;
-            if ($longitude) $attendance->check_in_longitude = $longitude;
-            if ($address) $attendance->check_in_address = $address;
-            $attendance->save();
-            $todayAttendance = $attendance->fresh();
-        } else {
-            $todayAttendance = $attendance;
-        }
+        // Look up today's existing attendance (do NOT auto punch-in; employee will click Punch In explicitly)
+        $today = now('Asia/Kolkata')->toDateString();
+        $todayAttendance = \App\Models\Attendance::where('employee_id', $employee->id)
+            ->where('date', $today)
+            ->first();
 
         AuditLogger::log('api_employee_login', 'authentication', $user->id, null, [
             'ip' => $request->ip(),

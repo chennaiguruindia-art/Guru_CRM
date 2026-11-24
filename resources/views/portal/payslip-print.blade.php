@@ -101,26 +101,6 @@
                 </tr>
             </table>
 
-            <!-- 3. Bank Details Grid (4 columns) -->
-            <table class="table table-bordered border-dark mb-0 text-center small" style="border-collapse: collapse;">
-                <thead>
-                    <tr style="background-color: #f8fafc;">
-                        <th class="py-2 border border-dark fw-bold" style="width: 25%;">Bank Name</th>
-                        <th class="py-2 border border-dark fw-bold" style="width: 25%;">Account Holder Name</th>
-                        <th class="py-2 border border-dark fw-bold" style="width: 25%;">Account Number</th>
-                        <th class="py-2 border border-dark fw-bold" style="width: 25%;">IFSC Code</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="py-2 border border-dark fw-semibold">{{ $employee->bank_name ?? '—' }}</td>
-                        <td class="py-2 border border-dark fw-semibold">{{ $employee->name }}</td>
-                        <td class="py-2 border border-dark font-monospace fw-semibold">{{ $employee->bank_account_number ?? '—' }}</td>
-                        <td class="py-2 border border-dark font-monospace fw-semibold">{{ $employee->bank_ifsc ?? '—' }}</td>
-                    </tr>
-                </tbody>
-            </table>
-
             <!-- 4. Dark Blue Month Header Bar -->
             <div class="text-center py-2 fw-bold text-white border-top border-bottom border-2 border-dark" style="background-color: #0b3d7d; font-size: 1.15rem; letter-spacing: 0.5px;">
                 Pay Slip ({{ $payslip->month_name }})
@@ -147,9 +127,7 @@
                     </tr>
                     <tr>
                         <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">Designation:</td>
-                        <td class="border border-dark fw-semibold px-2 py-1">{{ $employee->designation }}</td>
-                        <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">PF No:</td>
-                        <td colspan="3" class="border border-dark font-monospace fw-semibold px-2 py-1">{{ $employee->pf_number ?: '—' }}</td>
+                        <td colspan="5" class="border border-dark fw-semibold px-2 py-1">{{ $employee->designation }}</td>
                     </tr>
                 </tbody>
             </table>

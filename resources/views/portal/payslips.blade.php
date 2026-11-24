@@ -3,109 +3,112 @@
 
 @push('styles')
 <style>
-@media print {
-    /* 1. Suppress browser default header (date, title) & footer (URL, page numbers) */
-    @page {
-        size: A4 portrait;
-        margin: 0;
-    }
+    @media print {
 
-    html, body {
-        background: #fff !important;
-        color: #000 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        height: auto !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
+        /* 1. Suppress browser default header (date, title) & footer (URL, page numbers) */
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
 
-    /* 2. Hide EVERYTHING on the entire page by default */
-    body * {
-        visibility: hidden !important;
-    }
+        html,
+        body {
+            background: #fff !important;
+            color: #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
 
-    /* 3. Show ONLY the dedicated printable payslip area */
-    #printablePayslipArea,
-    #printablePayslipArea * {
-        visibility: visible !important;
-    }
+        /* 2. Hide EVERYTHING on the entire page by default */
+        body * {
+            visibility: hidden !important;
+        }
 
-    #printablePayslipArea {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 6mm 10mm !important;
-        background: #fff !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        page-break-after: avoid !important;
-    }
+        /* 3. Show ONLY the dedicated printable payslip area */
+        #printablePayslipArea,
+        #printablePayslipArea * {
+            visibility: visible !important;
+        }
 
-    /* 4. Complete removal of UI elements from page flow */
-    #sidebar,
-    .top-navbar,
-    .page-header-bar,
-    .month-selector-card,
-    .dynamic-alert-banner,
-    .below-payslip-note,
-    .no-print,
-    .d-print-none,
-    .btn,
-    nav,
-    footer,
-    header {
-        display: none !important;
-    }
+        #printablePayslipArea {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 6mm 10mm !important;
+            background: #fff !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: avoid !important;
+        }
 
-    #content-wrapper,
-    main,
-    .container-fluid {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        display: block !important;
-    }
+        /* 4. Complete removal of UI elements from page flow */
+        #sidebar,
+        .top-navbar,
+        .page-header-bar,
+        .month-selector-card,
+        .dynamic-alert-banner,
+        .below-payslip-note,
+        .no-print,
+        .d-print-none,
+        .btn,
+        nav,
+        footer,
+        header {
+            display: none !important;
+        }
 
-    #printablePayslip {
-        border: none !important;
-        box-shadow: none !important;
-        background: #fff !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
+        #content-wrapper,
+        main,
+        .container-fluid {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+        }
 
-    #printablePayslip .card-body {
-        padding: 0 !important;
-    }
+        #printablePayslip {
+            border: none !important;
+            box-shadow: none !important;
+            background: #fff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
 
-    .payslip-wrapper {
-        border: 2px solid #000 !important;
-        margin: 0 auto !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
+        #printablePayslip .card-body {
+            padding: 0 !important;
+        }
 
-    .table-responsive {
-        overflow: visible !important;
-        display: block !important;
-    }
+        .payslip-wrapper {
+            border: 2px solid #000 !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
 
-    table {
-        border-collapse: collapse !important;
-        width: 100% !important;
-    }
+        .table-responsive {
+            overflow: visible !important;
+            display: block !important;
+        }
 
-    table td, table th {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+        table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+        }
+
+        table td,
+        table th {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
     }
-}
 </style>
 @endpush
 
@@ -115,15 +118,15 @@
         <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-receipt-cutoff text-success me-2"></i>My Salary Payslips</h4>
         <div class="text-muted small">View, verify, and print your monthly compensation and payslip statements.</div>
     </div>
-    
+
     <div class="d-flex align-items-center gap-2">
         @if($currentPayslip)
-            <a href="{{ route('portal.payslip.show', $currentPayslip->salary_month) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Full Screen View
-            </a>
-            <button onclick="window.print()" class="btn btn-success btn-sm shadow-sm">
-                <i class="bi bi-printer-fill me-1"></i>Print / Save PDF
-            </button>
+        <a href="{{ route('portal.payslip.show', $currentPayslip->salary_month) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Full Screen View
+        </a>
+        <button onclick="window.print()" class="btn btn-success btn-sm shadow-sm">
+            <i class="bi bi-printer-fill me-1"></i>Print / Save PDF
+        </button>
         @endif
     </div>
 </div>
@@ -138,9 +141,9 @@
             <div class="col-12 col-sm-auto">
                 <select name="month" class="form-select form-select-sm" onchange="this.form.submit()">
                     @foreach($availableMonths as $mKey => $mLabel)
-                        <option value="{{ $mKey }}" {{ $selectedMonth === $mKey ? 'selected' : '' }}>
-                            {{ $mLabel }} {{ $mKey === now('Asia/Kolkata')->format('Y-m') ? '(Current Month • Live)' : '' }}
-                        </option>
+                    <option value="{{ $mKey }}" {{ $selectedMonth === $mKey ? 'selected' : '' }}>
+                        {{ $mLabel }} {{ $mKey === now('Asia/Kolkata')->format('Y-m') ? '(Current Month • Live)' : '' }}
+                    </option>
                     @endforeach
                 </select>
             </div>
@@ -183,7 +186,7 @@
     <div class="card border-0 shadow-sm bg-white overflow-hidden" id="printablePayslip">
         <div class="card-body p-2 p-md-4">
             <div class="payslip-wrapper border border-2 border-dark bg-white" style="color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-                
+
                 <!-- 1. Header Table (Guarantees Left Company Name & Right Logo with NO Wrap) -->
                 <table class="w-100 mb-0 border-bottom border-2 border-dark" style="border-collapse: collapse;">
                     <tr>
@@ -204,28 +207,6 @@
                         </td>
                     </tr>
                 </table>
-
-                <!-- 3. Bank Details Grid (4 columns) -->
-                <div class="table-responsive mb-0">
-                    <table class="table table-bordered border-dark mb-0 text-center small" style="border-collapse: collapse;">
-                        <thead>
-                            <tr style="background-color: #f8fafc;">
-                                <th class="py-2 border border-dark fw-bold" style="width: 25%;">Bank Name</th>
-                                <th class="py-2 border border-dark fw-bold" style="width: 25%;">Account Holder Name</th>
-                                <th class="py-2 border border-dark fw-bold" style="width: 25%;">Account Number</th>
-                                <th class="py-2 border border-dark fw-bold" style="width: 25%;">IFSC Code</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="py-2 border border-dark fw-semibold">{{ $employee?->bank_name ?? '—' }}</td>
-                                <td class="py-2 border border-dark fw-semibold">{{ $employee?->name ?? '—' }}</td>
-                                <td class="py-2 border border-dark font-monospace fw-semibold">{{ $employee?->bank_account_number ?? '—' }}</td>
-                                <td class="py-2 border border-dark font-monospace fw-semibold">{{ $employee?->bank_ifsc ?? '—' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
 
                 <!-- 4. Dark Blue Month Header Bar -->
                 <div class="text-center py-2 fw-bold text-white border-top border-bottom border-2 border-dark" style="background-color: #0b3d7d; font-size: 1.15rem; letter-spacing: 0.5px;">
@@ -254,9 +235,7 @@
                             </tr>
                             <tr>
                                 <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">Designation:</td>
-                                <td class="border border-dark fw-semibold px-2 py-1">{{ $employee?->designation ?? '—' }}</td>
-                                <td class="border border-dark fw-bold px-2 py-1" style="background-color: #f8fafc;">PF No:</td>
-                                <td colspan="3" class="border border-dark font-monospace fw-semibold px-2 py-1">{{ $employee?->pf_number ?: '—' }}</td>
+                                <td colspan="5" class="border border-dark fw-semibold px-2 py-1">{{ $employee?->designation ?? '—' }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -340,9 +319,9 @@
                     <i class="bi bi-info-circle text-primary me-1"></i>
                     <span>Payment Date: <strong>{{ $currentPayslip->payment_date?->format('d M Y') ?? 'End of Month' }}</strong></span>
                     @if($currentPayslip->payment_status === 'In Progress')
-                        &middot; <span class="badge bg-primary-subtle text-primary border">In Progress &middot; Live Attendance Sync</span>
+                    &middot; <span class="badge bg-primary-subtle text-primary border">In Progress &middot; Live Attendance Sync</span>
                     @else
-                        &middot; <span class="badge bg-success-subtle text-success border">Paid &middot; Official Locked</span>
+                    &middot; <span class="badge bg-success-subtle text-success border">Paid &middot; Official Locked</span>
                     @endif
                 </div>
                 <div>
@@ -414,26 +393,26 @@
             </div>
             <div class="list-group list-group-flush small">
                 @forelse($allPayslips as $slip)
-                    <a href="{{ route('portal.payslips', ['month' => $slip->salary_month]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ $selectedMonth === $slip->salary_month ? 'active' : '' }}">
-                        <div>
-                            <div class="fw-semibold">{{ $slip->month_name }}</div>
-                            <small class="{{ $selectedMonth === $slip->salary_month ? 'text-white-50' : 'text-muted' }}">
-                                Days: {{ $slip->paid_days }} / {{ $slip->total_working_days }}
-                            </small>
-                        </div>
-                        <div class="text-end">
-                            <span class="fw-bold {{ $selectedMonth === $slip->salary_month ? 'text-white' : 'text-success' }}">
-                                ₹{{ number_format($slip->net_salary, 0) }}
-                            </span>
-                            <span class="d-block badge {{ $selectedMonth === $slip->salary_month ? 'bg-light text-dark' : 'bg-success-subtle text-success' }}" style="font-size: 0.65rem;">
-                                {{ $slip->payment_status }}
-                            </span>
-                        </div>
-                    </a>
-                @empty
-                    <div class="p-3 text-center text-muted">
-                        No previous payslip statements generated yet.
+                <a href="{{ route('portal.payslips', ['month' => $slip->salary_month]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ $selectedMonth === $slip->salary_month ? 'active' : '' }}">
+                    <div>
+                        <div class="fw-semibold">{{ $slip->month_name }}</div>
+                        <small class="{{ $selectedMonth === $slip->salary_month ? 'text-white-50' : 'text-muted' }}">
+                            Days: {{ $slip->paid_days }} / {{ $slip->total_working_days }}
+                        </small>
                     </div>
+                    <div class="text-end">
+                        <span class="fw-bold {{ $selectedMonth === $slip->salary_month ? 'text-white' : 'text-success' }}">
+                            ₹{{ number_format($slip->net_salary, 0) }}
+                        </span>
+                        <span class="d-block badge {{ $selectedMonth === $slip->salary_month ? 'bg-light text-dark' : 'bg-success-subtle text-success' }}" style="font-size: 0.65rem;">
+                            {{ $slip->payment_status }}
+                        </span>
+                    </div>
+                </a>
+                @empty
+                <div class="p-3 text-center text-muted">
+                    No previous payslip statements generated yet.
+                </div>
                 @endforelse
             </div>
         </div>

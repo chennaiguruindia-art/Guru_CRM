@@ -161,14 +161,6 @@
                     <span class="sidebar-icon"><i class="bi bi-receipt-cutoff"></i></span>
                     <span class="sidebar-text">My Payslips</span>
                 </a>
-
-                @if($authUser && $authUser->hasAnyRole(['super-admin', 'admin', 'fieldmarketer']))
-                    <div class="sidebar-section-divider mt-3">MANAGEMENT</div>
-                    <a href="{{ route('dashboard') }}" class="sidebar-link text-primary fw-semibold">
-                        <span class="sidebar-icon"><i class="bi bi-arrow-left-right text-primary"></i></span>
-                        <span class="sidebar-text">Switch to CRM</span>
-                    </a>
-                @endif
             </div>
 
             <!-- Sidebar Footer -->

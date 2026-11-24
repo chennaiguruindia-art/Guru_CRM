@@ -117,6 +117,9 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
             Route::post('punch-in', [\App\Http\Controllers\Api\PortalController::class, 'punchIn'])->name('api.portal.punch_in');
             Route::post('punch-out', [\App\Http\Controllers\Api\PortalController::class, 'punchOut'])->name('api.portal.punch_out');
             Route::get('attendance', [\App\Http\Controllers\Api\PortalController::class, 'attendance'])->name('api.portal.attendance');
+            Route::get('profile', [\App\Http\Controllers\Api\PortalController::class, 'profile'])->name('api.portal.profile');
+            Route::post('profile', [\App\Http\Controllers\Api\PortalController::class, 'updateProfile'])->name('api.portal.update_profile');
+            Route::get('payslips', [\App\Http\Controllers\Api\PortalController::class, 'payslips'])->name('api.portal.payslips');
         });
 
         // App Lookups (metadata, dropdown choices, status choices)

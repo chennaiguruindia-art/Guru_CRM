@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\Payslip;
 use App\Services\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -226,5 +227,112 @@ class PortalController extends BaseApiController
                 'leave' => $allMonth->where('status', 'Leave')->count(),
             ],
         ]);
+    }
+
+    /**
+     * Get employee profile (official company-controlled + personal info).
+     */
+    public function profile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $employee = $user->employee ?? Employee::with('branch')->where('user_id', $user->id)->first();
+
+        if (! $employee) {
+            return $this->errorResponse('No active employee profile linked to this account.', 422);
+        }
+
+        return $this->successResponse([
+            'user' => $user,
+            'employee' => $employee->load('branch'),
+        ], 'Employee profile retrieved successfully');
+    }
+
+    /**
+     * Update employee editable personal details.
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $employee = $user->employee ?? Employee::where('user_id', $user->id)->first();
+
+        if (! $employee) {
+            return $this->errorResponse('No active employee profile linked to this account.', 422);
+        }
+
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'dob' => ['nullable', 'date'],
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'emergency_contact' => ['nullable', 'string', 'max:50'],
+            'emergency_contact_relation' => ['nullable', 'string', 'max:50'],
+            'marital_status' => ['nullable', 'string', 'in:Single,Married,Other'],
+            'spouse_name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $employee->update($validated);
+
+        if (! empty($validated['phone']) && $user->phone !== $validated['phone']) {
+            $user->phone = $validated['phone'];
+        }
+        if (! empty($validated['email']) && $user->email !== $validated['email']) {
+            $user->email = $validated['email'];
+        }
+        $user->save();
+
+        AuditLogger::log('api_update_profile', 'employees', $employee->id, null, [
+            'employee' => $employee->name,
+            'updated_by' => $user->name,
+        ]);
+
+        return $this->successResponse([
+            'user' => $user->fresh(),
+            'employee' => $employee->fresh()->load('branch'),
+        ], 'Personal profile updated successfully');
+    }
+
+    /**
+     * Get employee payslips list and monthly statement calculation.
+     */
+    public function payslips(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $employee = $user->employee ?? Employee::with('branch')->where('user_id', $user->id)->first();
+
+        if (! $employee) {
+            return $this->errorResponse('No active employee profile linked to this account.', 422);
+        }
+
+        $selectedMonth = $request->input('month', now('Asia/Kolkata')->format('Y-m'));
+        $currentPayslip = \App\Http\Controllers\PortalController::getPayslipForMonth($employee, $selectedMonth);
+
+        // Build list of recent 12 months for selector
+        $availableMonths = [];
+        $currentDate = now('Asia/Kolkata')->startOfMonth();
+        for ($i = 0; $i < 12; $i++) {
+            $mKey = $currentDate->format('Y-m');
+            $mLabel = $currentDate->format('F Y');
+            $availableMonths[] = [
+                'key' => $mKey,
+                'label' => $mLabel,
+                'is_current' => ($mKey === now('Asia/Kolkata')->format('Y-m')),
+            ];
+            $currentDate->subMonth();
+        }
+
+        $allPayslips = Payslip::where('employee_id', $employee->id)
+            ->orderBy('salary_month', 'desc')
+            ->get();
+
+        return $this->successResponse([
+            'employee' => $employee->load('branch'),
+            'selected_month' => $selectedMonth,
+            'available_months' => $availableMonths,
+            'current_payslip' => $currentPayslip ? array_merge($currentPayslip->toArray(), [
+                'net_salary_in_words' => $currentPayslip->net_salary_in_words,
+            ]) : null,
+            'all_payslips' => $allPayslips,
+        ], 'Employee payslips loaded successfully');
     }
 }

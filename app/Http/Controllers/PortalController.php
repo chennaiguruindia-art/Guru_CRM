@@ -375,7 +375,7 @@ class PortalController extends Controller
      * 4. Automated Loss of Pay (LOP) calculated from Monday-Saturday attendance punches
      * 5. Custom Admin salary split applied (Basic, HRA, Allowances) or statutory auto-split
      */
-    private function getPayslipForMonth(?Employee $employee, string $salaryMonth): ?Payslip
+    public static function getPayslipForMonth(?Employee $employee, string $salaryMonth): ?Payslip
     {
         if (! $employee) {
             return null;

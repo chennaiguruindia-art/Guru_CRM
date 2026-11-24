@@ -465,10 +465,10 @@ class PortalController extends Controller
         $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
         $paymentStatus = $monthEnded ? 'Paid' : 'In Progress';
 
-        // All Sundays are treated as present (paid holiday).
+        // Total Days Present = Actual punches (worked days + approved leave) + Sundays (paid holidays)
+        $totalDaysPresent = max(0, (float) ($workedDays + $paidSundays));
+
         // LOP is strictly considered by number of absent days:
-        // Total Days Present = Eligible tenure in month - absent days.
-        $totalDaysPresent = max(0, (float) ($eligibleDays - $absentDays));
         $totalLopDays = (float) ($preJoiningDays + $absentDays);
 
         // Monthly Salary & Component Breakdown (Form XXVIII: Basic, DA, Bonus, Leave Encashment, Other Allowance)

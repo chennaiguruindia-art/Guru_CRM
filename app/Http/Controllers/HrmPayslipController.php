@@ -267,10 +267,10 @@ class HrmPayslipController extends Controller
         $monthEnded = now('Asia/Kolkata')->greaterThanOrEqualTo($endOfMonth->copy()->endOfDay());
         $eligibleDays = max(0, $totalDaysInMonth - $preJoiningDays);
 
-        // All Sundays are treated as present (paid holiday).
+        // Total Days Present = Actual punches (worked days + approved leave) + Sundays (paid holidays)
+        $totalDaysPresent = max(0, (float) ($workedDays + $paidSundays));
+
         // LOP is strictly considered by number of absent days:
-        // Total Days Present = Eligible tenure in month - absent days.
-        $totalDaysPresent = max(0, (float) ($eligibleDays - $absentDays));
         $totalLopDays = (float) ($preJoiningDays + $absentDays);
 
         $monthlyGrossSalary = (float) ($employee->salary > 0 ? $employee->salary : 20000.00);

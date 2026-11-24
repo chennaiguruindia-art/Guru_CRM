@@ -176,6 +176,7 @@ class AuthenticatedSessionController extends Controller
         AuditLogger::log('logout', 'authentication', $userId, null, [
             'ip' => $request->ip(),
             'user' => $userName,
+            'reason' => $request->filled('timeout') ? 'idle_timeout_30m' : 'manual_logout',
         ]);
 
         Auth::guard('web')->logout();
@@ -183,6 +184,10 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        if ($request->filled('timeout')) {
+            return redirect()->route('login', ['timeout' => 1]);
+        }
 
         return redirect('/');
     }

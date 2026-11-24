@@ -7,6 +7,15 @@
     $isAdminActive = $errors->has('phone') || $errors->has('password');
 @endphp
 
+@if(request('timeout'))
+    <div class="alert alert-warning border-warning-subtle shadow-sm mb-4 text-start small d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history fs-5 text-warning-emphasis"></i>
+        <div>
+            <strong>Session Expired:</strong> You have been automatically logged out due to 30 minutes of inactivity. Please sign in again.
+        </div>
+    </div>
+@endif
+
 <!-- Dual Login Tabs -->
 <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-pill border shadow-sm" id="loginTabs" role="tablist">
     <li class="nav-item" role="presentation">

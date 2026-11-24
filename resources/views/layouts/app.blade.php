@@ -70,6 +70,9 @@
     <!-- Sidebar: pins / favourites -->
     <script src="{{ asset('js/sidebar.js') }}"></script>
 
+    <!-- Auto-logout after 30 minutes of inactivity -->
+    @include('components.session-timeout')
+
     @stack('scripts')
 </body>
 </html>

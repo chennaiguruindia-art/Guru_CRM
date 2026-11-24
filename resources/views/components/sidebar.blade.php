@@ -47,8 +47,9 @@
                         ['All Employees', 'bi-person-badge', 'employees.index', ['employees.index', 'employees.show', 'employees.edit'], 'employees.view'],
                         ['Add New Employee', 'bi-person-plus', 'employees.create', ['employees.create'], 'employees.create'],
                     ]],
-                    ['label' => 'Attendance & Tracking', 'key' => 'hrm_attendance', 'icon' => 'bi-calendar-check-fill', 'active' => ['attendance*', 'hrm.report*'], 'items' => [
+                    ['label' => 'Attendance & Tracking', 'key' => 'hrm_attendance', 'icon' => 'bi-calendar-check-fill', 'active' => ['attendance*', 'hrm.report*', 'hrm.monthly_attendance*'], 'items' => [
                         ['Daily Attendance', 'bi-calendar-check', 'attendance.index', ['attendance.index'], 'attendance.view'],
+                        ['Monthly Attendance Table', 'bi-calendar3-range', 'hrm.monthly_attendance', ['hrm.monthly_attendance*'], 'attendance.view'],
                         ['Monthly Reports', 'bi-file-earmark-bar-graph', 'hrm.report', ['hrm.report*'], 'attendance.view'],
                     ]],
                     ['label' => 'Payroll & Payslips', 'key' => 'hrm_payroll', 'icon' => 'bi-cash-stack', 'active' => ['hrm.payslips*'], 'items' => [
@@ -110,6 +111,7 @@
                     ['Employees Directory', 'bi-person-badge', 'employees.index', ['employees*'], 'employees.view'],
                     ['Monthly Payslips', 'bi-file-earmark-ruled', 'hrm.payslips', ['hrm.payslips*'], 'employees.view'],
                     ['Daily Attendance', 'bi-calendar-check', 'attendance.index', ['attendance*'], 'attendance.view'],
+                    ['Monthly Attendance Table', 'bi-calendar3-range', 'hrm.monthly_attendance', ['hrm.monthly_attendance*'], 'attendance.view'],
                     ['Tasks', 'bi-check2-square', 'tasks.index', ['tasks*'], 'tasks.view'],
                     ['Vendors', 'bi-shop', 'vendors.index', ['vendors*'], 'vendors.view'],
                     ['Purchase Orders', 'bi-cart-check', 'purchases.index', ['purchases*'], 'purchases.view'],

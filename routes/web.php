@@ -10,6 +10,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeMonthlyAttendanceController;
 use App\Http\Controllers\EstimationController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HrmDashboardController;
@@ -188,6 +189,10 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
         ->name('hrm.dashboard')->middleware('permission:' . $pickPermission('employees', 'view'));
     Route::get('/hrm/reports', [HrmDashboardController::class, 'report'])
         ->name('hrm.report')->middleware('permission:' . $pickPermission('attendance', 'view'));
+    Route::get('/hrm/monthly-attendance', [EmployeeMonthlyAttendanceController::class, 'index'])
+        ->name('hrm.monthly_attendance')->middleware('permission:' . $pickPermission('attendance', 'view'));
+    Route::post('/hrm/monthly-attendance/sync', [EmployeeMonthlyAttendanceController::class, 'sync'])
+        ->name('hrm.monthly_attendance.sync')->middleware('permission:' . $pickPermission('attendance', 'create'));
     Route::get('/hrm/payslips', [HrmPayslipController::class, 'index'])
         ->name('hrm.payslips')->middleware('permission:' . $pickPermission('employees', 'view'));
     Route::post('/hrm/payslips', [HrmPayslipController::class, 'store'])

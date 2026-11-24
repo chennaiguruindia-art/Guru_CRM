@@ -120,6 +120,7 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
             Route::get('profile', [\App\Http\Controllers\Api\PortalController::class, 'profile'])->name('api.portal.profile');
             Route::post('profile', [\App\Http\Controllers\Api\PortalController::class, 'updateProfile'])->name('api.portal.update_profile');
             Route::get('payslips', [\App\Http\Controllers\Api\PortalController::class, 'payslips'])->name('api.portal.payslips');
+            Route::get('payslips/download', [\App\Http\Controllers\Api\PortalController::class, 'downloadPayslip'])->name('api.portal.payslips.download');
         });
 
         // App Lookups (metadata, dropdown choices, status choices)

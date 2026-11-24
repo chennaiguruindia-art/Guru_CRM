@@ -335,4 +335,33 @@ class PortalController extends BaseApiController
             'all_payslips' => $allPayslips,
         ], 'Employee payslips loaded successfully');
     }
+
+    /**
+     * Get standalone printable HTML payslip for mobile app / browser view.
+     */
+    public function downloadPayslip(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $employee = $user->employee ?? Employee::with('branch')->where('user_id', $user->id)->first();
+
+        if (! $employee) {
+            return $this->errorResponse('No active employee profile linked to this account.', 422);
+        }
+
+        $month = $request->input('month', now('Asia/Kolkata')->format('Y-m'));
+        $payslip = \App\Http\Controllers\PortalController::getPayslipForMonth($employee, $month);
+
+        if (! $payslip) {
+            return $this->errorResponse('Payslip not available for ' . $month, 404);
+        }
+
+        $html = view('portal.payslip-print', compact('employee', 'payslip'))->render();
+
+        return $this->successResponse([
+            'filename' => 'Payslip_' . ($employee->employee_code ?: 'EMP') . '_' . $month . '.html',
+            'html' => $html,
+            'month' => $month,
+            'month_name' => $payslip->month_name,
+        ], 'Printable payslip HTML generated');
+    }
 }

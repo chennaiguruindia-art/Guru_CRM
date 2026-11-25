@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\Payslip;
+use App\Services\AttendanceRuleService;
 use App\Services\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -35,11 +36,14 @@ class PortalController extends Controller
             $hasCheckedOut = $todayAttendance && !empty($todayAttendance->check_out);
         }
 
+        $checkInWindow = AttendanceRuleService::isCheckInAllowed();
+
         return view('portal.punch', compact(
             'employee',
             'todayAttendance',
             'hasCheckedIn',
-            'hasCheckedOut'
+            'hasCheckedOut',
+            'checkInWindow'
         ));
     }
 
@@ -111,6 +115,8 @@ class PortalController extends Controller
             $currentPayslip = $this->getPayslipForMonth($employee, $currentMonth);
         }
 
+        $checkInWindow = AttendanceRuleService::isCheckInAllowed();
+
         return view('portal.dashboard', compact(
             'employee',
             'todayAttendance',
@@ -122,7 +128,8 @@ class PortalController extends Controller
             'leaveDays',
             'attendancePercentage',
             'currentPayslip',
-            'profileCompletion'
+            'profileCompletion',
+            'checkInWindow'
         ));
     }
 
@@ -148,6 +155,12 @@ class PortalController extends Controller
 
         if ($attendance->check_in) {
             return back()->with('info', 'You have already punched in today at ' . Carbon::parse($attendance->check_in, 'Asia/Kolkata')->format('h:i A'));
+        }
+
+        // Check if Check-In time window is currently allowed (Up to 10:30 AM OR 1:30 PM - 2:00 PM)
+        $windowCheck = AttendanceRuleService::isCheckInAllowed($nowTime);
+        if (! $windowCheck['allowed']) {
+            return back()->with('error', $windowCheck['message']);
         }
 
         $attendance->status = 'Present';
@@ -198,7 +211,17 @@ class PortalController extends Controller
             return back()->with('error', 'You must punch in first before punching out.');
         }
 
+        // Calculate worked hours and determine attendance status & permission consumption
+        $eval = AttendanceRuleService::evaluateCheckOut($attendance, $nowTime);
+
         $attendance->check_out = $nowTime;
+        $attendance->worked_hours = $eval['worked_hours'];
+        $attendance->status = $eval['status'];
+        $attendance->has_permission = $eval['has_permission'];
+        $attendance->permission_reason = $eval['permission_reason'];
+        if ($eval['notes']) {
+            $attendance->notes = ($attendance->notes ? $attendance->notes . ' | ' : '') . $eval['notes'];
+        }
 
         if ($request->filled('latitude')) {
             $attendance->check_out_latitude = $request->input('latitude');
@@ -215,11 +238,22 @@ class PortalController extends Controller
         AuditLogger::log('punch_out', 'attendances', $attendance->id, null, [
             'employee' => $employee->name,
             'time' => $nowTime,
+            'worked_hours' => $eval['worked_hours'],
+            'status' => $eval['status'],
+            'has_permission' => $eval['has_permission'],
             'latitude' => $attendance->check_out_latitude,
             'longitude' => $attendance->check_out_longitude,
         ]);
 
-        return back()->with('success', 'Punched out successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Live location captured.');
+        $feedbackMsg = 'Punched out successfully at ' . now('Asia/Kolkata')->format('h:i A') . '!';
+        $feedbackMsg .= " Worked: {$eval['worked_hours']} hrs &middot; Marked as: {$eval['status']}";
+        if ($eval['has_permission']) {
+            $feedbackMsg .= ' (Permission applied: ' . ($eval['used_permissions_before'] + 1) . '/2 used this month).';
+        } elseif ($eval['permission_reason']) {
+            $feedbackMsg .= " ({$eval['permission_reason']}).";
+        }
+
+        return back()->with('success', $feedbackMsg);
     }
 
     /**

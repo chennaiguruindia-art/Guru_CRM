@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\Payslip;
+use App\Services\AttendanceRuleService;
 use App\Services\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -90,6 +91,15 @@ class PortalController extends BaseApiController
             ]);
         }
 
+        // Validate Check-In time windows (Up to 10:30 AM OR 01:30 PM - 02:00 PM)
+        $windowCheck = AttendanceRuleService::isCheckInAllowed($nowTime);
+        if (! $windowCheck['allowed']) {
+            return $this->errorResponse($windowCheck['message'], 422, [
+                'window' => $windowCheck['window'],
+                'current_time' => $windowCheck['current_time'],
+            ]);
+        }
+
         $attendance->status = 'Present';
         $attendance->check_in = $nowTime;
 
@@ -150,7 +160,14 @@ class PortalController extends BaseApiController
             ]);
         }
 
+        // Calculate worked duration and evaluate status & permission consumption
+        $eval = AttendanceRuleService::evaluateCheckOut($attendance, $nowTime);
+
         $attendance->check_out = $nowTime;
+        $attendance->worked_hours = $eval['worked_hours'];
+        $attendance->status = $eval['status'];
+        $attendance->has_permission = $eval['has_permission'];
+        $attendance->permission_reason = $eval['permission_reason'];
 
         if ($request->filled('latitude')) {
             $attendance->check_out_latitude = $request->input('latitude');
@@ -161,22 +178,36 @@ class PortalController extends BaseApiController
         if ($request->filled('address')) {
             $attendance->check_out_address = $request->input('address');
         }
+        $combinedNotes = $eval['notes'];
         if ($request->filled('notes')) {
-            $attendance->notes = ($attendance->notes ? $attendance->notes . ' | ' : '') . $request->input('notes');
+            $combinedNotes .= ' | ' . $request->input('notes');
         }
+        $attendance->notes = ($attendance->notes ? $attendance->notes . ' | ' : '') . $combinedNotes;
 
         $attendance->save();
 
         AuditLogger::log('punch_out', 'attendances', $attendance->id, null, [
             'employee' => $employee->name,
             'time' => $nowTime,
+            'worked_hours' => $eval['worked_hours'],
+            'status' => $eval['status'],
+            'has_permission' => $eval['has_permission'],
             'latitude' => $attendance->check_out_latitude,
             'longitude' => $attendance->check_out_longitude,
         ]);
 
+        $feedbackMsg = 'Punched out successfully at ' . now('Asia/Kolkata')->format('h:i A') . '!';
+        $feedbackMsg .= " Worked: {$eval['worked_hours']} hrs &middot; Marked as: {$eval['status']}";
+        if ($eval['has_permission']) {
+            $feedbackMsg .= ' (Permission applied: ' . ($eval['used_permissions_before'] + 1) . '/2 used this month).';
+        } elseif ($eval['permission_reason']) {
+            $feedbackMsg .= " ({$eval['permission_reason']}).";
+        }
+
         return $this->successResponse([
             'attendance' => $attendance->fresh(),
-            'message' => 'Punched out successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Location captured.',
+            'evaluation' => $eval,
+            'message' => $feedbackMsg,
         ], 'Punched out successfully');
     }
 

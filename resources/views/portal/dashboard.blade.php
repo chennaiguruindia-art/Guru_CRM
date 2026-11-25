@@ -181,31 +181,56 @@
                     </div>
                 @elseif(!$todayAttendance || !$todayAttendance->check_in)
                     {{-- Not punched in yet --}}
+                    @php
+                        $windowCheck = $checkInWindow ?? app(\App\Services\AttendanceRuleService::class)->isCheckInAllowed();
+                    @endphp
                     <div class="py-2">
-                        <div class="mb-2">
-                            <i class="bi bi-box-arrow-in-right text-success" style="font-size: 3rem;"></i>
-                        </div>
-                        <h5 class="fw-bold text-dark mb-1">Ready to start work?</h5>
-                        <p class="text-muted small mb-3">Record your daily punch-in timestamp and live location.</p>
+                        @if($windowCheck['allowed'])
+                            <div class="mb-2">
+                                <i class="bi bi-box-arrow-in-right text-success" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1">Ready to start work?</h5>
+                            <p class="text-muted small mb-3">Record your daily punch-in timestamp and live location.</p>
 
-                        <form method="POST" action="{{ route('portal.punch_in') }}" id="quickPunchInForm">
-                            @csrf
-                            <input type="hidden" name="latitude" id="quickInLat">
-                            <input type="hidden" name="longitude" id="quickInLng">
-                            <button type="submit" class="btn punch-btn-in btn-lg px-4 py-2 rounded-pill fw-semibold shadow-sm">
-                                <i class="bi bi-fingerprint me-2"></i>Punch In Now
+                            <form method="POST" action="{{ route('portal.punch_in') }}" id="quickPunchInForm">
+                                @csrf
+                                <input type="hidden" name="latitude" id="quickInLat">
+                                <input type="hidden" name="longitude" id="quickInLng">
+                                <button type="submit" class="btn punch-btn-in btn-lg px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                                    <i class="bi bi-fingerprint me-2"></i>Punch In Now
+                                </button>
+                            </form>
+                        @else
+                            <div class="mb-2">
+                                <i class="bi bi-lock-fill text-secondary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="fw-bold text-secondary mb-1">Check-in Window Closed</h5>
+                            <p class="text-muted small mb-3">{{ $windowCheck['message'] }}</p>
+                            <button type="button" class="btn btn-secondary btn-lg px-4 py-2 rounded-pill fw-semibold shadow-sm" disabled style="opacity: 0.7; cursor: not-allowed;">
+                                <i class="bi bi-lock-fill me-2"></i>Punch In Locked
                             </button>
-                        </form>
+                        @endif
                     </div>
                 @elseif($todayAttendance->check_in && !$todayAttendance->check_out)
                     {{-- Punched in, waiting for punch out --}}
+                    @php
+                        $inTime = \Carbon\Carbon::parse($todayAttendance->check_in);
+                        $elapsedMinutes = max(0, $inTime->diffInMinutes(now()));
+                        $elapsedHours = floor($elapsedMinutes / 60);
+                        $elapsedRemainingMinutes = $elapsedMinutes % 60;
+                    @endphp
                     <div class="py-2">
                         <div class="d-inline-flex align-items-center justify-content-center bg-success-subtle text-success rounded-circle mb-3" style="width: 60px; height: 60px;">
                             <i class="bi bi-check-lg fs-1"></i>
                         </div>
                         <h5 class="fw-bold text-dark mb-1">You are currently working</h5>
-                        <div class="text-muted small mb-3">
-                            Checked in at: <strong class="text-success font-monospace fs-6">{{ \Carbon\Carbon::parse($todayAttendance->check_in)->format('h:i A') }}</strong>
+                        <div class="text-muted small mb-2">
+                            Checked in at: <strong class="text-success font-monospace fs-6">{{ $inTime->format('h:i A') }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill font-monospace">
+                                <i class="bi bi-stopwatch me-1 text-primary"></i>Working: <strong>{{ $elapsedHours }}h {{ $elapsedRemainingMinutes }}m</strong>
+                            </span>
                         </div>
 
                         <form method="POST" action="{{ route('portal.punch_out') }}" id="quickPunchOutForm">

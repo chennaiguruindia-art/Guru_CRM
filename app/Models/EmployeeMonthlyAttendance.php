@@ -91,11 +91,13 @@ class EmployeeMonthlyAttendance extends Model
 
                 $att = $attendances->get($dateKey);
                 if ($att) {
+                    if ($att->has_permission) {
+                        $permissions++;
+                    }
                     if ($att->status === 'Present') {
                         $workedDays += 1.0;
                     } elseif ($att->status === 'Half-Day') {
                         $workedDays += 0.5;
-                        $permissions += 1;
                     } elseif ($att->status === 'Leave') {
                         $workedDays += 1.0;
                     }

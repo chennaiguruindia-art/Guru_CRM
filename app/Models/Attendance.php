@@ -19,6 +19,9 @@ class Attendance extends Model
         'check_out_latitude',
         'check_out_longitude',
         'check_out_address',
+        'worked_hours',
+        'has_permission',
+        'permission_reason',
         'notes',
     ];
 
@@ -28,6 +31,8 @@ class Attendance extends Model
         'check_in_longitude' => 'float',
         'check_out_latitude' => 'float',
         'check_out_longitude' => 'float',
+        'worked_hours' => 'float',
+        'has_permission' => 'boolean',
     ];
 
     public function employee(): BelongsTo

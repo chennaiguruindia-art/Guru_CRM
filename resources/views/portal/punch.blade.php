@@ -43,10 +43,17 @@
                 <!-- Status Banner -->
                 <div class="text-center mb-4">
                     @if(!$hasCheckedIn)
-                        <div class="p-3 rounded-3 bg-light border text-muted">
-                            <i class="bi bi-info-circle-fill text-warning fs-5 me-1 align-middle"></i>
-                            <span class="small fw-semibold">You have not checked in yet today. Click <strong>CHECK IN</strong> below to record attendance with live location.</span>
-                        </div>
+                        @if($checkInWindow['allowed'] ?? false)
+                            <div class="p-3 rounded-3 bg-success-subtle border border-success-subtle text-success">
+                                <i class="bi bi-check-circle-fill fs-5 me-1 align-middle"></i>
+                                <span class="small fw-semibold">{{ $checkInWindow['message'] }} Click <strong>CHECK IN</strong> below to record attendance.</span>
+                            </div>
+                        @else
+                            <div class="p-3 rounded-3 bg-warning-subtle border border-warning-subtle text-dark">
+                                <i class="bi bi-clock-history text-warning-emphasis fs-5 me-1 align-middle"></i>
+                                <span class="small fw-semibold">{{ $checkInWindow['message'] }}</span>
+                            </div>
+                        @endif
                     @elseif($hasCheckedIn && !$hasCheckedOut)
                         <div class="p-3 rounded-3 bg-success-subtle border border-success-subtle text-success">
                             <i class="bi bi-check-circle-fill fs-5 me-1 align-middle"></i>
@@ -82,18 +89,26 @@
                 <div class="d-flex flex-column gap-3 mb-4">
                     <!-- 1. CHECK IN BUTTON -->
                     @if(!$hasCheckedIn)
-                        {{-- ENABLED --}}
-                        <form method="POST" action="{{ route('portal.punch_in') }}" id="punchInForm">
-                            @csrf
-                            <input type="hidden" name="latitude" class="geo-lat" value="{{ session('login_latitude') }}">
-                            <input type="hidden" name="longitude" class="geo-lng" value="{{ session('login_longitude') }}">
-                            <input type="hidden" name="address" class="geo-addr" value="{{ session('login_address') }}">
+                        @if($checkInWindow['allowed'] ?? false)
+                            {{-- ENABLED --}}
+                            <form method="POST" action="{{ route('portal.punch_in') }}" id="punchInForm">
+                                @csrf
+                                <input type="hidden" name="latitude" class="geo-lat" value="{{ session('login_latitude') }}">
+                                <input type="hidden" name="longitude" class="geo-lng" value="{{ session('login_longitude') }}">
+                                <input type="hidden" name="address" class="geo-addr" value="{{ session('login_address') }}">
 
-                            <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-box-arrow-in-right fs-4"></i>
-                                <span>CHECK IN</span>
+                                <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                    <i class="bi bi-box-arrow-in-right fs-4"></i>
+                                    <span>CHECK IN NOW</span>
+                                </button>
+                            </form>
+                        @else
+                            {{-- DISABLED (Outside Time Window) --}}
+                            <button type="button" class="btn btn-secondary btn-lg w-100 py-3 fw-bold rounded-3 opacity-75 d-flex align-items-center justify-content-center gap-2" disabled title="Check-in window is currently closed">
+                                <i class="bi bi-lock-fill fs-4"></i>
+                                <span>CHECK IN DISABLED (Closed)</span>
                             </button>
-                        </form>
+                        @endif
                     @else
                         {{-- DISABLED (Already Checked In) --}}
                         <button type="button" class="btn btn-outline-success btn-lg w-100 py-3 fw-bold rounded-3 opacity-75 d-flex align-items-center justify-content-center gap-2" disabled>
@@ -110,6 +125,18 @@
                             <span>CHECK OUT (Check in first)</span>
                         </button>
                     @elseif($hasCheckedIn && !$hasCheckedOut)
+                        @php
+                            $inTime = \Carbon\Carbon::parse($todayAttendance->check_in, 'Asia/Kolkata');
+                            $diffMinutes = max(0, $inTime->diffInMinutes(now('Asia/Kolkata')));
+                            $elapsedH = floor($diffMinutes / 60);
+                            $elapsedM = $diffMinutes % 60;
+                        @endphp
+                        <div class="text-center mb-1">
+                            <span class="badge bg-light text-dark border px-3 py-2 small">
+                                <i class="bi bi-stopwatch text-primary me-1"></i>
+                                Working Duration: <strong>{{ $elapsedH }}h {{ $elapsedM }}m</strong>
+                            </span>
+                        </div>
                         {{-- ENABLED (Ready for checkout) --}}
                         <form method="POST" action="{{ route('portal.punch_out') }}" id="punchOutForm">
                             @csrf

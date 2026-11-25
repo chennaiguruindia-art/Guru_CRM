@@ -13,11 +13,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Services\AttendanceRuleService;
 
 class AttendanceController extends Controller
 {
     public function index(Request $request): View|JsonResponse|StreamedResponse
     {
+        // Auto-checkout any pending attendances across active employees if past 07:00 PM
+        AttendanceRuleService::autoCheckOutPendingAttendances();
+
         $user = $request->user();
         $date = $request->input('date', now()->toDateString());
         $search = $request->input('search');

@@ -85,6 +85,19 @@
                     @endif
                 </div>
 
+                <!-- Auto Logout Banner if employee did not logout before 7 PM -->
+                @if($todayAttendance && $todayAttendance->is_auto_checkout)
+                    <div class="alert alert-warning border border-warning shadow-sm rounded-3 p-3 mb-4 text-start">
+                        <div class="d-flex align-items-center gap-2 fw-bold text-dark mb-1">
+                            <i class="bi bi-clock-history text-warning fs-5"></i>
+                            <span>Employee did not logout — System auto logged out at 07:00 PM</span>
+                        </div>
+                        <div class="small text-muted">
+                            You did not punch out before 07:00 PM. The system automatically recorded your checkout at <strong>07:00 PM</strong> with status <strong>{{ $todayAttendance->status }}</strong> (Worked: {{ $todayAttendance->worked_hours }} hrs).
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Two Punch Buttons -->
                 <div class="d-flex flex-column gap-3 mb-4">
                     <!-- 1. CHECK IN BUTTON -->
@@ -151,10 +164,17 @@
                         </form>
                     @else
                         {{-- DISABLED (Already Checked Out) --}}
-                        <button type="button" class="btn btn-outline-secondary btn-lg w-100 py-3 fw-bold rounded-3 opacity-75 d-flex align-items-center justify-content-center gap-2" disabled>
-                            <i class="bi bi-check2-all fs-4 text-secondary"></i>
-                            <span>CHECKED OUT ({{ \Carbon\Carbon::parse($todayAttendance->check_out)->format('h:i A') }})</span>
-                        </button>
+                        @if($todayAttendance && $todayAttendance->is_auto_checkout)
+                            <button type="button" class="btn btn-outline-warning text-dark btn-lg w-100 py-3 fw-bold rounded-3 opacity-90 d-flex align-items-center justify-content-center gap-2" disabled title="Employee did not logout — Auto logged out at 07:00 PM">
+                                <i class="bi bi-clock-history fs-4 text-warning"></i>
+                                <span>AUTO LOGGED OUT (07:00 PM)</span>
+                            </button>
+                        @else
+                            <button type="button" class="btn btn-outline-secondary btn-lg w-100 py-3 fw-bold rounded-3 opacity-75 d-flex align-items-center justify-content-center gap-2" disabled>
+                                <i class="bi bi-check2-all fs-4 text-secondary"></i>
+                                <span>CHECKED OUT ({{ \Carbon\Carbon::parse($todayAttendance->check_out)->format('h:i A') }})</span>
+                            </button>
+                        @endif
                     @endif
                 </div>
 

@@ -72,6 +72,11 @@
                                 <span class="badge bg-light text-dark border">
                                     <i class="bi bi-clock me-1 text-danger"></i>{{ \Carbon\Carbon::parse($item->check_out)->format('h:i A') }}
                                 </span>
+                                @if($item->is_auto_checkout)
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size: 0.72rem;" title="Employee did not logout — Auto logged out at 07:00 PM">
+                                        <i class="bi bi-clock-history me-1"></i>Auto Out
+                                    </span>
+                                @endif
                             @else
                                 <span class="text-muted">—</span>
                             @endif

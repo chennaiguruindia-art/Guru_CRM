@@ -28,6 +28,9 @@ class PortalController extends Controller
         $hasCheckedOut = false;
 
         if ($employee) {
+            // Auto check-out if past 07:00 PM and employee did not logout
+            AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
+
             $todayAttendance = Attendance::where('employee_id', $employee->id)
                 ->where('date', $today)
                 ->first();
@@ -68,6 +71,9 @@ class PortalController extends Controller
         $profileCompletion = 0;
 
         if ($employee) {
+            // Auto check-out if past 07:00 PM and employee did not logout
+            AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
+
             $todayAttendance = Attendance::where('employee_id', $employee->id)
                 ->where('date', $today)
                 ->first();
@@ -271,6 +277,8 @@ class PortalController extends Controller
 
         $attendances = collect();
         if ($employee) {
+            AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
+
             $attendances = Attendance::where('employee_id', $employee->id)
                 ->whereBetween('date', [$startOfMonth, $endOfMonth])
                 ->orderBy('date', 'desc')

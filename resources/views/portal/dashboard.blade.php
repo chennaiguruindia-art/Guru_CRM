@@ -244,25 +244,51 @@
                     </div>
                 @else
                     {{-- Punched out for the day --}}
-                    <div class="py-2">
-                        <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
-                            <i class="bi bi-moon-stars-fill fs-2"></i>
-                        </div>
-                        <h5 class="fw-bold text-dark mb-1">Work Day Completed!</h5>
-                        <div class="d-flex justify-content-center gap-3 my-2 small">
-                            <div class="p-2 px-3 bg-light rounded border">
-                                <span class="text-muted d-block" style="font-size: 0.72rem;">CHECK IN</span>
-                                <strong class="text-success font-monospace">{{ \Carbon\Carbon::parse($todayAttendance->check_in)->format('h:i A') }}</strong>
+                    @if($todayAttendance && $todayAttendance->is_auto_checkout)
+                        <div class="py-2">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-warning-subtle text-warning-emphasis rounded-circle mb-3" style="width: 60px; height: 60px;">
+                                <i class="bi bi-clock-history fs-2"></i>
                             </div>
-                            <div class="p-2 px-3 bg-light rounded border">
-                                <span class="text-muted d-block" style="font-size: 0.72rem;">CHECK OUT</span>
-                                <strong class="text-danger font-monospace">{{ \Carbon\Carbon::parse($todayAttendance->check_out)->format('h:i A') }}</strong>
+                            <h5 class="fw-bold text-dark mb-1">Auto Logged Out</h5>
+                            <div class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 text-wrap mb-2">
+                                <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+                                Employee did not logout — System auto logged out at 07:00 PM
+                            </div>
+                            <div class="d-flex justify-content-center gap-3 my-2 small">
+                                <div class="p-2 px-3 bg-light rounded border">
+                                    <span class="text-muted d-block" style="font-size: 0.72rem;">CHECK IN</span>
+                                    <strong class="text-success font-monospace">{{ \Carbon\Carbon::parse($todayAttendance->check_in)->format('h:i A') }}</strong>
+                                </div>
+                                <div class="p-2 px-3 bg-light rounded border">
+                                    <span class="text-muted d-block" style="font-size: 0.72rem;">CHECK OUT (AUTO)</span>
+                                    <strong class="text-warning-emphasis font-monospace">{{ \Carbon\Carbon::parse($todayAttendance->check_out)->format('h:i A') }}</strong>
+                                </div>
+                            </div>
+                            <div class="badge bg-light text-dark border px-3 py-1 mt-1 font-monospace">
+                                Status: <strong>{{ $todayAttendance->status }}</strong> ({{ $todayAttendance->worked_hours }} hrs)
                             </div>
                         </div>
-                        <div class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 mt-2">
-                            <i class="bi bi-check-all me-1"></i>Attendance Recorded for Today
+                    @else
+                        <div class="py-2">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
+                                <i class="bi bi-moon-stars-fill fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1">Work Day Completed!</h5>
+                            <div class="d-flex justify-content-center gap-3 my-2 small">
+                                <div class="p-2 px-3 bg-light rounded border">
+                                    <span class="text-muted d-block" style="font-size: 0.72rem;">CHECK IN</span>
+                                    <strong class="text-success font-monospace">{{ \Carbon\Carbon::parse($todayAttendance->check_in)->format('h:i A') }}</strong>
+                                </div>
+                                <div class="p-2 px-3 bg-light rounded border">
+                                    <span class="text-muted d-block" style="font-size: 0.72rem;">CHECK OUT</span>
+                                    <strong class="text-danger font-monospace">{{ \Carbon\Carbon::parse($todayAttendance->check_out)->format('h:i A') }}</strong>
+                                </div>
+                            </div>
+                            <div class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 mt-2">
+                                <i class="bi bi-check-all me-1"></i>Attendance Recorded for Today
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 @endif
             </div>
         </div>
@@ -309,7 +335,18 @@
                                     @endif
                                 </td>
                                 <td class="small font-monospace">{{ $att->check_in ? \Carbon\Carbon::parse($att->check_in)->format('h:i A') : '—' }}</td>
-                                <td class="small font-monospace">{{ $att->check_out ? \Carbon\Carbon::parse($att->check_out)->format('h:i A') : '—' }}</td>
+                                <td class="small font-monospace">
+                                    @if($att->check_out)
+                                        <span>{{ \Carbon\Carbon::parse($att->check_out)->format('h:i A') }}</span>
+                                        @if($att->is_auto_checkout)
+                                            <span class="badge bg-warning text-dark border ms-1" style="font-size: 0.65rem;" title="Employee did not logout — Auto logged out at 07:00 PM">
+                                                Auto
+                                            </span>
+                                        @endif
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td class="small text-muted">
                                     @if($att->check_in_address)
                                         <span title="{{ $att->check_in_address }}"><i class="bi bi-geo-alt text-success me-1"></i>{{ Str::limit($att->check_in_address, 22) }}</span>

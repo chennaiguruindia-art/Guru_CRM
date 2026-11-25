@@ -30,6 +30,8 @@ class PortalController extends BaseApiController
         $leaveDays = 0;
 
         if ($employee) {
+            AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
+
             $todayAttendance = Attendance::where('employee_id', $employee->id)
                 ->where('date', $today)
                 ->first();

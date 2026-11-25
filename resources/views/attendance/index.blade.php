@@ -251,9 +251,10 @@
                             'check_in_map' => $att?->checkInMapUrl(),
                             'check_out' => $hasOut ? \Carbon\Carbon::parse($att->check_out)->format('h:i:s A') : null,
                             'check_out_time' => $hasOut ? \Carbon\Carbon::parse($att->check_out)->format('H:i') : null,
+                            'is_auto_checkout' => (bool) ($att?->is_auto_checkout),
                             'check_out_lat' => $att?->check_out_latitude,
                             'check_out_lng' => $att?->check_out_longitude,
-                            'check_out_address' => $att?->check_out_address ?: 'GPS location recorded',
+                            'check_out_address' => ($att?->is_auto_checkout ? 'Employee did not logout — System auto logged out at 07:00 PM' : ($att?->check_out_address ?: 'GPS location recorded')),
                             'check_out_map' => $att?->checkOutMapUrl(),
                         ];
                     @endphp
@@ -325,7 +326,11 @@
                             @if($hasOut)
                                 <div class="d-flex align-items-center gap-1">
                                     <span class="fw-semibold text-dark">{{ \Carbon\Carbon::parse($att->check_out)->format('H:i') }}</span>
-                                    @if($att->check_out_latitude)
+                                    @if($att->is_auto_checkout)
+                                        <span class="badge bg-warning text-dark px-1 py-0 border" style="font-size: 0.68rem;" title="Employee did not logout — System auto logged out at 07:00 PM">
+                                            <i class="bi bi-clock-history me-1"></i>Auto
+                                        </span>
+                                    @elseif($att->check_out_latitude)
                                         <i class="bi bi-geo-alt-fill text-danger small" title="GPS Captured"></i>
                                     @endif
                                 </div>
@@ -706,8 +711,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.check_out) {
                 outTimeEl.textContent = data.check_out;
                 outTimeEl.className = 'fs-5 fw-bold text-primary';
-                outBadgeEl.textContent = 'Checked Out';
-                outBadgeEl.className = 'badge bg-primary';
+                if (data.is_auto_checkout) {
+                    outBadgeEl.textContent = 'Auto Logged Out (07:00 PM)';
+                    outBadgeEl.className = 'badge bg-warning text-dark';
+                } else {
+                    outBadgeEl.textContent = 'Checked Out';
+                    outBadgeEl.className = 'badge bg-primary';
+                }
                 outAddrEl.textContent = data.check_out_address;
                 
                 if (data.check_out_lat && data.check_out_lng) {

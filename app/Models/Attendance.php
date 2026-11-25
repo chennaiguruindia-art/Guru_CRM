@@ -22,6 +22,8 @@ class Attendance extends Model
         'worked_hours',
         'has_permission',
         'permission_reason',
+        'is_auto_checkout',
+        'auto_checkout_at',
         'notes',
     ];
 
@@ -33,6 +35,8 @@ class Attendance extends Model
         'check_out_longitude' => 'float',
         'worked_hours' => 'float',
         'has_permission' => 'boolean',
+        'is_auto_checkout' => 'boolean',
+        'auto_checkout_at' => 'datetime',
     ];
 
     public function employee(): BelongsTo

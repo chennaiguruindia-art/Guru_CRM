@@ -154,4 +154,83 @@ class AttendanceRuleService
             'used_permissions_before' => $usedPermissions,
         ];
     }
+
+    /**
+     * Auto check-out employees who haven't logged out by 7:00 PM (19:00 IST).
+     * If current time is past 19:00:
+     * - Automatically logs out / punches out the employee.
+     * - Check-out time is recorded as 07:00 PM (19:00:00).
+     * - Records is_auto_checkout = true.
+     * - Sets note: "Employee did not logout — System automatically logged out at 07:00 PM."
+     * - Calculates worked duration, status (Present/Half-Day/Absent) & permissions.
+     * - Updates monthly attendance summary.
+     */
+    public static function autoCheckOutPendingAttendances(?int $employeeId = null, ?Carbon $referenceTime = null, bool $force = false): array
+    {
+        $now = $referenceTime ?: now('Asia/Kolkata');
+        $todayDate = $now->toDateString();
+        $currentTime = $now->format('H:i');
+
+        $query = Attendance::whereNotNull('check_in')
+            ->whereNull('check_out');
+
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+
+        // Target attendances on or before today
+        $query->where('date', '<=', $todayDate);
+
+        $pending = $query->get();
+        $processed = [];
+
+        foreach ($pending as $attendance) {
+            $attDate = Carbon::parse($attendance->date)->toDateString();
+
+            // If it is today's attendance, only auto-logout if current time is 19:00 (7:00 PM) or later, unless forced
+            if ($attDate === $todayDate && !$force && $currentTime < '19:00') {
+                continue; // Still working hours; wait for employee to logout until 7:00 PM
+            }
+
+            // Auto check out at 19:00:00 (7:00 PM)
+            $checkOutTime = '19:00:00';
+            $eval = self::evaluateCheckOut($attendance, $checkOutTime);
+
+            $autoNote = "Employee did not logout — System automatically logged out at 07:00 PM.";
+            $combinedNotes = $attendance->notes 
+                ? trim($attendance->notes . ' | ' . $autoNote) 
+                : $autoNote;
+
+            $attendance->update([
+                'check_out' => $checkOutTime,
+                'status' => $eval['status'],
+                'worked_hours' => $eval['worked_hours'],
+                'has_permission' => $eval['has_permission'],
+                'permission_reason' => $eval['permission_reason'],
+                'is_auto_checkout' => true,
+                'auto_checkout_at' => $now,
+                'check_out_address' => $attendance->check_out_address ?: 'Auto Logged Out (System at 07:00 PM)',
+                'notes' => $combinedNotes,
+            ]);
+
+            // Sync monthly attendance record
+            $salaryMonth = Carbon::parse($attendance->date)->format('Y-m');
+            try {
+                \App\Models\EmployeeMonthlyAttendance::syncForMonth($salaryMonth);
+            } catch (\Throwable $e) {
+                // Ignore sync errors during batch
+            }
+
+            $processed[] = [
+                'attendance_id' => $attendance->id,
+                'employee_id' => $attendance->employee_id,
+                'date' => $attDate,
+                'status' => $eval['status'],
+                'worked_hours' => $eval['worked_hours'],
+                'is_auto_checkout' => true,
+            ];
+        }
+
+        return $processed;
+    }
 }

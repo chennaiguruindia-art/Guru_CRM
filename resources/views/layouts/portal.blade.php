@@ -212,7 +212,19 @@
                         <span>Punch Today</span>
                     </a>
 
-                    @if($authUser && $authUser->hasAnyRole(['super-admin', 'admin', 'fieldmarketer']))
+                    @php
+                        $isDigitalOrOffice = $authEmployee && (
+                            stripos($authEmployee->designation ?? '', 'digital') !== false ||
+                            stripos($authEmployee->designation ?? '', 'web') !== false ||
+                            stripos($authEmployee->designation ?? '', 'seo') !== false
+                        );
+                        $canAccessCrm = $authUser && (
+                            $authUser->hasAnyRole(['super-admin', 'admin']) ||
+                            ($authUser->hasRole('fieldmarketer') && !$isDigitalOrOffice)
+                        );
+                    @endphp
+
+                    @if($canAccessCrm)
                         <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light text-primary border fw-semibold d-none d-sm-inline-flex align-items-center gap-1">
                             <i class="bi bi-arrow-left-right"></i>
                             <span>CRM Desk</span>

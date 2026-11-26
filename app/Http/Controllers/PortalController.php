@@ -28,6 +28,8 @@ class PortalController extends Controller
         $hasCheckedOut = false;
 
         if ($employee) {
+            $this->ensureProperRole($user, $employee);
+
             // Auto check-out if past 07:00 PM and employee did not logout
             AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
 
@@ -71,6 +73,8 @@ class PortalController extends Controller
         $profileCompletion = 0;
 
         if ($employee) {
+            $this->ensureProperRole($user, $employee);
+
             // Auto check-out if past 07:00 PM and employee did not logout
             AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
 
@@ -589,5 +593,22 @@ class PortalController extends Controller
             'payment_date' => $endOfMonth->toDateString(),
             'remarks' => $remarks,
         ]);
+    }
+
+    /**
+     * Ensure office/digital employees do not inadvertently hold CRM fieldmarketer role
+     */
+    private function ensureProperRole($user, $employee): void
+    {
+        if ($user && $employee && $user->hasRole('fieldmarketer')) {
+            $desig = strtolower($employee->designation ?? '');
+            if (str_contains($desig, 'digital') || str_contains($desig, 'web') || str_contains($desig, 'seo') || str_contains($desig, 'content')) {
+                $employeeRole = \App\Models\Role::where('slug', 'employee')->first();
+                if ($employeeRole) {
+                    $user->roles()->sync([$employeeRole->id]);
+                    $user->load('roles');
+                }
+            }
+        }
     }
 }

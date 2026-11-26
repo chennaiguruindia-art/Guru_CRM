@@ -26,7 +26,13 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        if ($user && $user->hasRole('employee') && ! $user->hasAnyRole(['super-admin', 'admin', 'fieldmarketer'])) {
+        $isDigitalOrOffice = $user?->employee && (
+            stripos($user->employee->designation, 'digital') !== false ||
+            stripos($user->employee->designation, 'web') !== false ||
+            stripos($user->employee->designation, 'seo') !== false
+        );
+
+        if ($user && ($user->hasRole('employee') || $isDigitalOrOffice) && ! $user->hasAnyRole(['super-admin', 'admin'])) {
             return redirect()->route('portal.dashboard');
         }
 

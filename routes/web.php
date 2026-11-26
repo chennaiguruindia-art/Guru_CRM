@@ -107,7 +107,7 @@ Route::get('/', function () {
     if (! Auth::check()) {
         return redirect()->route('login');
     }
-    if (Auth::user()->hasRole('employee') && ! Auth::user()->hasAnyRole(['super-admin', 'admin', 'fieldmarketer'])) {
+    if (! Auth::user()->hasAnyRole(['super-admin', 'admin'])) {
         return redirect()->route('portal.punch');
     }
     return redirect()->route('dashboard');
@@ -130,17 +130,20 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
     Route::get('/portal/payslips', [PortalController::class, 'payslips'])->name('portal.payslips');
     Route::get('/portal/payslips/{month}', [PortalController::class, 'showPayslip'])->name('portal.payslip.show');
 
-    // Dashboard — every role lands here, so it carries no permission.
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
-
     // Profile — you always manage your own account.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // CRM Section
-    Route::get('/leads/sample-template', [LeadController::class, 'downloadSampleTemplate'])
+    // CRM & Admin Section — strictly restricted to Super Admin and Branch Admins ONLY
+    Route::middleware(['role:super-admin,admin'])->group(function () use ($pickPermission, $resourceWithPerms) {
+
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
+
+        // CRM Section
+        Route::get('/leads/sample-template', [LeadController::class, 'downloadSampleTemplate'])
         ->name('leads.sample_template')->middleware('permission:leads.view');
     Route::post('/leads/import', [LeadController::class, 'import'])
         ->name('leads.import')->middleware('permission:' . $pickPermission('leads', 'create'));
@@ -249,6 +252,7 @@ Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWi
     Route::get('/search', SearchController::class)->name('search');
     Route::get('/notifications', NotificationController::class)->name('notifications');
     Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
+    }); // end role:super-admin,admin
 });
 
 Route::get('/run-migrations', function () {

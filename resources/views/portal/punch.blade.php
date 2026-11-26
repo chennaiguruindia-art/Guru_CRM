@@ -178,19 +178,8 @@
                     @endif
                 </div>
 
-                <!-- Move to CRM (Visible ONLY to Sales / Field Marketers & Management - Never Office/Digital) -->
-                @php
-                    $isDigitalOrOffice = $employee && (
-                        stripos($employee->designation ?? '', 'digital') !== false ||
-                        stripos($employee->designation ?? '', 'web') !== false ||
-                        stripos($employee->designation ?? '', 'seo') !== false
-                    );
-                    $canAccessCrm = auth()->user() && (
-                        auth()->user()->hasAnyRole(['super-admin', 'admin']) ||
-                        (auth()->user()->hasRole('fieldmarketer') && !$isDigitalOrOffice)
-                    );
-                @endphp
-                @if($canAccessCrm)
+                <!-- Move to CRM (Visible ONLY to Admin & Super Admin) -->
+                @if(auth()->user() && auth()->user()->hasAnyRole(['super-admin', 'admin']))
                     <div class="mb-3">
                         <a href="{{ route('dashboard') }}" class="btn btn-primary btn-lg w-100 py-3 fw-bold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%); border: none;">
                             <i class="bi bi-briefcase-fill fs-5"></i>

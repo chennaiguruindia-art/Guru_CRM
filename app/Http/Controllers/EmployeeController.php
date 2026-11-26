@@ -226,20 +226,7 @@ class EmployeeController extends Controller
 
         $role = $request->input('role');
         if (empty($role)) {
-            $desig = strtolower($emp->designation ?? '');
-            $isDigitalOrOffice = str_contains($desig, 'digital') 
-                || str_contains($desig, 'web') 
-                || str_contains($desig, 'seo')
-                || str_contains($desig, 'content')
-                || str_contains($desig, 'social')
-                || str_contains($desig, 'tele')
-                || str_contains($desig, 'office');
-
-            if (! $isDigitalOrOffice && (str_contains($desig, 'field') || str_contains($desig, 'field marketer') || str_contains($desig, 'field marketing'))) {
-                $role = 'fieldmarketer';
-            } else {
-                $role = 'employee';
-            }
+            $role = 'employee';
         }
 
         $user->assignRole($role);

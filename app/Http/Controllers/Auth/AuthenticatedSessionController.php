@@ -53,7 +53,7 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         $user = Auth::user();
-        if ($user && $user->hasRole('employee') && ! $user->hasAnyRole(['super-admin', 'admin', 'fieldmarketer'])) {
+        if ($user && ! $user->hasAnyRole(['super-admin', 'admin'])) {
             return redirect()->intended(route('portal.punch'));
         }
 

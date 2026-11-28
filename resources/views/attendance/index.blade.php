@@ -139,20 +139,31 @@
                         <i class="bi bi-chevron-left fw-bold"></i>
                     </a>
 
-                    <div class="d-flex align-items-center gap-2 px-2 border-start border-end">
+                    <div class="d-flex align-items-center gap-2 px-2 border-start border-end position-relative" style="cursor: pointer;" onclick="const inp = document.getElementById('dateNavInput'); try { inp.showPicker(); } catch(e) { inp.focus(); inp.click(); }">
                         <span class="fw-semibold text-dark text-nowrap" style="min-width: 95px; text-align: center; font-size: 0.92rem;">
                             {{ $formattedDate }}
                         </span>
                         
-                        {{-- Hidden Date picker triggered by calendar icon --}}
-                        <label for="dateNavInput" class="mb-0 text-muted cursor-pointer" title="Pick Date">
+                        <span class="text-muted" title="Pick Date">
                             <i class="bi bi-calendar-event text-primary fs-6"></i>
-                        </label>
-                        <form id="dateNavForm" method="GET" action="{{ route('attendance.index') }}" style="display: none;">
+                        </span>
+
+                        <form id="dateNavForm" method="GET" action="{{ route('attendance.index') }}" class="m-0">
                             @foreach(request()->except('date') as $key => $val)
-                                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                                @if(!is_array($val))
+                                    <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                                @endif
                             @endforeach
-                            <input type="date" id="dateNavInput" name="date" value="{{ $date }}" onchange="document.getElementById('dateNavForm').submit()">
+                            @if(!request()->has('branch_id') && !empty($selectedBranchId))
+                                <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
+                            @endif
+                            <input type="date"
+                                   id="dateNavInput"
+                                   name="date"
+                                   value="{{ $date }}"
+                                   onchange="document.getElementById('dateNavForm').submit()"
+                                   style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;"
+                                   title="Choose a particular date">
                         </form>
                     </div>
 
@@ -173,7 +184,7 @@
 
                 {{-- Quick refresh / today --}}
                 @if($date !== now()->toDateString())
-                    <a href="{{ route('attendance.index') }}" class="btn btn-light btn-sm rounded-pill px-3 py-2 text-primary border" title="Go to Today">
+                    <a href="{{ route('attendance.index', array_filter(['branch_id' => $selectedBranchId ?? request('branch_id')])) }}" class="btn btn-light btn-sm rounded-pill px-3 py-2 text-primary border" title="Go to Today">
                         <i class="bi bi-arrow-clockwise me-1"></i>Today
                     </a>
                 @endif

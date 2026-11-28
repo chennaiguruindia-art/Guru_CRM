@@ -157,6 +157,40 @@
     </div>
 @endif
 
+@if(file_exists(public_path('downloads/guru-crm.apk')))
+    @php
+        $apkSizeMb = number_format(filesize(public_path('downloads/guru-crm.apk')) / (1024 * 1024), 1);
+    @endphp
+    <div class="mt-4 pt-3 border-top">
+        <div class="rounded-4 p-3 text-white shadow-sm position-relative overflow-hidden"
+             style="background: linear-gradient(135deg, #064e3b 0%, #047857 55%, #10b981 100%);">
+            <div class="d-flex align-items-center justify-content-between gap-3 position-relative" style="z-index: 1;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-3 bg-white bg-opacity-25 text-white flex-shrink-0"
+                         style="width: 46px; height: 46px; backdrop-filter: blur(4px);">
+                        <i class="bi bi-android2 fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-0">
+                            <span class="fw-bold" style="font-size: 0.95rem;">Guru Mobile App</span>
+                            <span class="badge bg-white text-success fw-bold" style="font-size: 0.65rem; padding: 2px 6px;">APK</span>
+                        </div>
+                        <div class="text-white-50" style="font-size: 0.75rem;">
+                            Android Official Build &bull; {{ $apkSizeMb }} MB
+                        </div>
+                    </div>
+                </div>
+
+                <a href="{{ route('app.download') }}"
+                   class="btn btn-light btn-sm rounded-pill px-3 py-2 fw-bold text-success shadow-sm d-inline-flex align-items-center gap-1 flex-shrink-0">
+                    <i class="bi bi-download"></i>
+                    <span>Download</span>
+                </a>
+            </div>
+        </div>
+    </div>
+@endif
+
 <script>
     // Tab active styling switcher
     document.addEventListener('DOMContentLoaded', function () {

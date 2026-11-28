@@ -115,6 +115,15 @@ Route::get('/', function () {
 
 Route::view('/privacy-policy', 'privacy-policy')->name('privacy-policy');
 
+Route::get('/download/app', function () {
+    $path = public_path('downloads/guru-crm.apk');
+    abort_unless(file_exists($path), 404, 'Android app package not found.');
+
+    return response()->download($path, 'Guru-CRM-App.apk', [
+        'Content-Type' => 'application/vnd.android.package-archive',
+    ]);
+})->name('app.download');
+
 // Authenticated Routes
 Route::middleware(['auth'])->group(function () use ($pickPermission, $resourceWithPerms) {
 

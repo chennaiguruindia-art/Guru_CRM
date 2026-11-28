@@ -115,8 +115,12 @@
                         </div>
 
                         <div class="position-relative mx-auto rounded-3 overflow-hidden bg-dark mb-2" style="max-width: 280px; aspect-ratio: 4/3;">
-                            <video id="selfieVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover" style="transform: scaleX(-1);"></video>
+                            <video id="selfieVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover d-none" style="transform: scaleX(-1);"></video>
                             <img id="selfiePreviewImg" src="" alt="Captured Selfie" class="w-100 h-100 object-fit-cover d-none">
+                            <div id="cameraIdleMsg" class="position-absolute top-50 start-50 translate-middle text-white small px-3 w-100">
+                                <i class="bi bi-camera-video-off fs-3 d-block mb-1 text-secondary"></i>
+                                <span>{{ $hasCheckedIn ? 'Camera disabled while working. Enable when ready to Check Out.' : 'Camera is off. Click Enable Camera to take your selfie.' }}</span>
+                            </div>
                             <div id="cameraFallbackMsg" class="position-absolute top-50 start-50 translate-middle text-white small px-2 d-none w-100">
                                 <i class="bi bi-camera-video-off fs-4 d-block mb-1"></i>
                                 <span>Live camera unavailable. Use Take Photo below.</span>
@@ -126,8 +130,14 @@
                         <canvas id="selfieCanvas" class="d-none"></canvas>
 
                         <div class="d-flex justify-content-center gap-2 flex-wrap">
-                            <button type="button" id="captureSelfieBtn" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold">
+                            <button type="button" id="enableCameraBtn" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold">
+                                <i class="bi bi-camera-video me-1"></i>{{ $hasCheckedIn ? 'Enable Camera for Check-Out' : 'Enable Camera' }}
+                            </button>
+                            <button type="button" id="captureSelfieBtn" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold d-none">
                                 <i class="bi bi-camera me-1"></i>Capture Selfie
+                            </button>
+                            <button type="button" id="disableCameraBtn" class="btn btn-outline-danger btn-sm px-3 rounded-pill fw-semibold d-none">
+                                <i class="bi bi-camera-video-off me-1"></i>Disable Camera
                             </button>
                             <button type="button" id="retakeSelfieBtn" class="btn btn-outline-secondary btn-sm px-3 rounded-pill fw-semibold d-none">
                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Retake
@@ -331,7 +341,7 @@
         );
     })();
 
-    // 3. Live Selfie Camera Capture & Compression
+    // 3. Live Selfie Camera Capture & Compression (On-Demand — disabled after punch-in until user enables for checkout)
     (function () {
         const box = document.getElementById('selfieCaptureBox');
         if (!box) return;
@@ -339,6 +349,9 @@
         const video = document.getElementById('selfieVideo');
         const canvas = document.getElementById('selfieCanvas');
         const previewImg = document.getElementById('selfiePreviewImg');
+        const idleMsg = document.getElementById('cameraIdleMsg');
+        const enableBtn = document.getElementById('enableCameraBtn');
+        const disableBtn = document.getElementById('disableCameraBtn');
         const captureBtn = document.getElementById('captureSelfieBtn');
         const retakeBtn = document.getElementById('retakeSelfieBtn');
         const fallbackBtn = document.getElementById('selfieFallbackBtn');
@@ -349,24 +362,24 @@
 
         let stream = null;
 
-        function setSelfieReady(dataUrl) {
-            document.querySelectorAll('.selfie-data-input').forEach(el => el.value = dataUrl);
-            previewImg.src = dataUrl;
-            previewImg.classList.remove('d-none');
-            video.classList.add('d-none');
-            fallbackMsg.classList.add('d-none');
-            captureBtn.classList.add('d-none');
-            retakeBtn.classList.remove('d-none');
-            statusBadge.className = 'badge bg-success-subtle text-success border border-success-subtle';
-            statusBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Selfie Ready';
-            submitBtns.forEach(btn => btn.disabled = false);
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+                stream = null;
+            }
+            video.srcObject = null;
         }
 
-        function resetSelfie() {
+        function setCameraIdle() {
+            stopCamera();
             document.querySelectorAll('.selfie-data-input').forEach(el => el.value = '');
+            video.classList.add('d-none');
             previewImg.classList.add('d-none');
-            video.classList.remove('d-none');
-            captureBtn.classList.remove('d-none');
+            fallbackMsg.classList.add('d-none');
+            idleMsg.classList.remove('d-none');
+            enableBtn.classList.remove('d-none');
+            captureBtn.classList.add('d-none');
+            disableBtn.classList.add('d-none');
             retakeBtn.classList.add('d-none');
             statusBadge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle';
             statusBadge.textContent = 'Required before Punch';
@@ -374,22 +387,56 @@
         }
 
         function enableFallback() {
+            stopCamera();
             video.classList.add('d-none');
+            idleMsg.classList.add('d-none');
+            enableBtn.classList.add('d-none');
             captureBtn.classList.add('d-none');
+            disableBtn.classList.add('d-none');
             fallbackMsg.classList.remove('d-none');
             fallbackBtn.classList.remove('d-none');
         }
 
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        function startCamera() {
+            if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+                enableFallback();
+                return;
+            }
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
                 .then(s => {
                     stream = s;
                     video.srcObject = s;
+                    idleMsg.classList.add('d-none');
+                    fallbackMsg.classList.add('d-none');
+                    previewImg.classList.add('d-none');
+                    video.classList.remove('d-none');
+                    enableBtn.classList.add('d-none');
+                    captureBtn.classList.remove('d-none');
+                    disableBtn.classList.remove('d-none');
+                    retakeBtn.classList.add('d-none');
                 })
                 .catch(() => enableFallback());
-        } else {
-            enableFallback();
         }
+
+        function setSelfieReady(dataUrl) {
+            stopCamera(); // Immediately turn off camera once selfie is captured
+            document.querySelectorAll('.selfie-data-input').forEach(el => el.value = dataUrl);
+            previewImg.src = dataUrl;
+            previewImg.classList.remove('d-none');
+            video.classList.add('d-none');
+            idleMsg.classList.add('d-none');
+            fallbackMsg.classList.add('d-none');
+            enableBtn.classList.add('d-none');
+            captureBtn.classList.add('d-none');
+            disableBtn.classList.add('d-none');
+            retakeBtn.classList.remove('d-none');
+            statusBadge.className = 'badge bg-success-subtle text-success border border-success-subtle';
+            statusBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Selfie Ready';
+            submitBtns.forEach(btn => btn.disabled = false);
+        }
+
+        enableBtn.addEventListener('click', startCamera);
+        disableBtn.addEventListener('click', setCameraIdle);
 
         captureBtn.addEventListener('click', function () {
             if (!video.videoWidth) return;
@@ -404,7 +451,13 @@
             setSelfieReady(canvas.toDataURL('image/jpeg', 0.78));
         });
 
-        retakeBtn.addEventListener('click', resetSelfie);
+        retakeBtn.addEventListener('click', function () {
+            document.querySelectorAll('.selfie-data-input').forEach(el => el.value = '');
+            submitBtns.forEach(btn => btn.disabled = true);
+            statusBadge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+            statusBadge.textContent = 'Required before Punch';
+            startCamera();
+        });
 
         fallbackInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
@@ -424,6 +477,8 @@
             };
             reader.readAsDataURL(file);
         });
+
+        window.addEventListener('beforeunload', stopCamera);
     })();
 </script>
 @endpush

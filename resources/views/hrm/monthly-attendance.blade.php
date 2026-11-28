@@ -16,10 +16,9 @@
     <div class="d-flex align-items-center gap-2 flex-wrap">
         <form method="GET" action="{{ route('hrm.monthly_attendance') }}" class="d-flex align-items-center gap-2 flex-wrap">
             @if($canSeeAll && $branches->isNotEmpty())
-                <select name="branch_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">All Branches</option>
+                <select name="branch_id" class="form-select form-select-sm fw-semibold" onchange="this.form.submit()">
                     @foreach($branches as $b)
-                        <option value="{{ $b->id }}" {{ $selectedBranchId == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                        <option value="{{ $b->id }}" {{ $selectedBranchId == $b->id ? 'selected' : '' }}>🏢 {{ $b->name }}</option>
                     @endforeach
                 </select>
             @endif

@@ -25,10 +25,9 @@
                 @if(auth()->user()->canSeeAllBranches() && !empty($branches) && $branches->isNotEmpty())
                     <form method="GET" action="{{ route('attendance.index') }}" class="d-inline-block">
                         <input type="hidden" name="date" value="{{ $date }}">
-                        <select name="branch_id" class="form-select form-select-sm rounded-pill border-secondary-subtle" onchange="this.form.submit()">
-                            <option value="">🏢 All Branches</option>
+                        <select name="branch_id" class="form-select form-select-sm rounded-pill border-secondary-subtle fw-semibold" onchange="this.form.submit()">
                             @foreach($branches as $b)
-                                <option value="{{ $b->id }}" {{ request('branch_id') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                <option value="{{ $b->id }}" {{ ($selectedBranchId ?? request('branch_id')) == $b->id ? 'selected' : '' }}>🏢 {{ $b->name }}</option>
                             @endforeach
                         </select>
                     </form>
@@ -57,8 +56,8 @@
                     @if(request('status'))
                         <input type="hidden" name="status" value="{{ request('status') }}">
                     @endif
-                    @if(request('branch_id'))
-                        <input type="hidden" name="branch_id" value="{{ request('branch_id') }}">
+                    @if($selectedBranchId ?? request('branch_id'))
+                        <input type="hidden" name="branch_id" value="{{ $selectedBranchId ?? request('branch_id') }}">
                     @endif
 
                     <div class="input-group input-group-sm rounded-pill overflow-hidden border">

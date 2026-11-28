@@ -42,16 +42,30 @@ class AttendanceController extends Controller
 
         $employeeQuery = Employee::with('branch')->where('status', 'active');
 
-        // Scoped to Branch Admin's branch
+        $branches = $user && $user->canSeeAllBranches()
+            ? Branch::where('status', 'active')->orderBy('name')->get()
+            : collect();
+
+        $selectedBranchId = null;
+
+        // Scoped to Branch Admin's branch, or Super Admin's selected branch (branch-wise only)
         if ($user && ! $user->canSeeAllBranches()) {
-            $branchId = $user->branchId();
-            if ($branchId === null) {
+            $selectedBranchId = $user->branchId();
+            if ($selectedBranchId === null) {
                 $employeeQuery->whereRaw('1 = 0');
             } else {
-                $employeeQuery->where('branch_id', $branchId);
+                $employeeQuery->where('branch_id', $selectedBranchId);
             }
-        } elseif ($request->filled('branch_id')) {
-            $employeeQuery->where('branch_id', $request->input('branch_id'));
+        } else {
+            $selectedBranchId = $request->filled('branch_id')
+                ? (int) $request->input('branch_id')
+                : ($branches->first()?->id);
+
+            if ($selectedBranchId) {
+                $employeeQuery->where('branch_id', $selectedBranchId);
+            } else {
+                $employeeQuery->whereRaw('1 = 0');
+            }
         }
 
         if (! empty($search)) {
@@ -100,10 +114,6 @@ class AttendanceController extends Controller
             return response()->json(['success' => true, 'data' => $attendances]);
         }
 
-        $branches = $user && $user->canSeeAllBranches()
-            ? Branch::where('status', 'active')->orderBy('name')->get()
-            : collect();
-
         $departments = Employee::whereNotNull('department')
             ->where('department', '!=', '')
             ->distinct()
@@ -121,6 +131,7 @@ class AttendanceController extends Controller
             'leaveCount',
             'halfDayCount',
             'branches',
+            'selectedBranchId',
             'departments',
             'search',
             'department',

@@ -26,8 +26,24 @@ class AttendanceController extends BaseApiController
 
         $date = $request->input('date', now()->toDateString());
         $month = $request->input('month');
+        $user = $request->user();
+
+        $branchId = null;
+        if ($user && ! $user->canSeeAllBranches()) {
+            $branchId = $user->branchId();
+        } else {
+            $branchId = $request->filled('branch_id')
+                ? (int) $request->input('branch_id')
+                : \App\Models\Branch::where('status', 'active')->orderBy('name')->value('id');
+        }
 
         $query = Attendance::with('employee');
+
+        if ($branchId) {
+            $query->whereHas('employee', fn ($q) => $q->where('branch_id', $branchId));
+        } else {
+            $query->whereRaw('1 = 0');
+        }
 
         if ($month) {
             $query->where('date', 'like', "{$month}%");

@@ -35,9 +35,10 @@ class EmployeeMonthlyAttendanceController extends Controller
         if (! $canSeeAll) {
             $selectedBranchId = $user ? $user->branchId() : null;
         } else {
+            // Super Admin views monthly attendance strictly branch-wise
             $selectedBranchId = $request->filled('branch_id')
                 ? (int) $request->input('branch_id')
-                : null;
+                : ($branches->first()?->id);
         }
 
         // Auto-sync monthly attendance data for selected month & branch

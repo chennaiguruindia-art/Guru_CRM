@@ -98,6 +98,48 @@
                     </div>
                 @endif
 
+                @php
+                    $needsSelfie = (!$hasCheckedIn && ($checkInWindow['allowed'] ?? false)) || ($hasCheckedIn && !$hasCheckedOut);
+                @endphp
+
+                @if($needsSelfie)
+                    <!-- Live Selfie Capture Box -->
+                    <div class="card border border-primary-subtle bg-light bg-opacity-50 rounded-3 p-3 mb-4 text-center" id="selfieCaptureBox">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold small text-dark">
+                                <i class="bi bi-camera-fill text-primary me-1"></i>Live Selfie Verification <span class="text-danger">*</span>
+                            </span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" id="selfieStatusBadge">
+                                Required before Punch
+                            </span>
+                        </div>
+
+                        <div class="position-relative mx-auto rounded-3 overflow-hidden bg-dark mb-2" style="max-width: 280px; aspect-ratio: 4/3;">
+                            <video id="selfieVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover" style="transform: scaleX(-1);"></video>
+                            <img id="selfiePreviewImg" src="" alt="Captured Selfie" class="w-100 h-100 object-fit-cover d-none">
+                            <div id="cameraFallbackMsg" class="position-absolute top-50 start-50 translate-middle text-white small px-2 d-none w-100">
+                                <i class="bi bi-camera-video-off fs-4 d-block mb-1"></i>
+                                <span>Live camera unavailable. Use Take Photo below.</span>
+                            </div>
+                        </div>
+
+                        <canvas id="selfieCanvas" class="d-none"></canvas>
+
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <button type="button" id="captureSelfieBtn" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold">
+                                <i class="bi bi-camera me-1"></i>Capture Selfie
+                            </button>
+                            <button type="button" id="retakeSelfieBtn" class="btn btn-outline-secondary btn-sm px-3 rounded-pill fw-semibold d-none">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Retake
+                            </button>
+                            <label for="selfieFileFallback" id="selfieFallbackBtn" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold mb-0 d-none cursor-pointer">
+                                <i class="bi bi-upload me-1"></i>Take / Upload Selfie
+                            </label>
+                            <input type="file" id="selfieFileFallback" accept="image/*" capture="user" class="d-none">
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Two Punch Buttons -->
                 <div class="d-flex flex-column gap-3 mb-4">
                     <!-- 1. CHECK IN BUTTON -->
@@ -109,8 +151,9 @@
                                 <input type="hidden" name="latitude" class="geo-lat" value="{{ session('login_latitude') }}">
                                 <input type="hidden" name="longitude" class="geo-lng" value="{{ session('login_longitude') }}">
                                 <input type="hidden" name="address" class="geo-addr" value="{{ session('login_address') }}">
+                                <input type="hidden" name="selfie_data" class="selfie-data-input">
 
-                                <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <button type="submit" id="punchInSubmitBtn" class="btn btn-success btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" disabled title="Capture live selfie first">
                                     <i class="bi bi-box-arrow-in-right fs-4"></i>
                                     <span>CHECK IN NOW</span>
                                 </button>
@@ -156,8 +199,9 @@
                             <input type="hidden" name="latitude" class="geo-lat" value="{{ session('login_latitude') }}">
                             <input type="hidden" name="longitude" class="geo-lng" value="{{ session('login_longitude') }}">
                             <input type="hidden" name="address" class="geo-addr" value="{{ session('login_address') }}">
+                            <input type="hidden" name="selfie_data" class="selfie-data-input">
 
-                            <button type="submit" class="btn btn-warning text-dark btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); border: none;">
+                            <button type="submit" id="punchOutSubmitBtn" class="btn btn-warning text-dark btn-lg w-100 py-3 fw-bold fs-5 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); border: none;" disabled title="Capture live selfie first">
                                 <i class="bi bi-box-arrow-right fs-4 text-dark"></i>
                                 <span>CHECK OUT (End Day)</span>
                             </button>
@@ -285,6 +329,101 @@
             },
             geoOptions
         );
+    })();
+
+    // 3. Live Selfie Camera Capture & Compression
+    (function () {
+        const box = document.getElementById('selfieCaptureBox');
+        if (!box) return;
+
+        const video = document.getElementById('selfieVideo');
+        const canvas = document.getElementById('selfieCanvas');
+        const previewImg = document.getElementById('selfiePreviewImg');
+        const captureBtn = document.getElementById('captureSelfieBtn');
+        const retakeBtn = document.getElementById('retakeSelfieBtn');
+        const fallbackBtn = document.getElementById('selfieFallbackBtn');
+        const fallbackInput = document.getElementById('selfieFileFallback');
+        const fallbackMsg = document.getElementById('cameraFallbackMsg');
+        const statusBadge = document.getElementById('selfieStatusBadge');
+        const submitBtns = [document.getElementById('punchInSubmitBtn'), document.getElementById('punchOutSubmitBtn')].filter(Boolean);
+
+        let stream = null;
+
+        function setSelfieReady(dataUrl) {
+            document.querySelectorAll('.selfie-data-input').forEach(el => el.value = dataUrl);
+            previewImg.src = dataUrl;
+            previewImg.classList.remove('d-none');
+            video.classList.add('d-none');
+            fallbackMsg.classList.add('d-none');
+            captureBtn.classList.add('d-none');
+            retakeBtn.classList.remove('d-none');
+            statusBadge.className = 'badge bg-success-subtle text-success border border-success-subtle';
+            statusBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Selfie Ready';
+            submitBtns.forEach(btn => btn.disabled = false);
+        }
+
+        function resetSelfie() {
+            document.querySelectorAll('.selfie-data-input').forEach(el => el.value = '');
+            previewImg.classList.add('d-none');
+            video.classList.remove('d-none');
+            captureBtn.classList.remove('d-none');
+            retakeBtn.classList.add('d-none');
+            statusBadge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+            statusBadge.textContent = 'Required before Punch';
+            submitBtns.forEach(btn => btn.disabled = true);
+        }
+
+        function enableFallback() {
+            video.classList.add('d-none');
+            captureBtn.classList.add('d-none');
+            fallbackMsg.classList.remove('d-none');
+            fallbackBtn.classList.remove('d-none');
+        }
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
+                .then(s => {
+                    stream = s;
+                    video.srcObject = s;
+                })
+                .catch(() => enableFallback());
+        } else {
+            enableFallback();
+        }
+
+        captureBtn.addEventListener('click', function () {
+            if (!video.videoWidth) return;
+            const maxW = 640;
+            const scale = Math.min(1, maxW / video.videoWidth);
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            setSelfieReady(canvas.toDataURL('image/jpeg', 0.78));
+        });
+
+        retakeBtn.addEventListener('click', resetSelfie);
+
+        fallbackInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                const img = new Image();
+                img.onload = function () {
+                    const maxW = 640;
+                    const scale = Math.min(1, maxW / img.width);
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    setSelfieReady(canvas.toDataURL('image/jpeg', 0.78));
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
     })();
 </script>
 @endpush

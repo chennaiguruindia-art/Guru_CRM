@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Attendance;
 use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class AttendanceRuleService
 {
@@ -232,5 +234,106 @@ class AttendanceRuleService
         }
 
         return $processed;
+    }
+
+    /**
+     * Store a live selfie image (UploadedFile or Base64 data URI) on the public disk.
+     *
+     * @param  int  $employeeId
+     * @param  string  $type  'in' or 'out'
+     * @param  string  $dateString  YYYY-MM-DD
+     * @param  UploadedFile|string|null  $imageInput
+     */
+    public static function storeSelfieImage(int $employeeId, string $type, string $dateString, UploadedFile|string|null $imageInput): ?string
+    {
+        if (! $imageInput) {
+            return null;
+        }
+
+        $folder = 'attendance-selfies/' . Carbon::parse($dateString)->format('Y-m');
+        $safeType = $type === 'out' ? 'out' : 'in';
+
+        if ($imageInput instanceof UploadedFile) {
+            if (! $imageInput->isValid()) {
+                return null;
+            }
+            $ext = strtolower($imageInput->getClientOriginalExtension() ?: 'jpg');
+            if (! in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+                $ext = 'jpg';
+            }
+            $filename = "{$employeeId}_{$dateString}_{$safeType}_" . uniqid() . ".{$ext}";
+
+            return Storage::disk('public')->putFileAs($folder, $imageInput, $filename) ?: null;
+        }
+
+        if (is_string($imageInput) && str_starts_with($imageInput, 'data:image/')) {
+            if (! preg_match('/^data:image\/(\w+);base64,(.+)$/s', $imageInput, $matches)) {
+                return null;
+            }
+            $ext = strtolower($matches[1]);
+            if ($ext === 'jpeg') {
+                $ext = 'jpg';
+            }
+            if (! in_array($ext, ['jpg', 'png', 'webp'], true)) {
+                $ext = 'jpg';
+            }
+            $binary = base64_decode($matches[2], true);
+            if ($binary === false || strlen($binary) === 0) {
+                return null;
+            }
+
+            $filename = "{$employeeId}_{$dateString}_{$safeType}_" . uniqid() . ".{$ext}";
+            $path = "{$folder}/{$filename}";
+
+            if (Storage::disk('public')->put($path, $binary)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Delete attendance selfie images older than $retentionDays (default 45 days)
+     * from both public storage and the attendances database columns, while keeping
+     * the attendance records themselves intact for payroll and reporting.
+     */
+    public static function cleanupExpiredSelfies(int $retentionDays = 45, ?Carbon $referenceDate = null): array
+    {
+        $cutoffDate = ($referenceDate ? $referenceDate->copy() : now('Asia/Kolkata'))
+            ->subDays($retentionDays)
+            ->toDateString();
+
+        $expired = Attendance::where('date', '<', $cutoffDate)
+            ->where(function ($q) {
+                $q->whereNotNull('check_in_image')
+                  ->orWhereNotNull('check_out_image');
+            })
+            ->get();
+
+        $recordsCleared = 0;
+        $filesDeleted = 0;
+        $disk = Storage::disk('public');
+
+        foreach ($expired as $attendance) {
+            foreach (['check_in_image', 'check_out_image'] as $col) {
+                $path = $attendance->{$col};
+                if ($path) {
+                    if ($disk->exists($path)) {
+                        $disk->delete($path);
+                        $filesDeleted++;
+                    }
+                    $attendance->{$col} = null;
+                }
+            }
+            $attendance->save();
+            $recordsCleared++;
+        }
+
+        return [
+            'cutoff_date' => $cutoffDate,
+            'records_cleared' => $recordsCleared,
+            'files_deleted' => $filesDeleted,
+        ];
     }
 }

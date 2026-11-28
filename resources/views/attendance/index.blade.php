@@ -249,6 +249,7 @@
                             'check_in_lng' => $att?->check_in_longitude,
                             'check_in_address' => $att?->check_in_address ?: 'GPS location recorded',
                             'check_in_map' => $att?->checkInMapUrl(),
+                            'check_in_image' => $att?->checkInImageUrl(),
                             'check_out' => $hasOut ? \Carbon\Carbon::parse($att->check_out)->format('h:i:s A') : null,
                             'check_out_time' => $hasOut ? \Carbon\Carbon::parse($att->check_out)->format('H:i') : null,
                             'is_auto_checkout' => (bool) ($att?->is_auto_checkout),
@@ -256,6 +257,8 @@
                             'check_out_lng' => $att?->check_out_longitude,
                             'check_out_address' => ($att?->is_auto_checkout ? 'Employee did not logout — System auto logged out at 07:00 PM' : ($att?->check_out_address ?: 'GPS location recorded')),
                             'check_out_map' => $att?->checkOutMapUrl(),
+                            'check_out_image' => $att?->checkOutImageUrl(),
+                            'is_selfie_expired' => $att && \Carbon\Carbon::parse($att->date)->lt(now('Asia/Kolkata')->subDays(45)),
                         ];
                     @endphp
                     <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" class="attendance-row">
@@ -446,6 +449,11 @@
                                 </div>
                             </div>
 
+                            <div class="mb-3" id="modalInSelfieContainer">
+                                <label class="small text-muted d-block mb-1"><i class="bi bi-camera-fill text-success me-1"></i>Check-In Selfie</label>
+                                <div id="modalInSelfieBody" class="small text-muted">—</div>
+                            </div>
+
                             <div class="mt-auto pt-2" id="modalInMapBtnContainer">
                                 <a href="#" target="_blank" id="modalInMapBtn" class="btn btn-outline-success btn-sm w-100 rounded-pill">
                                     <i class="bi bi-map-fill me-1"></i>View on Google Maps
@@ -484,6 +492,11 @@
                                 <div class="small text-secondary font-monospace" id="modalOutCoords">
                                     Lat: -- | Lng: --
                                 </div>
+                            </div>
+
+                            <div class="mb-3" id="modalOutSelfieContainer">
+                                <label class="small text-muted d-block mb-1"><i class="bi bi-camera-fill text-primary me-1"></i>Check-Out Selfie</label>
+                                <div id="modalOutSelfieBody" class="small text-muted">—</div>
                             </div>
 
                             <div class="mt-auto pt-2" id="modalOutMapBtnContainer">
@@ -700,6 +713,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 inMapContainer.style.display = 'none';
             }
 
+            const inSelfieBody = document.getElementById('modalInSelfieBody');
+            if (inSelfieBody) {
+                if (data.check_in_image) {
+                    inSelfieBody.innerHTML = `<a href="${data.check_in_image}" target="_blank" title="Click to open full size"><img src="${data.check_in_image}" alt="Check-In Selfie" class="img-thumbnail rounded-3 shadow-xs" style="max-height: 150px; object-fit: cover;"></a>`;
+                } else if (data.check_in && data.is_selfie_expired) {
+                    inSelfieBody.innerHTML = '<span class="badge bg-light text-muted border"><i class="bi bi-trash me-1"></i>Auto-deleted after 45 days</span>';
+                } else {
+                    inSelfieBody.innerHTML = '<span class="text-muted">No selfie captured</span>';
+                }
+            }
+
             // Check-Out Details
             const outTimeEl = document.getElementById('modalOutTime');
             const outBadgeEl = document.getElementById('modalOutBadge');
@@ -736,6 +760,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 outAddrEl.textContent = 'Punch out not registered yet';
                 outCoordsEl.textContent = 'Lat: -- | Lng: --';
                 outMapContainer.style.display = 'none';
+            }
+
+            const outSelfieBody = document.getElementById('modalOutSelfieBody');
+            if (outSelfieBody) {
+                if (data.check_out_image) {
+                    outSelfieBody.innerHTML = `<a href="${data.check_out_image}" target="_blank" title="Click to open full size"><img src="${data.check_out_image}" alt="Check-Out Selfie" class="img-thumbnail rounded-3 shadow-xs" style="max-height: 150px; object-fit: cover;"></a>`;
+                } else if (data.is_auto_checkout) {
+                    outSelfieBody.innerHTML = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Auto Logged Out (No Selfie)</span>';
+                } else if (data.check_out && data.is_selfie_expired) {
+                    outSelfieBody.innerHTML = '<span class="badge bg-light text-muted border"><i class="bi bi-trash me-1"></i>Auto-deleted after 45 days</span>';
+                } else {
+                    outSelfieBody.innerHTML = '<span class="text-muted">No selfie captured</span>';
+                }
             }
 
             // Populate Admin override form

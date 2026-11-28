@@ -105,6 +105,14 @@ class PortalController extends BaseApiController
         $attendance->status = 'Present';
         $attendance->check_in = $nowTime;
 
+        $selfieInput = $request->file('selfie') ?? $request->file('image') ?? $request->input('selfie_data');
+        if ($selfieInput) {
+            $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'in', $today, $selfieInput);
+            if ($selfiePath) {
+                $attendance->check_in_image = $selfiePath;
+            }
+        }
+
         if ($request->filled('latitude')) {
             $attendance->check_in_latitude = $request->input('latitude');
         }
@@ -170,6 +178,14 @@ class PortalController extends BaseApiController
         $attendance->status = $eval['status'];
         $attendance->has_permission = $eval['has_permission'];
         $attendance->permission_reason = $eval['permission_reason'];
+
+        $selfieInput = $request->file('selfie') ?? $request->file('image') ?? $request->input('selfie_data');
+        if ($selfieInput) {
+            $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'out', $today, $selfieInput);
+            if ($selfiePath) {
+                $attendance->check_out_image = $selfiePath;
+            }
+        }
 
         if ($request->filled('latitude')) {
             $attendance->check_out_latitude = $request->input('latitude');

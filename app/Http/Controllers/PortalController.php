@@ -173,8 +173,16 @@ class PortalController extends Controller
             return back()->with('error', $windowCheck['message']);
         }
 
+        // Capture & store mandatory live selfie
+        $selfieInput = $request->file('selfie') ?? $request->input('selfie_data');
+        $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'in', $today, $selfieInput);
+        if (! $selfiePath) {
+            return back()->with('error', 'Live selfie is required to Punch In. Please capture your selfie and try again.');
+        }
+
         $attendance->status = 'Present';
         $attendance->check_in = $nowTime;
+        $attendance->check_in_image = $selfiePath;
 
         if ($request->filled('latitude')) {
             $attendance->check_in_latitude = $request->input('latitude');
@@ -193,9 +201,10 @@ class PortalController extends Controller
             'time' => $nowTime,
             'latitude' => $attendance->check_in_latitude,
             'longitude' => $attendance->check_in_longitude,
+            'has_selfie' => true,
         ]);
 
-        return back()->with('success', 'Punched in successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Live location captured.');
+        return back()->with('success', 'Punched in successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Live location & selfie captured.');
     }
 
     /**
@@ -221,10 +230,18 @@ class PortalController extends Controller
             return back()->with('error', 'You must punch in first before punching out.');
         }
 
+        // Capture & store mandatory live selfie
+        $selfieInput = $request->file('selfie') ?? $request->input('selfie_data');
+        $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'out', $today, $selfieInput);
+        if (! $selfiePath) {
+            return back()->with('error', 'Live selfie is required to Punch Out. Please capture your selfie and try again.');
+        }
+
         // Calculate worked hours and determine attendance status & permission consumption
         $eval = AttendanceRuleService::evaluateCheckOut($attendance, $nowTime);
 
         $attendance->check_out = $nowTime;
+        $attendance->check_out_image = $selfiePath;
         $attendance->worked_hours = $eval['worked_hours'];
         $attendance->status = $eval['status'];
         $attendance->has_permission = $eval['has_permission'];

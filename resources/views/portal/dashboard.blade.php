@@ -196,8 +196,9 @@
                                 @csrf
                                 <input type="hidden" name="latitude" id="quickInLat">
                                 <input type="hidden" name="longitude" id="quickInLng">
-                                <button type="submit" class="btn punch-btn-in btn-lg px-4 py-2 rounded-pill fw-semibold shadow-sm">
-                                    <i class="bi bi-fingerprint me-2"></i>Punch In Now
+                                <input type="hidden" name="selfie_data" id="quickInSelfie">
+                                <button type="button" onclick="openQuickSelfieModal('quickPunchInForm', 'quickInSelfie', 'Punch In Now')" class="btn punch-btn-in btn-lg px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                                    <i class="bi bi-camera-fill me-2"></i>Punch In Now
                                 </button>
                             </form>
                         @else
@@ -237,8 +238,9 @@
                             @csrf
                             <input type="hidden" name="latitude" id="quickOutLat">
                             <input type="hidden" name="longitude" id="quickOutLng">
-                            <button type="submit" class="btn punch-btn-out btn-lg px-4 py-2 rounded-pill fw-semibold shadow-sm">
-                                <i class="bi bi-box-arrow-right me-2"></i>Punch Out (End Day)
+                            <input type="hidden" name="selfie_data" id="quickOutSelfie">
+                            <button type="button" onclick="openQuickSelfieModal('quickPunchOutForm', 'quickOutSelfie', 'Punch Out (End Day)')" class="btn punch-btn-out btn-lg px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                                <i class="bi bi-camera-fill me-2"></i>Punch Out (End Day)
                             </button>
                         </form>
                     </div>
@@ -504,6 +506,47 @@
         </div>
     </div>
 </div>
+
+<!-- Quick Selfie Capture Modal for Dashboard Punch -->
+<div class="modal fade" id="quickSelfieModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom">
+                <h6 class="modal-title fw-bold text-dark">
+                    <i class="bi bi-camera-fill text-success me-2"></i><span id="quickSelfieModalTitle">Capture Live Selfie</span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <p class="small text-muted mb-3">Live selfie verification is required to complete your punch.</p>
+                <div class="position-relative mx-auto rounded-3 overflow-hidden bg-dark mb-3" style="max-width: 320px; aspect-ratio: 4/3;">
+                    <video id="quickSelfieVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover" style="transform: scaleX(-1);"></video>
+                    <img id="quickSelfiePreview" src="" alt="Selfie" class="w-100 h-100 object-fit-cover d-none">
+                    <div id="quickCameraFallbackMsg" class="position-absolute top-50 start-50 translate-middle text-white small px-2 d-none w-100">
+                        <i class="bi bi-camera-video-off fs-4 d-block mb-1"></i>
+                        <span>Camera unavailable. Use Upload/Take Photo below.</span>
+                    </div>
+                </div>
+                <canvas id="quickSelfieCanvas" class="d-none"></canvas>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <button type="button" id="quickCaptureBtn" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-camera me-1"></i>Take Selfie
+                    </button>
+                    <button type="button" id="quickRetakeBtn" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold d-none">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Retake
+                    </button>
+                    <button type="button" id="quickConfirmSubmitBtn" class="btn btn-success rounded-pill px-4 fw-semibold d-none">
+                        <i class="bi bi-check-circle-fill me-1"></i>Confirm & Punch
+                    </button>
+                    <label for="quickSelfieFileFallback" id="quickFallbackLabel" class="btn btn-outline-primary rounded-pill px-3 fw-semibold mb-0 d-none cursor-pointer">
+                        <i class="bi bi-upload me-1"></i>Take / Upload Photo
+                    </label>
+                    <input type="file" id="quickSelfieFileFallback" accept="image/*" capture="user" class="d-none">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -537,5 +580,136 @@
             console.log('Location:', err.message);
         });
     }
+
+    let quickTargetFormId = null;
+    let quickTargetInputId = null;
+    let quickStream = null;
+    let quickSelfieData = '';
+
+    function stopQuickCamera() {
+        if (quickStream) {
+            quickStream.getTracks().forEach(t => t.stop());
+            quickStream = null;
+        }
+    }
+
+    function openQuickSelfieModal(formId, inputId, title) {
+        quickTargetFormId = formId;
+        quickTargetInputId = inputId;
+        quickSelfieData = '';
+
+        const modalEl = document.getElementById('quickSelfieModal');
+        const video = document.getElementById('quickSelfieVideo');
+        const preview = document.getElementById('quickSelfiePreview');
+        const captureBtn = document.getElementById('quickCaptureBtn');
+        const retakeBtn = document.getElementById('quickRetakeBtn');
+        const confirmBtn = document.getElementById('quickConfirmSubmitBtn');
+        const fallbackMsg = document.getElementById('quickCameraFallbackMsg');
+        const fallbackLabel = document.getElementById('quickFallbackLabel');
+
+        document.getElementById('quickSelfieModalTitle').textContent = title;
+        preview.classList.add('d-none');
+        video.classList.remove('d-none');
+        captureBtn.classList.remove('d-none');
+        retakeBtn.classList.add('d-none');
+        confirmBtn.classList.add('d-none');
+        fallbackMsg.classList.add('d-none');
+        fallbackLabel.classList.add('d-none');
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
+                .then(s => {
+                    quickStream = s;
+                    video.srcObject = s;
+                })
+                .catch(() => {
+                    video.classList.add('d-none');
+                    captureBtn.classList.add('d-none');
+                    fallbackMsg.classList.remove('d-none');
+                    fallbackLabel.classList.remove('d-none');
+                });
+        } else {
+            video.classList.add('d-none');
+            captureBtn.classList.add('d-none');
+            fallbackMsg.classList.remove('d-none');
+            fallbackLabel.classList.remove('d-none');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalEl = document.getElementById('quickSelfieModal');
+        if (!modalEl) return;
+
+        modalEl.addEventListener('hidden.bs.modal', stopQuickCamera);
+
+        const video = document.getElementById('quickSelfieVideo');
+        const canvas = document.getElementById('quickSelfieCanvas');
+        const preview = document.getElementById('quickSelfiePreview');
+        const captureBtn = document.getElementById('quickCaptureBtn');
+        const retakeBtn = document.getElementById('quickRetakeBtn');
+        const confirmBtn = document.getElementById('quickConfirmSubmitBtn');
+        const fallbackInput = document.getElementById('quickSelfieFileFallback');
+
+        function showCaptured(dataUrl) {
+            quickSelfieData = dataUrl;
+            preview.src = dataUrl;
+            preview.classList.remove('d-none');
+            video.classList.add('d-none');
+            captureBtn.classList.add('d-none');
+            retakeBtn.classList.remove('d-none');
+            confirmBtn.classList.remove('d-none');
+        }
+
+        captureBtn.addEventListener('click', function () {
+            if (!video.videoWidth) return;
+            const maxW = 640;
+            const scale = Math.min(1, maxW / video.videoWidth);
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            showCaptured(canvas.toDataURL('image/jpeg', 0.78));
+        });
+
+        retakeBtn.addEventListener('click', function () {
+            quickSelfieData = '';
+            preview.classList.add('d-none');
+            video.classList.remove('d-none');
+            captureBtn.classList.remove('d-none');
+            retakeBtn.classList.add('d-none');
+            confirmBtn.classList.add('d-none');
+        });
+
+        fallbackInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                const img = new Image();
+                img.onload = function () {
+                    const maxW = 640;
+                    const scale = Math.min(1, maxW / img.width);
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    showCaptured(canvas.toDataURL('image/jpeg', 0.78));
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        confirmBtn.addEventListener('click', function () {
+            if (!quickSelfieData || !quickTargetFormId || !quickTargetInputId) return;
+            document.getElementById(quickTargetInputId).value = quickSelfieData;
+            stopQuickCamera();
+            document.getElementById(quickTargetFormId).submit();
+        });
+    });
 </script>
 @endpush

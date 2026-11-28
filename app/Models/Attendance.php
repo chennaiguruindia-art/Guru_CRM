@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Attendance extends Model
 {
@@ -15,10 +16,12 @@ class Attendance extends Model
         'check_in_latitude',
         'check_in_longitude',
         'check_in_address',
+        'check_in_image',
         'check_out',
         'check_out_latitude',
         'check_out_longitude',
         'check_out_address',
+        'check_out_image',
         'worked_hours',
         'has_permission',
         'permission_reason',
@@ -56,6 +59,22 @@ class Attendance extends Model
     {
         if ($this->check_out_latitude && $this->check_out_longitude) {
             return "https://www.google.com/maps?q={$this->check_out_latitude},{$this->check_out_longitude}";
+        }
+        return null;
+    }
+
+    public function checkInImageUrl(): ?string
+    {
+        if ($this->check_in_image) {
+            return Storage::disk('public')->url($this->check_in_image);
+        }
+        return null;
+    }
+
+    public function checkOutImageUrl(): ?string
+    {
+        if ($this->check_out_image) {
+            return Storage::disk('public')->url($this->check_out_image);
         }
         return null;
     }

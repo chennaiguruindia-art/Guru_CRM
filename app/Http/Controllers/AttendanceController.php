@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Services\AttendanceRuleService;
+use Illuminate\Support\Facades\Cache;
 
 class AttendanceController extends Controller
 {
@@ -21,6 +22,12 @@ class AttendanceController extends Controller
     {
         // Auto-checkout any pending attendances across active employees if past 07:00 PM
         AttendanceRuleService::autoCheckOutPendingAttendances();
+
+        // Run 45-day expired selfie cleanup once per day JIT (safe even if cron isn't running)
+        $cleanupCacheKey = 'attendance_selfie_cleanup_' . now('Asia/Kolkata')->toDateString();
+        Cache::remember($cleanupCacheKey, 86400, function () {
+            return AttendanceRuleService::cleanupExpiredSelfies(45);
+        });
 
         $user = $request->user();
         $date = $request->input('date', now()->toDateString());

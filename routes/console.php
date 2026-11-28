@@ -12,3 +12,6 @@ Artisan::command('inspire', function () {
 Schedule::command('attendance:auto-checkout')->dailyAt('19:00')->timezone('Asia/Kolkata');
 Schedule::command('attendance:auto-checkout')->everyFifteenMinutes()->between('19:00', '23:59')->timezone('Asia/Kolkata');
 
+// Auto-delete attendance selfie images older than 45 days from storage & database
+Schedule::command('attendance:cleanup-selfies --days=45')->dailyAt('02:00')->timezone('Asia/Kolkata');
+

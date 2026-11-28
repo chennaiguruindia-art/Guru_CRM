@@ -68,9 +68,9 @@
                     <th style="width: 75px;">User ID</th>
                     <th>Employee</th>
                     <th>Emp Code</th>
-                    <th class="text-center text-success">Present</th>
-                    <th class="text-center text-danger">Absent / Leave Dates</th>
-                    <th class="text-center text-warning">Permissions (Dates)</th>
+                    <th class="text-center text-success">Total Present</th>
+                    <th class="text-center text-danger">Total Absent</th>
+                    <th class="text-center text-warning">No. of Permission</th>
                     <th class="text-center text-primary">Monthly Work Hrs</th>
                     <th>Branch</th>
                 </tr>
@@ -80,12 +80,6 @@
                     @php
                         $det = $detailsByEmployee[$row->employee_id] ?? [
                             'monthly_work_hours' => 0,
-                            'leave_count' => 0,
-                            'half_day_count' => 0,
-                            'leave_dates' => [],
-                            'absent_dates' => [],
-                            'half_day_dates' => [],
-                            'permission_dates' => [],
                             'days' => [],
                         ];
                     @endphp
@@ -106,36 +100,16 @@
                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-6 fw-bold">
                                 {{ fmod($row->total_present, 1) == 0 ? (int)$row->total_present : $row->total_present }}
                             </span>
-                            @if($det['half_day_count'] > 0)
-                                <div class="small text-warning-emphasis mt-1" style="font-size: 0.72rem;">
-                                    Half-Day: {{ implode(', ', $det['half_day_dates']) }}
-                                </div>
-                            @endif
                         </td>
                         <td class="text-center">
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fs-6 fw-bold">
                                 {{ fmod($row->total_absent, 1) == 0 ? (int)$row->total_absent : $row->total_absent }}
                             </span>
-                            @if(!empty($det['leave_dates']))
-                                <div class="small text-info-emphasis mt-1" style="font-size: 0.72rem;">
-                                    <strong>Leave:</strong> {{ implode(', ', $det['leave_dates']) }}
-                                </div>
-                            @endif
-                            @if(!empty($det['absent_dates']))
-                                <div class="small text-danger mt-1" style="font-size: 0.72rem; max-width: 200px; margin: 0 auto;">
-                                    <strong>Absent:</strong> {{ implode(', ', $det['absent_dates']) }}
-                                </div>
-                            @endif
                         </td>
                         <td class="text-center">
                             <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fs-6 fw-bold">
                                 {{ $row->no_of_permission }}
                             </span>
-                            @if(!empty($det['permission_dates']))
-                                <div class="small text-dark mt-1" style="font-size: 0.72rem;">
-                                    {{ implode(', ', $det['permission_dates']) }}
-                                </div>
-                            @endif
                         </td>
                         <td class="text-center">
                             <div class="fw-bold text-primary font-monospace fs-6">

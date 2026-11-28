@@ -17,18 +17,19 @@
 @endif
 
 <!-- Dual Login Tabs -->
-<ul class="nav nav-pills nav-fill flex-nowrap mb-4 p-1 bg-light rounded-pill border shadow-sm" id="loginTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link rounded-pill py-2 px-2 fw-semibold text-nowrap {{ !$isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
-                style="font-size: 0.85rem;"
+<ul class="nav nav-pills mb-4 p-1 bg-light rounded-pill border shadow-sm w-100" id="loginTabs" role="tablist"
+    style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+    <li class="nav-item min-w-0" role="presentation">
+        <button class="nav-link w-100 rounded-pill py-2 px-1 px-sm-2 fw-semibold text-truncate {{ !$isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
+                style="font-size: clamp(0.74rem, 3.2vw, 0.88rem);"
                 id="employee-tab" data-bs-toggle="pill" data-bs-target="#employee-login-pane" type="button" role="tab"
                 aria-controls="employee-login-pane" aria-selected="{{ !$isAdminActive ? 'true' : 'false' }}">
             <i class="bi bi-fingerprint me-1"></i>Employee Punch
         </button>
     </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link rounded-pill py-2 px-2 fw-semibold text-nowrap {{ $isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
-                style="font-size: 0.85rem;"
+    <li class="nav-item min-w-0" role="presentation">
+        <button class="nav-link w-100 rounded-pill py-2 px-1 px-sm-2 fw-semibold text-truncate {{ $isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
+                style="font-size: clamp(0.74rem, 3.2vw, 0.88rem);"
                 id="admin-tab" data-bs-toggle="pill" data-bs-target="#admin-login-pane" type="button" role="tab"
                 aria-controls="admin-login-pane" aria-selected="{{ $isAdminActive ? 'true' : 'false' }}">
             <i class="bi bi-shield-lock me-1"></i>Admin / CRM
@@ -73,10 +74,10 @@
             </div>
 
             <div class="d-grid mb-3 pt-2">
-                <button type="submit" class="btn btn-success py-3 fw-bold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-box-arrow-in-right fs-5"></i>
+                <button type="submit" class="btn btn-success py-2 py-sm-3 fw-bold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: clamp(0.85rem, 3.6vw, 1rem);">
+                    <i class="bi bi-box-arrow-in-right fs-5 flex-shrink-0"></i>
                     <span>Continue to Attendance Punch</span>
-                    <i class="bi bi-arrow-right ms-auto"></i>
+                    <i class="bi bi-arrow-right ms-auto flex-shrink-0"></i>
                 </button>
             </div>
 

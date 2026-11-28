@@ -34,13 +34,21 @@
         }
         .auth-header {
             background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 70%);
-            padding: 2.5rem 2rem 1rem;
+            padding: 1.5rem 1.15rem 1rem;
             text-align: center;
             border-bottom: 1px solid #e5e7eb;
         }
         .auth-body {
             background: #ffffff;
-            padding: 1.5rem 2rem 2.5rem;
+            padding: 1.25rem 1rem 1.5rem;
+        }
+        @media (min-width: 576px) {
+            .auth-header {
+                padding: 2.5rem 2rem 1rem;
+            }
+            .auth-body {
+                padding: 1.5rem 2rem 2.5rem;
+            }
         }
         .auth-logo {
             display: block;
@@ -53,8 +61,8 @@
         }
     </style>
 </head>
-<body class="auth-wrapper d-flex align-items-center justify-content-center p-3">
-    <div class="container">
+<body class="auth-wrapper d-flex align-items-center justify-content-center p-2 p-sm-3">
+    <div class="container px-1 px-sm-3">
         <div class="row justify-content-center">
             <div class="col-12 col-sm-10 col-md-9 col-lg-6 col-xl-5">
                 <div class="card auth-card">

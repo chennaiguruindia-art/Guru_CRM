@@ -17,19 +17,21 @@
 @endif
 
 <!-- Dual Login Tabs -->
-<ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-pill border shadow-sm" id="loginTabs" role="tablist">
+<ul class="nav nav-pills nav-fill flex-nowrap mb-4 p-1 bg-light rounded-pill border shadow-sm" id="loginTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link rounded-pill py-2 fw-semibold {{ !$isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
+        <button class="nav-link rounded-pill py-2 px-2 fw-semibold text-nowrap {{ !$isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
+                style="font-size: 0.85rem;"
                 id="employee-tab" data-bs-toggle="pill" data-bs-target="#employee-login-pane" type="button" role="tab"
                 aria-controls="employee-login-pane" aria-selected="{{ !$isAdminActive ? 'true' : 'false' }}">
-            <i class="bi bi-fingerprint me-1"></i> Employee Punch
+            <i class="bi bi-fingerprint me-1"></i>Employee Punch
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link rounded-pill py-2 fw-semibold {{ $isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
+        <button class="nav-link rounded-pill py-2 px-2 fw-semibold text-nowrap {{ $isAdminActive ? 'active bg-success text-white' : 'text-secondary' }}" 
+                style="font-size: 0.85rem;"
                 id="admin-tab" data-bs-toggle="pill" data-bs-target="#admin-login-pane" type="button" role="tab"
                 aria-controls="admin-login-pane" aria-selected="{{ $isAdminActive ? 'true' : 'false' }}">
-            <i class="bi bi-shield-lock me-1"></i> Admin / CRM
+            <i class="bi bi-shield-lock me-1"></i>Admin / CRM
         </button>
     </li>
 </ul>
@@ -43,9 +45,9 @@
         <div class="text-center mb-3">
             <h5 class="fw-bold text-dark mb-1">Employee Attendance Login</h5>
             <p class="text-muted small mb-1">Enter your Employee ID to punch Check-In / Check-Out.</p>
-            <div id="loginGpsBadge" class="badge bg-light text-secondary border px-2 py-1 small d-inline-flex align-items-center gap-1">
-                <span class="spinner-border spinner-border-sm text-success" role="status" style="width: 0.8rem; height: 0.8rem;"></span>
-                <span id="loginGpsText">Detecting location...</span>
+            <div id="loginGpsBadge" class="badge bg-light text-secondary border px-2 py-1 small d-inline-flex align-items-center justify-content-center gap-1 text-wrap mw-100" style="white-space: normal; line-height: 1.35;">
+                <span class="spinner-border spinner-border-sm text-success flex-shrink-0" role="status" style="width: 0.8rem; height: 0.8rem;"></span>
+                <span id="loginGpsText" class="text-break">Detecting location...</span>
             </div>
         </div>
 
@@ -62,7 +64,7 @@
                     <input id="employee_code" type="text" 
                            class="form-control border-start-0 font-monospace fw-semibold @error('employee_code') is-invalid @enderror" 
                            name="employee_code" value="{{ old('employee_code') }}" 
-                           placeholder="EMP-0001 or EMP-0003" required autofocus autocomplete="off">
+                           placeholder="e.g. EMP-0001" required autofocus autocomplete="off">
                 </div>
                 <div class="form-text small">Enter your Employee ID (e.g. <code>EMP-0001</code>). No password needed.</div>
                 @error('employee_code')
@@ -164,27 +166,27 @@
     <div class="mt-4 pt-3 border-top">
         <div class="rounded-4 p-3 text-white shadow-sm position-relative overflow-hidden"
              style="background: linear-gradient(135deg, #064e3b 0%, #047857 55%, #10b981 100%);">
-            <div class="d-flex align-items-center justify-content-between gap-3 position-relative" style="z-index: 1;">
+            <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-3 position-relative" style="z-index: 1;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="d-flex align-items-center justify-content-center rounded-3 bg-white bg-opacity-25 text-white flex-shrink-0"
-                         style="width: 46px; height: 46px; backdrop-filter: blur(4px);">
+                         style="width: 44px; height: 44px; backdrop-filter: blur(4px);">
                         <i class="bi bi-android2 fs-3"></i>
                     </div>
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-0">
-                            <span class="fw-bold" style="font-size: 0.95rem;">Guru Mobile App</span>
+                    <div class="min-w-0">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="fw-bold text-nowrap" style="font-size: 0.95rem;">Guru Mobile App</span>
                             <span class="badge bg-white text-success fw-bold" style="font-size: 0.65rem; padding: 2px 6px;">APK</span>
                         </div>
-                        <div class="text-white-50" style="font-size: 0.75rem;">
+                        <div class="text-white-50" style="font-size: 0.76rem;">
                             Android Official Build &bull; {{ $apkSizeMb }} MB
                         </div>
                     </div>
                 </div>
 
                 <a href="{{ route('app.download') }}"
-                   class="btn btn-light btn-sm rounded-pill px-3 py-2 fw-bold text-success shadow-sm d-inline-flex align-items-center gap-1 flex-shrink-0">
+                   class="btn btn-light btn-sm rounded-pill px-3 py-2 fw-bold text-success shadow-sm d-inline-flex align-items-center justify-content-center gap-1 flex-shrink-0">
                     <i class="bi bi-download"></i>
-                    <span>Download</span>
+                    <span>Download APK</span>
                 </a>
             </div>
         </div>

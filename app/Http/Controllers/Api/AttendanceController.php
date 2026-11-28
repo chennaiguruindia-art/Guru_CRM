@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Services\AttendanceRuleService;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AttendanceController extends BaseApiController
 {
@@ -15,6 +17,13 @@ class AttendanceController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
+        AttendanceRuleService::autoCheckOutPendingAttendances();
+
+        $cleanupCacheKey = 'attendance_selfie_cleanup_' . now('Asia/Kolkata')->toDateString();
+        Cache::remember($cleanupCacheKey, 86400, function () {
+            return AttendanceRuleService::cleanupExpiredSelfies(45);
+        });
+
         $date = $request->input('date', now()->toDateString());
         $month = $request->input('month');
 

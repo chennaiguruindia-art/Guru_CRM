@@ -274,6 +274,7 @@ class AuthController extends BaseApiController
             'status' => $user->status,
             'roles' => $user->roles->pluck('slug')->all(),
             'is_super_admin' => $isSuperAdmin,
+            'can_access_crm' => $user->hasAnyRole(['super-admin', 'admin']),
             'branch' => [
                 'id' => $user->branchId(),
                 'label' => $user->branchLabel(),

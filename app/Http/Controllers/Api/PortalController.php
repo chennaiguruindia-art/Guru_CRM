@@ -55,6 +55,10 @@ class PortalController extends BaseApiController
             'today_attendance' => $todayAttendance,
             'has_checked_in' => $todayAttendance && !empty($todayAttendance->check_in),
             'has_checked_out' => $todayAttendance && !empty($todayAttendance->check_out),
+            'is_auto_checkout' => (bool) ($todayAttendance?->is_auto_checkout),
+            'check_in_image_url' => $todayAttendance?->checkInImageUrl(),
+            'check_out_image_url' => $todayAttendance?->checkOutImageUrl(),
+            'check_in_window' => AttendanceRuleService::isCheckInAllowed(),
             'stats' => [
                 'month' => now('Asia/Kolkata')->format('F Y'),
                 'present_days' => $presentDays,
@@ -102,16 +106,16 @@ class PortalController extends BaseApiController
             ]);
         }
 
+        // Capture & store mandatory live selfie
+        $selfieInput = $request->file('selfie') ?? $request->file('image') ?? $request->input('selfie_data');
+        $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'in', $today, $selfieInput);
+        if (! $selfiePath) {
+            return $this->errorResponse('Live selfie is required to Punch In. Please capture and send a selfie image.', 422);
+        }
+
         $attendance->status = 'Present';
         $attendance->check_in = $nowTime;
-
-        $selfieInput = $request->file('selfie') ?? $request->file('image') ?? $request->input('selfie_data');
-        if ($selfieInput) {
-            $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'in', $today, $selfieInput);
-            if ($selfiePath) {
-                $attendance->check_in_image = $selfiePath;
-            }
-        }
+        $attendance->check_in_image = $selfiePath;
 
         if ($request->filled('latitude')) {
             $attendance->check_in_latitude = $request->input('latitude');
@@ -137,7 +141,8 @@ class PortalController extends BaseApiController
 
         return $this->successResponse([
             'attendance' => $attendance->fresh(),
-            'message' => 'Punched in successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Location captured.',
+            'check_in_image_url' => $attendance->checkInImageUrl(),
+            'message' => 'Punched in successfully at ' . now('Asia/Kolkata')->format('h:i A') . '! Location & selfie captured.',
         ], 'Punched in successfully');
     }
 
@@ -170,22 +175,22 @@ class PortalController extends BaseApiController
             ]);
         }
 
+        // Capture & store mandatory live selfie
+        $selfieInput = $request->file('selfie') ?? $request->file('image') ?? $request->input('selfie_data');
+        $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'out', $today, $selfieInput);
+        if (! $selfiePath) {
+            return $this->errorResponse('Live selfie is required to Punch Out. Please capture and send a selfie image.', 422);
+        }
+
         // Calculate worked duration and evaluate status & permission consumption
         $eval = AttendanceRuleService::evaluateCheckOut($attendance, $nowTime);
 
         $attendance->check_out = $nowTime;
+        $attendance->check_out_image = $selfiePath;
         $attendance->worked_hours = $eval['worked_hours'];
         $attendance->status = $eval['status'];
         $attendance->has_permission = $eval['has_permission'];
         $attendance->permission_reason = $eval['permission_reason'];
-
-        $selfieInput = $request->file('selfie') ?? $request->file('image') ?? $request->input('selfie_data');
-        if ($selfieInput) {
-            $selfiePath = AttendanceRuleService::storeSelfieImage($employee->id, 'out', $today, $selfieInput);
-            if ($selfiePath) {
-                $attendance->check_out_image = $selfiePath;
-            }
-        }
 
         if ($request->filled('latitude')) {
             $attendance->check_out_latitude = $request->input('latitude');
@@ -224,6 +229,8 @@ class PortalController extends BaseApiController
 
         return $this->successResponse([
             'attendance' => $attendance->fresh(),
+            'check_in_image_url' => $attendance->checkInImageUrl(),
+            'check_out_image_url' => $attendance->checkOutImageUrl(),
             'evaluation' => $eval,
             'message' => $feedbackMsg,
         ], 'Punched out successfully');
@@ -240,6 +247,8 @@ class PortalController extends BaseApiController
         if (! $employee) {
             return $this->errorResponse('No active employee profile linked to this account.', 422);
         }
+
+        AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
 
         $selectedMonth = $request->input('month', now()->format('Y-m'));
         $dateObj = Carbon::createFromFormat('Y-m', $selectedMonth) ?: now();
@@ -290,6 +299,8 @@ class PortalController extends BaseApiController
             return $this->errorResponse('No active employee profile linked to this account.', 422);
         }
 
+        AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
+
         return $this->successResponse([
             'user' => $user,
             'employee' => $employee->load('branch'),
@@ -307,6 +318,8 @@ class PortalController extends BaseApiController
         if (! $employee) {
             return $this->errorResponse('No active employee profile linked to this account.', 422);
         }
+
+        AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
 
         $validated = $request->validate([
             'phone' => ['required', 'string', 'max:20'],
@@ -353,6 +366,8 @@ class PortalController extends BaseApiController
             return $this->errorResponse('No active employee profile linked to this account.', 422);
         }
 
+        AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
+
         $selectedMonth = $request->input('month', now('Asia/Kolkata')->format('Y-m'));
         $currentPayslip = \App\Http\Controllers\PortalController::getPayslipForMonth($employee, $selectedMonth);
 
@@ -396,6 +411,8 @@ class PortalController extends BaseApiController
         if (! $employee) {
             return $this->errorResponse('No active employee profile linked to this account.', 422);
         }
+
+        AttendanceRuleService::autoCheckOutPendingAttendances($employee->id);
 
         $month = $request->input('month', now('Asia/Kolkata')->format('Y-m'));
         $payslip = \App\Http\Controllers\PortalController::getPayslipForMonth($employee, $month);

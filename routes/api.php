@@ -126,6 +126,9 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
         // App Lookups (metadata, dropdown choices, status choices)
         Route::get('lookups', [LookupController::class, 'index'])->name('api.lookups');
 
+        // ─── CRM & Admin API Routes (Strictly Super Admin & Branch Admins ONLY) ───
+        Route::middleware(['role:super-admin,admin'])->group(function () use ($pickPermission, $apiResourceWithPerms) {
+
         // Dashboard & Analytics
         Route::get('dashboard', [DashboardController::class, 'index'])->name('api.dashboard');
         Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('api.dashboard.stats');
@@ -232,5 +235,6 @@ Route::prefix('v1')->group(function () use ($pickPermission, $apiResourceWithPer
 
         Route::get('audit-logs', [AuditLogController::class, 'index'])
             ->name('api.audit_logs.index')->middleware('permission:' . $pickPermission('audit_logs', 'view'));
+        }); // end role:super-admin,admin
     });
 });

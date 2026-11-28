@@ -25,6 +25,10 @@ class DashboardController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
+        if (! $request->user()?->hasAnyRole(['super-admin', 'admin'])) {
+            return $this->errorResponse('Unauthorized. CRM access is restricted to Admin and Super Admin only.', 403);
+        }
+
         return $this->successResponse([
             'metrics' => $this->buildMetrics(),
             'today_items' => $this->today->items(15),
@@ -37,6 +41,10 @@ class DashboardController extends BaseApiController
      */
     public function stats(Request $request): JsonResponse
     {
+        if (! $request->user()?->hasAnyRole(['super-admin', 'admin'])) {
+            return $this->errorResponse('Unauthorized. CRM access is restricted to Admin and Super Admin only.', 403);
+        }
+
         return $this->successResponse([
             'metrics' => $this->buildMetrics(),
             'charts' => $this->buildCharts(),
